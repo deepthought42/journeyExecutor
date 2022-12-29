@@ -2,7 +2,7 @@ package com.looksee.utils;
 
 import org.springframework.stereotype.Service;
 
-import com.looksee.audit.journeyExecutor.models.enums.FormType;
+import com.looksee.journeyExecutor.models.enums.FormType;
 
 
 @Service

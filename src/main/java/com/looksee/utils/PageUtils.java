@@ -8,9 +8,9 @@ import java.util.stream.Collectors;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.looksee.audit.journeyExecutor.models.ElementState;
-import com.looksee.audit.journeyExecutor.models.Form;
-import com.looksee.audit.journeyExecutor.models.PageState;
+import com.looksee.journeyExecutor.models.ElementState;
+import com.looksee.journeyExecutor.models.Form;
+import com.looksee.journeyExecutor.models.PageState;
 
 
 public class PageUtils {

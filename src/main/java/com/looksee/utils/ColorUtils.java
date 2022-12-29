@@ -14,9 +14,9 @@ import javax.imageio.ImageIO;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.looksee.audit.journeyExecutor.models.ColorData;
-import com.looksee.audit.journeyExecutor.models.ColorUsageStat;
-import com.looksee.audit.journeyExecutor.models.ElementState;
+import com.looksee.journeyExecutor.models.ColorData;
+import com.looksee.journeyExecutor.models.ColorUsageStat;
+import com.looksee.journeyExecutor.models.ElementState;
 import com.looksee.journeyExecutor.models.recommend.ColorContrastRecommendation;
 
 public class ColorUtils {

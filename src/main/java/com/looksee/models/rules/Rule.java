@@ -2,8 +2,8 @@ package com.looksee.models.rules;
 
 
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
-import com.looksee.audit.journeyExecutor.models.Element;
-import com.looksee.audit.journeyExecutor.models.LookseeObject;
+import com.looksee.journeyExecutor.models.Element;
+import com.looksee.journeyExecutor.models.LookseeObject;
 import com.looksee.models.rules.RuleType;
 import com.looksee.models.serializer.RuleDeserializer;
 

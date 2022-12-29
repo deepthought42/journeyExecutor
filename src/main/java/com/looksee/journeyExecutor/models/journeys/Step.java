@@ -5,8 +5,8 @@ import java.util.ArrayList;
 import org.springframework.data.neo4j.core.schema.Node;
 import org.springframework.data.neo4j.core.schema.Relationship;
 
-import com.looksee.audit.journeyExecutor.models.LookseeObject;
-import com.looksee.audit.journeyExecutor.models.PageState;
+import com.looksee.journeyExecutor.models.LookseeObject;
+import com.looksee.journeyExecutor.models.PageState;
 
 
 @Node

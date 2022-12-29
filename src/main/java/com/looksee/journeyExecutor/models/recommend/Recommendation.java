@@ -2,7 +2,7 @@ package com.looksee.journeyExecutor.models.recommend;
 
 import java.util.UUID;
 
-import com.looksee.audit.journeyExecutor.models.LookseeObject;
+import com.looksee.journeyExecutor.models.LookseeObject;
 
 
 public class Recommendation extends LookseeObject{

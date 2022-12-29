@@ -3,7 +3,7 @@ package com.looksee.browsing;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.looksee.audit.journeyExecutor.models.enums.Action;
+import com.looksee.journeyExecutor.models.enums.Action;
 
 import org.openqa.selenium.Point;
 import org.openqa.selenium.WebDriver;

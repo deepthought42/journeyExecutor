@@ -25,3 +25,12 @@ hs_err_pid*
 *.stage
 
 *.json
+/target/
+
+.classpath
+
+.settings/
+
+*.properties
+
+*.prod

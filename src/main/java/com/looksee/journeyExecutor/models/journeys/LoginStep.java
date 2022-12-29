@@ -3,9 +3,9 @@ package com.looksee.journeyExecutor.models.journeys;
 import org.springframework.data.neo4j.core.schema.Node;
 import org.springframework.data.neo4j.core.schema.Relationship;
 
-import com.looksee.audit.journeyExecutor.models.ElementState;
-import com.looksee.audit.journeyExecutor.models.PageState;
-import com.looksee.audit.journeyExecutor.models.TestUser;
+import com.looksee.journeyExecutor.models.ElementState;
+import com.looksee.journeyExecutor.models.PageState;
+import com.looksee.journeyExecutor.models.TestUser;
 
 /**
  * A Step is the increment of work that start with a {@link PageState} contians an {@link ElementState} 

@@ -7,17 +7,17 @@ import java.util.stream.Collectors;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.looksee.audit.journeyExecutor.models.AuditRecord;
-import com.looksee.audit.journeyExecutor.models.AuditScore;
-import com.looksee.audit.journeyExecutor.models.PageAuditRecord;
-import com.looksee.audit.journeyExecutor.models.ReadingComplexityIssueMessage;
-import com.looksee.audit.journeyExecutor.models.SentenceIssueMessage;
-import com.looksee.audit.journeyExecutor.models.StockImageIssueMessage;
-import com.looksee.audit.journeyExecutor.models.UXIssueMessage;
-import com.looksee.audit.journeyExecutor.models.enums.AuditCategory;
-import com.looksee.audit.journeyExecutor.models.enums.AuditName;
-import com.looksee.audit.journeyExecutor.models.enums.AuditSubcategory;
-import com.looksee.audit.journeyExecutor.models.Audit;
+import com.looksee.journeyExecutor.models.Audit;
+import com.looksee.journeyExecutor.models.AuditRecord;
+import com.looksee.journeyExecutor.models.AuditScore;
+import com.looksee.journeyExecutor.models.PageAuditRecord;
+import com.looksee.journeyExecutor.models.ReadingComplexityIssueMessage;
+import com.looksee.journeyExecutor.models.SentenceIssueMessage;
+import com.looksee.journeyExecutor.models.StockImageIssueMessage;
+import com.looksee.journeyExecutor.models.UXIssueMessage;
+import com.looksee.journeyExecutor.models.enums.AuditCategory;
+import com.looksee.journeyExecutor.models.enums.AuditName;
+import com.looksee.journeyExecutor.models.enums.AuditSubcategory;
 
 
 public class AuditUtils {

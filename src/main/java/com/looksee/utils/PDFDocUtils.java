@@ -9,9 +9,9 @@ import java.util.Set;
 
 import org.springframework.stereotype.Service;
 
-import com.looksee.audit.journeyExecutor.models.Score;
-import com.looksee.audit.journeyExecutor.models.enums.AuditSubcategory;
-import com.looksee.audit.journeyExecutor.models.Audit;
+import com.looksee.journeyExecutor.models.Audit;
+import com.looksee.journeyExecutor.models.Score;
+import com.looksee.journeyExecutor.models.enums.AuditSubcategory;
 
 @Service
 public class PDFDocUtils {

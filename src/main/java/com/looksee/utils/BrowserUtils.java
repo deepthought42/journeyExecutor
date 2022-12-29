@@ -39,16 +39,16 @@ import org.openqa.selenium.WebElement;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.looksee.audit.journeyExecutor.gcp.GoogleCloudStorage;
-import com.looksee.audit.journeyExecutor.models.Browser;
-import com.looksee.audit.journeyExecutor.models.ColorData;
-import com.looksee.audit.journeyExecutor.models.ElementState;
-import com.looksee.audit.journeyExecutor.models.ImageElementState;
-import com.looksee.audit.journeyExecutor.models.PageLoadAnimation;
-import com.looksee.audit.journeyExecutor.models.PageState;
-import com.looksee.audit.journeyExecutor.models.enums.BrowserEnvironment;
-import com.looksee.audit.journeyExecutor.models.enums.BrowserType;
-import com.looksee.audit.journeyExecutor.services.BrowserService;
+import com.looksee.journeyExecutor.gcp.GoogleCloudStorage;
+import com.looksee.journeyExecutor.models.Browser;
+import com.looksee.journeyExecutor.models.ColorData;
+import com.looksee.journeyExecutor.models.ElementState;
+import com.looksee.journeyExecutor.models.ImageElementState;
+import com.looksee.journeyExecutor.models.PageLoadAnimation;
+import com.looksee.journeyExecutor.models.PageState;
+import com.looksee.journeyExecutor.models.enums.BrowserEnvironment;
+import com.looksee.journeyExecutor.models.enums.BrowserType;
+import com.looksee.journeyExecutor.services.BrowserService;
 
 
 /**
@@ -340,10 +340,10 @@ public class BrowserUtils {
 	 * @param source valid html source
 	 * @return {@link List list} of link urls
 	 */
-	public static List<com.looksee.audit.journeyExecutor.models.Element> extractLinks(List<com.looksee.audit.journeyExecutor.models.Element> elements) {
-		List<com.looksee.audit.journeyExecutor.models.Element> links = new ArrayList<>();
+	public static List<com.looksee.journeyExecutor.models.Element> extractLinks(List<com.looksee.journeyExecutor.models.Element> elements) {
+		List<com.looksee.journeyExecutor.models.Element> links = new ArrayList<>();
 		
-		for(com.looksee.audit.journeyExecutor.models.Element element : elements) {
+		for(com.looksee.journeyExecutor.models.Element element : elements) {
 			if(element.getName().equalsIgnoreCase("a")) {
 				links.add(element);
 			}

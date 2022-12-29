@@ -7,7 +7,7 @@ import java.util.stream.Collectors;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.data.neo4j.core.schema.Relationship;
 
-import com.looksee.audit.journeyExecutor.models.LookseeObject;
+import com.looksee.journeyExecutor.models.LookseeObject;
 
 
 /**

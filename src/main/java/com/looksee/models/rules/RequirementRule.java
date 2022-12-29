@@ -1,6 +1,6 @@
 package com.looksee.models.rules;
 
-import com.looksee.audit.journeyExecutor.models.Element;
+import com.looksee.journeyExecutor.models.Element;
 
 public class RequirementRule extends Rule{
 	/**

@@ -6,8 +6,8 @@ import java.util.List;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.looksee.audit.journeyExecutor.models.LookseeObject;
-import com.looksee.audit.journeyExecutor.models.PageState;
+import com.looksee.journeyExecutor.models.LookseeObject;
+import com.looksee.journeyExecutor.models.PageState;
 import com.looksee.journeyExecutor.models.journeys.Redirect;
 import com.looksee.journeyExecutor.models.journeys.Step;
 

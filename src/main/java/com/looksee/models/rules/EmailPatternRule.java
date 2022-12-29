@@ -3,7 +3,7 @@ package com.looksee.models.rules;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-import com.looksee.audit.journeyExecutor.models.Element;
+import com.looksee.journeyExecutor.models.Element;
 
 public class EmailPatternRule extends Rule {
 

@@ -12,15 +12,15 @@ import java.util.Set;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.looksee.audit.journeyExecutor.models.CIEColorSpace;
-import com.looksee.audit.journeyExecutor.models.ColorData;
-import com.looksee.audit.journeyExecutor.models.ColorPaletteIssueMessage;
-import com.looksee.audit.journeyExecutor.models.PaletteColor;
-import com.looksee.audit.journeyExecutor.models.Score;
-import com.looksee.audit.journeyExecutor.models.UXIssueMessage;
-import com.looksee.audit.journeyExecutor.models.enums.AuditCategory;
-import com.looksee.audit.journeyExecutor.models.enums.ColorScheme;
-import com.looksee.audit.journeyExecutor.models.enums.Priority;
+import com.looksee.journeyExecutor.models.CIEColorSpace;
+import com.looksee.journeyExecutor.models.ColorData;
+import com.looksee.journeyExecutor.models.ColorPaletteIssueMessage;
+import com.looksee.journeyExecutor.models.PaletteColor;
+import com.looksee.journeyExecutor.models.Score;
+import com.looksee.journeyExecutor.models.UXIssueMessage;
+import com.looksee.journeyExecutor.models.enums.AuditCategory;
+import com.looksee.journeyExecutor.models.enums.ColorScheme;
+import com.looksee.journeyExecutor.models.enums.Priority;
 
 
 /**
@@ -137,7 +137,7 @@ public class ColorPaletteUtils {
 																	ada_compliance, 
 																	title,
 																	0,
-																	1);
+																	1); 
 			
 			messages.add(palette_issue_message);
 		}

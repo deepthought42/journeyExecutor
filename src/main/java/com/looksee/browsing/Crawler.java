@@ -14,10 +14,10 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 import org.slf4j.Logger;
 
-import com.looksee.audit.journeyExecutor.models.Element;
-import com.looksee.audit.journeyExecutor.models.ElementState;
-import com.looksee.audit.journeyExecutor.models.enums.Action;
-import com.looksee.audit.journeyExecutor.services.BrowserService;
+import com.looksee.journeyExecutor.models.Element;
+import com.looksee.journeyExecutor.models.ElementState;
+import com.looksee.journeyExecutor.models.enums.Action;
+import com.looksee.journeyExecutor.services.BrowserService;
 import com.looksee.utils.TimingUtils;
 
 

@@ -2,7 +2,7 @@ package com.looksee.models.rules;
 
 import org.slf4j.LoggerFactory;
 
-import com.looksee.audit.journeyExecutor.models.Element;
+import com.looksee.journeyExecutor.models.Element;
 
 import org.slf4j.Logger;
 

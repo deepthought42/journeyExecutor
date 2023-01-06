@@ -105,7 +105,7 @@ public class AuditController {
 	private PubSubPageBuiltPublisherImpl page_built_topic;
 	
 	@RequestMapping(value = "/", method = RequestMethod.POST)
-	public ResponseEntity receiveMessage(@RequestBody Body body) 
+	public ResponseEntity<String> receiveMessage(@RequestBody Body body) 
 			throws JsonMappingException, JsonProcessingException, ExecutionException, InterruptedException 
 	{	
 		Body.Message message = body.getMessage();

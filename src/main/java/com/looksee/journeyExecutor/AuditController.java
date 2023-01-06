@@ -188,7 +188,7 @@ public class AuditController {
 																						account_id, 
 																						audit_record_id);
 				
-			   	JsonMapper mapper = new JsonMapper().builder().addModule(new JavaTimeModule()).build();
+			   	JsonMapper mapper = JsonMapper.builder().addModule(new JavaTimeModule()).build();
 				String audit_record_json = mapper.writeValueAsString(journey_message);
 				log.warn("audit progress update = "+audit_record_json);
 				//TODO: SEND PUB SUB MESSAGE THAT AUDIT RECORD NOT FOUND WITH PAGE DATA EXTRACTION MESSAGE

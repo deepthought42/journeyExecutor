@@ -137,6 +137,8 @@ public class AuditController {
 				page_built_topic.publish(page_state.getUrl());
 				steps.set(steps.size()-1, final_step);
 			}
+
+			return new ResponseEntity<String>("Successfully sent message to audit manager", HttpStatus.OK);
 		}
 		catch(Exception e) {
 			log.error("Exception occurred during journey execution");
@@ -153,7 +155,7 @@ public class AuditController {
 										journey_msg.getAccountId(),
 										journey_msg.getDomainAuditRecordId());
 
-		return new ResponseEntity("Successfully sent message to audit manager", HttpStatus.OK);
+		return new ResponseEntity<String>("Error occurred while executing journey", HttpStatus.INTERNAL_SERVER_ERROR);
 	}
 	
 	/**

@@ -340,7 +340,7 @@ public class AuditController {
 		assert !steps.isEmpty();
 				
 		PageState initial_page = steps.get(0).getStartPage();
-		String sanitized_url = BrowserUtils.sanitizeUrl(initial_page.getUrl(), initial_page.isSecure());
+		String sanitized_url = BrowserUtils.sanitizeUrl(initial_page.getUrl(), initial_page.isSecured());
 
 		browser.navigateTo(sanitized_url);
 		//execute all steps sequentially in the journey

@@ -8,7 +8,6 @@ import java.util.UUID;
 import com.looksee.journeyExecutor.models.enums.AuditLevel;
 import com.looksee.journeyExecutor.models.enums.ExecutionStatus;
 
-
 /**
  * Record detailing an set of {@link Audit audits}.
  */

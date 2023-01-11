@@ -20,6 +20,7 @@ package com.looksee.journeyExecutor;
 import java.net.URL;
 import java.util.ArrayList;
 import java.util.Base64;
+import java.util.HashSet;
 import java.util.List;
 import java.util.concurrent.ExecutionException;
 import java.util.stream.Collectors;
@@ -61,15 +62,20 @@ import com.looksee.journeyExecutor.models.journeys.LoginStep;
 import com.looksee.journeyExecutor.models.journeys.SimpleStep;
 import com.looksee.journeyExecutor.models.journeys.Step;
 import com.looksee.journeyExecutor.models.message.DiscardedJourneyMessage;
-import com.looksee.journeyExecutor.models.message.JourneyMessage;
+import com.looksee.journeyExecutor.models.message.JourneyCandidateMessage;
+import com.looksee.journeyExecutor.models.message.PageBuiltMessage;
 import com.looksee.journeyExecutor.models.message.VerifiedJourneyMessage;
 import com.looksee.journeyExecutor.services.AuditRecordService;
 import com.looksee.journeyExecutor.services.BrowserService;
 import com.looksee.journeyExecutor.services.DomainService;
 import com.looksee.journeyExecutor.services.PageStateService;
 import com.looksee.journeyExecutor.services.StepService;
+import com.looksee.journeyExecutor.models.AuditRecord;
+import com.looksee.journeyExecutor.models.PageAuditRecord;
+import com.looksee.journeyExecutor.models.enums.ExecutionStatus;
 import com.looksee.utils.BrowserUtils;
 import com.looksee.utils.ElementStateUtils;
+import com.looksee.utils.JourneyUtils;
 import com.looksee.utils.PathUtils;
 
 // PubsubController consumes a Pub/Sub message.
@@ -112,30 +118,60 @@ public class AuditController {
 		String data = message.getData();
 	    String target = !data.isEmpty() ? new String(Base64.getDecoder().decode(data)) : "";
 	    ObjectMapper input_mapper = new ObjectMapper();
-	    JourneyMessage journey_msg = input_mapper.readValue(target, JourneyMessage.class);
+	    JourneyCandidateMessage journey_msg = input_mapper.readValue(target, JourneyCandidateMessage.class);
         
 	    log.warn("message " + journey_msg);
-	    Journey journey = journey_msg.getJourney();
-	    
-	   	log.warn("Received journey :: "+journey.getId());
-		List<Step> steps = new ArrayList<>(journey.getSteps());
-		
+	    JsonMapper mapper = JsonMapper.builder().addModule(new JavaTimeModule()).build();
+
+		List<Step> steps = new ArrayList<>(journey_msg.getSteps());
+		log.warn("Received journey :: "+steps);
 		try {
 			PageState page_state = iterateThroughJourneySteps(steps, 
 															  journey_msg.getDomainId(), 
 															  journey_msg.getAccountId(), 
 															  journey_msg.getDomainAuditRecordId());
 			Step final_step = steps.get(steps.size()-1);
-			final_step.setEndPage(page_state);
-			final_step.setKey(steps.get(steps.size()-1).generateKey());
-			
-			if(existsInJourney(steps, final_step)) {
-				return null;
-			}
-			else {
-				final_step = step_service.save(final_step);
-				page_built_topic.publish(page_state.getUrl());
-				steps.set(steps.size()-1, final_step);
+			if(!final_step.getStartPage().equals(page_state)) {			
+				final_step.setEndPage(page_state);
+				final_step.setKey(steps.get(steps.size()-1).generateKey());
+				
+				if(existsInJourney(steps, final_step)) {
+					return null;
+				}
+				else {
+					final_step = step_service.save(final_step);
+					
+					
+					if(JourneyUtils.hasLoginStep(steps)) {
+						steps.set(steps.size()-1, final_step);
+					}
+					else {
+						steps = new ArrayList<>();
+						steps.add(final_step);
+						//TODO: Change to send page built message to page built topic
+						AuditRecord audit_record = new PageAuditRecord(ExecutionStatus.BUILDING_PAGE, new HashSet<>(), true);
+						audit_record = audit_record_service.save(audit_record);
+						audit_record_service.addPageAuditToDomainAudit(journey_msg.getDomainAuditRecordId(),
+																		audit_record.getId());
+								
+						PageBuiltMessage page_built_msg = new PageBuiltMessage(journey_msg.getAccountId(),
+																			journey_msg.getDomainAuditRecordId(),
+																			journey_msg.getDomainId(),
+																			page_state.getId(),
+																			audit_record.getId());
+						String page_built_str = mapper.writeValueAsString(page_built_msg);
+
+						page_built_topic.publish(page_built_str);
+					}
+					
+					Journey journey = new Journey(steps);
+					log.warn("done processing journey");
+					processIfStepsShouldBeExpanded(journey.getId(), 
+													journey, 
+													journey_msg.getDomainId(), 
+													journey_msg.getAccountId(),
+													journey_msg.getDomainAuditRecordId());
+				}
 			}
 
 			return new ResponseEntity<String>("Successfully sent message to audit manager", HttpStatus.OK);
@@ -148,12 +184,6 @@ public class AuditController {
 			error_topic.publish("");
 		}
 		
-		log.warn("done processing journey :: "+journey.getId());
-		processIfStepsShouldBeExpanded(journey.getId(), 
-										journey, 
-										journey_msg.getDomainId(), 
-										journey_msg.getAccountId(),
-										journey_msg.getDomainAuditRecordId());
 
 		return new ResponseEntity<String>("Error occurred while executing journey", HttpStatus.INTERNAL_SERVER_ERROR);
 	}

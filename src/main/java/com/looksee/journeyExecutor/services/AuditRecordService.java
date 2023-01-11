@@ -44,7 +44,6 @@ public class AuditRecordService {
 	@Autowired
 	private PageStateService page_state_service;
 	
-	@Deprecated
 	public AuditRecord save(AuditRecord audit) {
 		assert audit != null;
 

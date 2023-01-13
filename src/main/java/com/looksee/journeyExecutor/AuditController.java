@@ -153,9 +153,10 @@ public class AuditController {
 					else {
 						steps = new ArrayList<>();
 						steps.add(final_step);
-						//TODO: Change to send page built message to page built topic
+
 						AuditRecord audit_record = new PageAuditRecord(ExecutionStatus.BUILDING_PAGE, new HashSet<>(), true);
 						audit_record = audit_record_service.save(audit_record);
+						
 						audit_record_service.addPageAuditToDomainAudit(journey_msg.getDomainAuditRecordId(),
 																		audit_record.getId());
 								

@@ -23,7 +23,7 @@ public class JourneyCandidateMessage extends Message {
 						   long account_id, 
 						   long audit_record_id)
 	{
-		super(domain_id, account_id, audit_record_id);
+		super(account_id, audit_record_id, domain_id);
 		setSteps(steps);
 		setBrowser(browser_type);
 	}

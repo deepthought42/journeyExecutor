@@ -1,5 +1,6 @@
-package com.looksee.journeyExecutor.models.message;
+package com.looksee.journeyExecutor.models.repository;
 
+import com.looksee.journeyExecutor.models.message.Message;
 
 public class PageBuiltMessage extends Message{
 	private long page_id;

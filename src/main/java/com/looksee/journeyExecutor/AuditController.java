@@ -1,22 +1,5 @@
 package com.looksee.journeyExecutor;
 
-/*
- * Copyright 2019 Google LLC
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- * http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- */
-// [START cloudrun_pubsub_handler]
-// [START run_pubsub_handler]
 import java.net.URL;
 import java.util.ArrayList;
 import java.util.Base64;
@@ -68,6 +51,7 @@ import com.looksee.journeyExecutor.models.message.VerifiedJourneyMessage;
 import com.looksee.journeyExecutor.services.AuditRecordService;
 import com.looksee.journeyExecutor.services.BrowserService;
 import com.looksee.journeyExecutor.services.DomainService;
+import com.looksee.journeyExecutor.services.JourneyService;
 import com.looksee.journeyExecutor.services.PageStateService;
 import com.looksee.journeyExecutor.services.StepService;
 import com.looksee.journeyExecutor.models.AuditRecord;
@@ -78,6 +62,24 @@ import com.looksee.utils.ElementStateUtils;
 import com.looksee.utils.JourneyUtils;
 import com.looksee.utils.PathUtils;
 
+
+/*
+ * Copyright 2019 Google LLC
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+// [START cloudrun_pubsub_handler]
+// [START run_pubsub_handler]
 // PubsubController consumes a Pub/Sub message.
 @RestController
 public class AuditController {
@@ -91,7 +93,10 @@ public class AuditController {
 	
 	@Autowired
 	private DomainService domain_service;
-	
+
+	@Autowired
+	private JourneyService journey_service;
+
 	@Autowired
 	private StepService step_service;
 	
@@ -165,6 +170,8 @@ public class AuditController {
 					}
 					
 					Journey journey = new Journey(steps);
+					journey = journey_service.save(journey);
+
 					log.warn("done processing journey");
 					processIfStepsShouldBeExpanded(journey.getId(), 
 													journey, 
@@ -340,7 +347,7 @@ public class AuditController {
 			}
 			catch(Exception e) {
 				log.error("Error occurred while iterating through journey steps.");
-				//e.printStackTrace();
+				e.printStackTrace();
 			}
 			finally {
 				if(browser != null) {

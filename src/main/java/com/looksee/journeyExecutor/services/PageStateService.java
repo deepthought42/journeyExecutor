@@ -174,4 +174,8 @@ public class PageStateService {
 	public void addAllElements(long page_state_id, List<Long> element_ids) {
 		page_state_repo.addAllElements(page_state_id, element_ids);
 	}
+
+	public PageState findByDomainAudit(long domainAuditRecordId, long page_state_id) {
+		return page_state_repo.findByDomainAudit(domainAuditRecordId, page_state_id);
+	}
 }

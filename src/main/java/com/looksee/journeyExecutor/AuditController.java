@@ -9,7 +9,6 @@ import java.util.concurrent.ExecutionException;
 import java.util.stream.Collectors;
 
 import org.openqa.selenium.By;
-import org.openqa.selenium.ElementNotInteractableException;
 import org.openqa.selenium.WebElement;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -54,6 +53,8 @@ import com.looksee.journeyExecutor.services.DomainService;
 import com.looksee.journeyExecutor.services.JourneyService;
 import com.looksee.journeyExecutor.services.PageStateService;
 import com.looksee.journeyExecutor.services.StepService;
+import com.looksee.journeyExecutor.models.enums.AuditCategory;
+import com.looksee.journeyExecutor.models.message.AuditError;
 import com.looksee.journeyExecutor.models.AuditRecord;
 import com.looksee.journeyExecutor.models.PageAuditRecord;
 import com.looksee.journeyExecutor.models.enums.ExecutionStatus;
@@ -87,6 +88,9 @@ public class AuditController {
 
 	@Autowired
 	private BrowserService browser_service;
+	
+	@Autowired
+	private JourneyService journey_service;
 	
 	@Autowired
 	private PageStateService page_state_service;
@@ -130,11 +134,14 @@ public class AuditController {
 
 		List<Step> steps = new ArrayList<>(journey_msg.getSteps());
 		log.warn("Received journey :: "+steps);
+		Browser browser = null;
+
 		try {
 			PageState page_state = iterateThroughJourneySteps(steps, 
 															  journey_msg.getDomainId(), 
 															  journey_msg.getAccountId(), 
-															  journey_msg.getDomainAuditRecordId());
+															  journey_msg.getDomainAuditRecordId(),
+															  browser);
 			Step final_step = steps.get(steps.size()-1);
 			if(!final_step.getStartPage().equals(page_state)) {			
 				final_step.setEndPage(page_state);
@@ -145,8 +152,7 @@ public class AuditController {
 				}
 				else {
 					final_step = step_service.save(final_step);
-					
-					
+						
 					if(JourneyUtils.hasLoginStep(steps)) {
 						steps.set(steps.size()-1, final_step);
 					}
@@ -155,6 +161,12 @@ public class AuditController {
 						steps.add(final_step);
 
 						AuditRecord audit_record = new PageAuditRecord(ExecutionStatus.BUILDING_PAGE, new HashSet<>(), true);
+						page_state = page_state_service.findByDomainAudit(journey_msg.getDomainAuditRecordId(), page_state.getId());
+						if(page_state != null) {
+							//if page exists for domain audit already then don't do anything with it and return
+							return new ResponseEntity<String>("Successfully sent message to audit manager", HttpStatus.OK);
+						}
+						
 						audit_record = audit_record_service.save(audit_record);
 						
 						audit_record_service.addPageAuditToDomainAudit(journey_msg.getDomainAuditRecordId(),
@@ -165,6 +177,7 @@ public class AuditController {
 																			journey_msg.getDomainId(),
 																			page_state.getId(),
 																			audit_record.getId());
+						
 						String page_built_str = mapper.writeValueAsString(page_built_msg);
 
 						page_built_topic.publish(page_built_str);
@@ -186,12 +199,25 @@ public class AuditController {
 		}
 		catch(Exception e) {
 			log.error("Exception occurred during journey execution");
-			//e.printStackTrace();
+			e.printStackTrace();
 			
+			double progress = 1.0;
 			//TODO send error message to error topic
-			error_topic.publish("");
+			AuditError err = new AuditError(journey_msg.getAccountId(), 
+											journey_msg.getDomainAuditRecordId(), 
+											"Exception occurred during journey execution",
+											AuditCategory.ACCESSIBILITY,
+											progress,
+											journey_msg.getDomainId());
+			
+			String err_json = mapper.writeValueAsString(err);
+			error_topic.publish(err_json);
 		}
-		
+		finally {
+			if(browser != null) {
+				browser.close();
+			}
+		}
 
 		return new ResponseEntity<String>("Error occurred while executing journey", HttpStatus.INTERNAL_SERVER_ERROR);
 	}
@@ -219,6 +245,7 @@ public class AuditController {
 			PageState final_page = PathUtils.getLastPageState(journey.getSteps());
 			//is end_page PageState different from second to last PageState
 			if(final_page == null || final_page.equals(second_to_last_page)) {
+				log.warn("publishing discarded journey...");
 				//tell parent that we processed a journey that is being discarded
 				DiscardedJourneyMessage journey_message = new DiscardedJourneyMessage(	journey_id, 
 																						BrowserType.CHROME, 
@@ -227,12 +254,13 @@ public class AuditController {
 																						audit_record_id);
 				
 			   	JsonMapper mapper = JsonMapper.builder().addModule(new JavaTimeModule()).build();
-				String audit_record_json = mapper.writeValueAsString(journey_message);
-				log.warn("audit progress update = "+audit_record_json);
+				String discarded_journey_json = mapper.writeValueAsString(journey_message);
+				log.warn("audit progress update = "+discarded_journey_json);
 				//TODO: SEND PUB SUB MESSAGE THAT AUDIT RECORD NOT FOUND WITH PAGE DATA EXTRACTION MESSAGE
-			    discarded_journey_topic.publish(audit_record_json);
+			    discarded_journey_topic.publish(discarded_journey_json);
 			}
 			else {
+				log.warn("publishing journey verified message...");
 				VerifiedJourneyMessage journey_message = new VerifiedJourneyMessage(journey_id,
 																					journey,
 																					PathStatus.EXAMINED, 
@@ -242,10 +270,10 @@ public class AuditController {
 																					audit_record_id);
 				
 				JsonMapper mapper = JsonMapper.builder().addModule(new JavaTimeModule()).build();
-				String audit_record_json = mapper.writeValueAsString(journey_message);
-				log.warn("audit progress update = "+audit_record_json);
+				String journey_json = mapper.writeValueAsString(journey_message);
+				log.warn("audit progress update = "+journey_json);
 				//TODO: SEND PUB SUB MESSAGE THAT AUDIT RECORD NOT FOUND WITH PAGE DATA EXTRACTION MESSAGE
-			    journey_verified_topic.publish(audit_record_json);
+			    journey_verified_topic.publish(journey_json);
 			}
 		}catch(Exception e) {
 			e.printStackTrace();
@@ -306,29 +334,33 @@ public class AuditController {
 	 * @param domain_id
 	 * @param account_id
 	 * @param audit_record_id
+	 * @param browser TODO
 	 * @return {@link PageState} or null if final page is an external page
 	 * @throws Exception
 	 * 
 	 * @pre steps != null
 	 * @pre !steps.isEmpty()
 	 */
+	@Retry(name="webdriver")
 	private PageState iterateThroughJourneySteps( List<Step> steps, 
 												  long domain_id, 
 												  long account_id, 
-												  long audit_record_id
+												  long audit_record_id, 
+												  Browser browser
 	) throws Exception {
 		assert steps != null;
 		assert !steps.isEmpty();
 		
-		boolean complete = false;
-		int count = 0;
+		//boolean complete = false;
+		//int count = 0;
 		PageState page = null;
-		do {
-			Browser browser = null;
-			try {
+		//do {
+			//Browser browser = null;
+			//try {
 				browser = browser_service.getConnection(BrowserType.CHROME, BrowserEnvironment.DISCOVERY);
 				
 				performJourneyStepsInBrowser(steps, browser);
+				log.warn("domain id = "+domain_id);
 				Domain domain = domain_service.findById(domain_id).get();
 				//if page url already exists for domain audit record then load that page state instead of performing a build
 				//NOTE: This patch is meant to reduce duplication of page builds and will not catch A/B tests
@@ -339,6 +371,7 @@ public class AuditController {
 				}
 				
 				page = buildPage(audit_record_id, browser);				
+			/*
 				complete = true;
 			}
 			catch(ElementNotInteractableException e ) {
@@ -356,7 +389,8 @@ public class AuditController {
 				}
 			}
 			count++;
-		}while(!complete && count < 20);
+			*/
+		//}while(!complete && count < 20);
 		
 		return page;
 	}

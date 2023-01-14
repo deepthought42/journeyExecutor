@@ -8,7 +8,9 @@ import java.util.List;
 import java.util.concurrent.ExecutionException;
 import java.util.stream.Collectors;
 
+import org.openqa.grid.common.exception.GridException;
 import org.openqa.selenium.By;
+import org.openqa.selenium.WebDriverException;
 import org.openqa.selenium.WebElement;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -63,6 +65,8 @@ import com.looksee.utils.ElementStateUtils;
 import com.looksee.utils.JourneyUtils;
 import com.looksee.utils.PathUtils;
 
+import io.github.resilience4j.retry.annotation.Retry;
+
 
 /*
  * Copyright 2019 Google LLC
@@ -99,9 +103,6 @@ public class AuditController {
 	private DomainService domain_service;
 
 	@Autowired
-	private JourneyService journey_service;
-
-	@Autowired
 	private StepService step_service;
 	
 	@Autowired
@@ -129,7 +130,6 @@ public class AuditController {
 	    ObjectMapper input_mapper = new ObjectMapper();
 	    JourneyCandidateMessage journey_msg = input_mapper.readValue(target, JourneyCandidateMessage.class);
         
-	    log.warn("message " + journey_msg);
 	    JsonMapper mapper = JsonMapper.builder().addModule(new JavaTimeModule()).build();
 
 		List<Step> steps = new ArrayList<>(journey_msg.getSteps());
@@ -142,6 +142,8 @@ public class AuditController {
 															  journey_msg.getAccountId(), 
 															  journey_msg.getDomainAuditRecordId(),
 															  browser);
+			
+			
 			Step final_step = steps.get(steps.size()-1);
 			if(!final_step.getStartPage().equals(page_state)) {			
 				final_step.setEndPage(page_state);
@@ -161,10 +163,11 @@ public class AuditController {
 						steps.add(final_step);
 
 						AuditRecord audit_record = new PageAuditRecord(ExecutionStatus.BUILDING_PAGE, new HashSet<>(), true);
-						page_state = page_state_service.findByDomainAudit(journey_msg.getDomainAuditRecordId(), page_state.getId());
-						if(page_state != null) {
+						PageState page_state_record = page_state_service.findByDomainAudit(journey_msg.getDomainAuditRecordId(), page_state.getId());
+						
+						if(page_state_record != null) {
 							//if page exists for domain audit already then don't do anything with it and return
-							return new ResponseEntity<String>("Successfully sent message to audit manager", HttpStatus.OK);
+							return new ResponseEntity<String>("Page has already been expanded.", HttpStatus.OK);
 						}
 						
 						audit_record = audit_record_service.save(audit_record);
@@ -179,7 +182,7 @@ public class AuditController {
 																			audit_record.getId());
 						
 						String page_built_str = mapper.writeValueAsString(page_built_msg);
-
+						log.warn("sending page built message ...");
 						page_built_topic.publish(page_built_str);
 					}
 					
@@ -195,7 +198,10 @@ public class AuditController {
 				}
 			}
 
-			return new ResponseEntity<String>("Successfully sent message to audit manager", HttpStatus.OK);
+			return new ResponseEntity<String>("Successfully expanded journey", HttpStatus.OK);
+		}
+		catch(WebDriverException | GridException e) {
+			return new ResponseEntity<String>("Selenium error occurred while executing journey", HttpStatus.INTERNAL_SERVER_ERROR);
 		}
 		catch(Exception e) {
 			log.error("Exception occurred during journey execution");
@@ -360,16 +366,17 @@ public class AuditController {
 				browser = browser_service.getConnection(BrowserType.CHROME, BrowserEnvironment.DISCOVERY);
 				
 				performJourneyStepsInBrowser(steps, browser);
-				log.warn("domain id = "+domain_id);
-				Domain domain = domain_service.findById(domain_id).get();
+				//log.warn("domain id = "+domain_id);
+				//Domain domain = domain_service.findById(domain_id).get();
 				//if page url already exists for domain audit record then load that page state instead of performing a build
 				//NOTE: This patch is meant to reduce duplication of page builds and will not catch A/B tests
 				String current_url = BrowserUtils.getPageUrl(browser.getDriver().getCurrentUrl());
+				/*
 				if(BrowserUtils.isExternalLink(domain.getUrl(), current_url)) {
 					log.warn("current url is external : "+current_url);
 					return null;
 				}
-				
+				*/
 				page = buildPage(audit_record_id, browser);				
 			/*
 				complete = true;

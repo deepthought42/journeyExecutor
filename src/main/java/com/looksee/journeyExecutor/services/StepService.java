@@ -1,5 +1,7 @@
 package com.looksee.journeyExecutor.services;
 
+import java.util.List;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -12,6 +14,8 @@ import com.looksee.journeyExecutor.models.journeys.Step;
 import com.looksee.journeyExecutor.models.repository.LoginStepRepository;
 import com.looksee.journeyExecutor.models.repository.SimpleStepRepository;
 import com.looksee.journeyExecutor.models.repository.StepRepository;
+import com.looksee.journeyExecutor.models.PageState;
+import com.looksee.journeyExecutor.models.repository.PageStateRepository;
 
 import io.github.resilience4j.retry.annotation.Retry;
 
@@ -26,6 +30,9 @@ public class StepService {
 
 	@Autowired
 	private StepRepository step_repo;
+	
+	@Autowired
+	private PageStateRepository page_state_repo;
 	
 	@Autowired
 	private SimpleStepRepository simple_step_repo;
@@ -108,11 +115,43 @@ public class StepService {
 			
 			return new_login_step;
 		}
-		
-		return null;
+		else {
+			Step step_record = step_repo.findByKey(step.getKey());
+			
+			if(step_record != null) {
+				step_record.setStartPage(step.getStartPage());
+				step_record.setEndPage(step.getEndPage());
+				
+				return step_record;
+			}
+			else {
+				Step saved_step = step_repo.save(step);
+				step_repo.addStartPage(saved_step.getId(), saved_step.getStartPage().getId());
+				step_repo.addEndPage(saved_step.getId(), saved_step.getEndPage().getId());
+				saved_step.setStartPage(saved_step.getStartPage());
+				saved_step.setEndPage(saved_step.getEndPage());
+				
+				return saved_step;
+			}
+		}
 	}
 
 	public ElementState getElementState(String step_key) {
 		return step_repo.getElementState(step_key);
+	}
+	
+
+	/**
+	 * Checks if page state is listed as a the start page for a journey step
+	 * 
+	 * @param page_state
+	 * @return
+	 */
+	public List<Step> getStepsWithStartPage(PageState page_state) {
+		return step_repo.getStepsWithStartPage(page_state.getId());
+	}
+
+	public PageState getEndPage(long id) {
+		return page_state_repo.getEndPageForStep(id);
 	}
 }

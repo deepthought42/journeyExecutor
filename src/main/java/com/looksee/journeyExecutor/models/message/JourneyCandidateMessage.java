@@ -11,7 +11,6 @@ import com.looksee.journeyExecutor.models.journeys.Step;
  * 
  */
 public class JourneyCandidateMessage extends Message {
-
 	private List<Step> steps;
 	private BrowserType browser;
 	

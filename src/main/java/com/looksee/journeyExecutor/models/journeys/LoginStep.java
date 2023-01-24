@@ -109,6 +109,11 @@ public class LoginStep extends Step {
 	
 	@Override
 	public LoginStep clone() {
-		return new LoginStep(getStartPage(), getEndPage(), getUsernameElement(), getPasswordElement(), getSubmitElement(), getTestUser());
+		return new LoginStep(getStartPage(), 
+							 getEndPage(), 
+							 getUsernameElement(), 
+							 getPasswordElement(), 
+							 getSubmitElement(), 
+							 getTestUser());
 	}
 }

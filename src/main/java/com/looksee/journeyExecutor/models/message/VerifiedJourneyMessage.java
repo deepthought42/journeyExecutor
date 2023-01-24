@@ -9,19 +9,19 @@ import com.looksee.journeyExecutor.models.journeys.Journey;
  */
 public class VerifiedJourneyMessage extends Message {
 
-	private long id;
 	private Journey journey;
 	private PathStatus status;
 	private BrowserType browser;
 	
-	public VerifiedJourneyMessage(long journey_id,
-								   Journey journey, 
+	public VerifiedJourneyMessage() {}
+	
+	public VerifiedJourneyMessage( Journey journey, 
 								   PathStatus status, 
 								   BrowserType browser,
 								   long domain_id,
 								   long account_id, 
-								   long audit_record_id){
-		setId(journey_id);
+								   long audit_record_id)
+	{
 		setJourney(journey);
 		setStatus(status);
 		setBrowser(browser);
@@ -31,8 +31,7 @@ public class VerifiedJourneyMessage extends Message {
 	}
 	
 	public VerifiedJourneyMessage clone(){
-		return new VerifiedJourneyMessage(getId(), 
-											journey.clone(), 
+		return new VerifiedJourneyMessage(	journey.clone(), 
 											getStatus(), 
 											getBrowser(), 
 											getDomainId(), 
@@ -56,14 +55,6 @@ public class VerifiedJourneyMessage extends Message {
 		this.browser = browser;
 	}
 
-	public long getId() {
-		return id;
-	}
-
-	public void setId(long id) {
-		this.id = id;
-	}
-
 	public Journey getJourney() {
 		return journey;
 	}
@@ -72,3 +63,4 @@ public class VerifiedJourneyMessage extends Message {
 		this.journey = journey;
 	}
 }
+

@@ -77,7 +77,6 @@ public class SimpleStep extends Step {
 		}
 		return "simplestep"+key+action+actionInput;
 	}
-
 	
 	@Override
 	public String toString() {

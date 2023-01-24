@@ -1,6 +1,5 @@
 package com.looksee.journeyExecutor.models;
 
-import java.util.UUID;
 
 public class Label extends LookseeObject{
 	private String description;
@@ -14,6 +13,7 @@ public class Label extends LookseeObject{
 	public Label(String description, float score) {
 		setDescription(description);
 		setScore(score);
+		setKey(generateKey());
 	}
 
 	public String getDescription() {
@@ -32,8 +32,9 @@ public class Label extends LookseeObject{
 		this.score = score;
 	}
 
+
 	@Override
 	public String generateKey() {
-		return "label::"+UUID.randomUUID();
+		return "label::"+getDescription();
 	}
 }

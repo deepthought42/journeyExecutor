@@ -352,7 +352,7 @@ public class BrowserService {
 				}
 			}
 			cnt++;
-		}while(!complete && cnt < 10000);
+		}while(!complete && cnt < 10);
 		
 		return page_state;
 	}
@@ -407,13 +407,6 @@ public class BrowserService {
 		URL current_url = new URL(browser.getDriver().getCurrentUrl());
 		String url_without_protocol = BrowserUtils.getPageUrl(current_url.toString());
 		log.warn("building page state for URL :: "+current_url);
-		if(current_url.toString().contains("dashboard")) {
-			log.warn("BUILDING DASHBOARD PAGE STATE...");
-			log.warn("url_without_protocol = "+url_without_protocol);
-		}
-		else if(current_url.toString().contains("?#")) {
-			log.warn("BUILDING    ?#   PAGE STATE..."+current_url);
-		}
 
 		boolean is_secure = BrowserUtils.checkIfSecure(current_url);
         int status_code = BrowserUtils.getHttpStatus(current_url);
@@ -541,7 +534,7 @@ public class BrowserService {
 				}
 			}
 			cnt++;
-		}while(rendering_incomplete && cnt < 10000);
+		}while(rendering_incomplete && cnt < 10);
 
 		return elements;
 	}

@@ -10,6 +10,7 @@ import org.springframework.data.neo4j.core.schema.Relationship;
 import org.springframework.data.neo4j.core.schema.Relationship.Direction;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.looksee.journeyExecutor.models.ElementState;
 import com.looksee.journeyExecutor.models.PageState;
@@ -18,6 +19,7 @@ import com.looksee.journeyExecutor.models.PageState;
  * A Step is the increment of work that start with a {@link PageState} contians an {@link ElementState} 
  * 	 that has an {@link Action} performed on it and results in an end {@link PageState}
  */
+@JsonIgnoreProperties(ignoreUnknown = true)
 @Node
 public class SimpleStep extends Step {
 	private static Logger log = LoggerFactory.getLogger(SimpleStep.class);
@@ -36,10 +38,10 @@ public class SimpleStep extends Step {
 	
     @JsonCreator
 	public SimpleStep(@JsonProperty("startPage") PageState start_page,
-				ElementState element,
-				Action action,
-				String action_input, 
-				PageState end_page) 
+			@JsonProperty("element") ElementState element,
+			@JsonProperty("action") Action action,
+			@JsonProperty("actionInput") String action_input, 
+			@JsonProperty("endPage") PageState end_page) 
 	{
 		setStartPage(start_page);
 		setElementState(element);

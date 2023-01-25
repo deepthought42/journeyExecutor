@@ -1,11 +1,24 @@
 ####################################
-# Test page audit and journey paths
+# Test journey candidate messages
 ###################################
 {
 	"domainId": 10859,
 	"accountId": 0,
 	"domainAuditRecordId": 12,
-	"steps": []
+	"steps": [
+		{
+			"startPage": {}.
+			"action": "",
+			"actionInput": "",
+			"element": {}
+		},
+				{
+			"startPage": {}.
+			"action": "",
+			"actionInput": "",
+			"element": {}
+		}
+	]
 }
 
 ####################################

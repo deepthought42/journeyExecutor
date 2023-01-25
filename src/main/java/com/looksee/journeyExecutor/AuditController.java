@@ -30,16 +30,16 @@ import com.looksee.journeyExecutor.gcp.PubSubJourneyVerifiedPublisherImpl;
 import com.looksee.journeyExecutor.gcp.PubSubPageBuiltPublisherImpl;
 import com.looksee.journeyExecutor.mapper.Body;
 import com.looksee.journeyExecutor.models.Browser;
-import com.looksee.journeyExecutor.models.DomainMap;
 import com.looksee.journeyExecutor.models.ElementState;
-import com.looksee.journeyExecutor.models.Journey;
-import com.looksee.journeyExecutor.models.LoginStep;
 import com.looksee.journeyExecutor.models.PageState;
-import com.looksee.journeyExecutor.models.SimpleStep;
-import com.looksee.journeyExecutor.models.Step;
 import com.looksee.journeyExecutor.models.enums.BrowserEnvironment;
 import com.looksee.journeyExecutor.models.enums.BrowserType;
 import com.looksee.journeyExecutor.models.enums.PathStatus;
+import com.looksee.journeyExecutor.models.journeys.Journey;
+import com.looksee.journeyExecutor.models.journeys.JourneyMap;
+import com.looksee.journeyExecutor.models.journeys.LoginStep;
+import com.looksee.journeyExecutor.models.journeys.SimpleStep;
+import com.looksee.journeyExecutor.models.journeys.Step;
 import com.looksee.journeyExecutor.models.message.DiscardedJourneyMessage;
 import com.looksee.journeyExecutor.models.message.JourneyCandidateMessage;
 import com.looksee.journeyExecutor.models.message.PageBuiltMessage;
@@ -168,7 +168,7 @@ public class AuditController {
 															  browser);
 			
 			log.warn("DONE iterating through steps...."+steps);
-			Step final_step = cloneStep(steps.get(steps.size()-1));
+			Step final_step = steps.get(steps.size()-1).clone(); //cloneStep(steps.get(steps.size()-1));
 			
 			final_step.setEndPage(page_state);
 			final_step.setKey(getStepKey(final_step));
@@ -207,8 +207,6 @@ public class AuditController {
 
 					// if end page for final step doesn't already exist for domain then create a page load step
 					if(page_state_record == null) {
-						
-						
 						PageBuiltMessage page_built_msg = new PageBuiltMessage(journey_msg.getAccountId(),
 																				journey_msg.getDomainAuditRecordId(),
 																				journey_msg.getDomainId(),
@@ -217,8 +215,6 @@ public class AuditController {
 						String page_built_str = mapper.writeValueAsString(page_built_msg);
 						log.warn("sending page built message ...");
 						page_built_topic.publish(page_built_str);
-						
-						final_step = new Step(page_state, page_state);
 					}
 					
 					steps.add(final_step);
@@ -227,9 +223,9 @@ public class AuditController {
 				Journey journey = new Journey(steps);
 				journey = journey_service.save(journey);
 				journey.setId(journey.getId());
-				DomainMap domain_map = domain_map_service.findByDomainId(journey_msg.getDomainId());
+				JourneyMap domain_map = domain_map_service.findByDomainId(journey_msg.getDomainId());
 				if(domain_map == null) {
-					domain_map_service.save(new DomainMap());
+					domain_map_service.save(new JourneyMap());
 				}
 				domain_map_service.addJourneyToDomainMap(journey.getId(), domain_map.getId());
 				
@@ -271,18 +267,6 @@ public class AuditController {
 		}
 
 		return new ResponseEntity<String>("Error occurred while executing journey", HttpStatus.INTERNAL_SERVER_ERROR);
-	}
-	
-	private Step cloneStep(Step step) {
-		if(step instanceof SimpleStep) {
-			return ((SimpleStep)step).clone();
-		}
-		else if(step instanceof LoginStep) {
-			return ((LoginStep)step).clone();
-		}
-		else {
-			return step.clone();
-		}
 	}
 
 	private String getStepKey(Step step) {

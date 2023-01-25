@@ -1,8 +1,8 @@
 package com.looksee.journeyExecutor.models.message;
 
-import com.looksee.journeyExecutor.models.Journey;
 import com.looksee.journeyExecutor.models.enums.BrowserType;
 import com.looksee.journeyExecutor.models.enums.PathStatus;
+import com.looksee.journeyExecutor.models.journeys.Journey;
 
 /**
  * 

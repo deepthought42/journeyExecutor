@@ -1,15 +1,16 @@
-package com.looksee.journeyExecutor.models;
+package com.looksee.journeyExecutor.models.journeys;
 
 import org.springframework.data.neo4j.core.schema.Node;
 import org.springframework.data.neo4j.core.schema.Relationship;
 
-import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import com.looksee.journeyExecutor.models.ElementState;
+import com.looksee.journeyExecutor.models.PageState;
+import com.looksee.journeyExecutor.models.TestUser;
 
 /**
  * A Step is the increment of work that start with a {@link PageState} contians an {@link ElementState} 
  * 	 that has an {@link Action} performed on it and results in an end {@link PageState}
  */
-@JsonIgnoreProperties(ignoreUnknown = true)
 @Node
 public class LoginStep extends Step {
 
@@ -108,11 +109,6 @@ public class LoginStep extends Step {
 	
 	@Override
 	public LoginStep clone() {
-		return new LoginStep(getStartPage(), 
-							 getEndPage(), 
-							 getUsernameElement(), 
-							 getPasswordElement(), 
-							 getSubmitElement(), 
-							 getTestUser());
+		return new LoginStep(getStartPage(), getEndPage(), getUsernameElement(), getPasswordElement(), getSubmitElement(), getTestUser());
 	}
 }

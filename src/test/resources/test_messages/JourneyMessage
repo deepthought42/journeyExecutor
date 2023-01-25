@@ -1,0 +1,44 @@
+####################################
+# Test page audit and journey paths
+###################################
+{
+	"domainId": 10859,
+	"accountId": 0,
+	"domainAuditRecordId": 12,
+	"steps": []
+}
+
+####################################
+# Test single page audit path
+###################################
+
+
+
+
+{
+  "type": "record",
+  "name": "Body",
+  "fields": [
+    {
+      "name": "message",
+      "type": {
+        "type": "record",
+        "name": "Message",
+        "fields": [
+          {
+            "name": "domainId",
+            "type": "long"
+          },
+          {
+            "name": "accountId",
+            "type": "long"
+          },
+          {
+            "name": "domainAuditRecordId",
+            "type": "long"
+          }
+        ]
+      }
+    }
+  ]
+}

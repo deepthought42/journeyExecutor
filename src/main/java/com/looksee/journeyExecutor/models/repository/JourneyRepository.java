@@ -4,8 +4,8 @@ import org.springframework.data.neo4j.repository.Neo4jRepository;
 import org.springframework.data.neo4j.repository.query.Query;
 import org.springframework.data.repository.query.Param;
 
-import com.looksee.journeyExecutor.models.Journey;
-import com.looksee.journeyExecutor.models.Step;
+import com.looksee.journeyExecutor.models.journeys.Journey;
+import com.looksee.journeyExecutor.models.journeys.Step;
 
 public interface JourneyRepository extends Neo4jRepository<Journey, Long>  {
 	

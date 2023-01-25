@@ -11,7 +11,7 @@ import com.looksee.journeyExecutor.models.journeys.Step;
  * 
  */
 public class JourneyCandidateMessage extends Message {
-	private List<? extends Step> steps;
+	private List<Step> steps;
 	private BrowserType browser;
 	
 	public JourneyCandidateMessage() {}
@@ -43,11 +43,11 @@ public class JourneyCandidateMessage extends Message {
 		this.browser = browser;
 	}
 
-	public void setSteps(List<? extends Step> steps) {
+	public void setSteps(List<Step> steps) {
 		this.steps = steps;
 	}
 	
-	public List<? extends Step> getSteps() {
+	public List<Step> getSteps() {
 		return this.steps;
 	}
 	

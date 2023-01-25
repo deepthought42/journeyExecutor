@@ -6,7 +6,7 @@ import org.springframework.data.neo4j.repository.query.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
-import com.looksee.journeyExecutor.models.journeys.DomainMap;
+import com.looksee.journeyExecutor.models.DomainMap;
 
 
 @Repository

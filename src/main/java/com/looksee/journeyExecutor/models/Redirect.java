@@ -1,4 +1,4 @@
-package com.looksee.journeyExecutor.models.journeys;
+package com.looksee.journeyExecutor.models;
 
 import java.net.MalformedURLException;
 import java.util.ArrayList;

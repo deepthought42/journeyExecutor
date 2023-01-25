@@ -8,8 +8,8 @@ import org.slf4j.LoggerFactory;
 
 import com.looksee.journeyExecutor.models.LookseeObject;
 import com.looksee.journeyExecutor.models.PageState;
-import com.looksee.journeyExecutor.models.journeys.Redirect;
-import com.looksee.journeyExecutor.models.journeys.Step;
+import com.looksee.journeyExecutor.models.Redirect;
+import com.looksee.journeyExecutor.models.Step;
 
 
 public class PathUtils {

@@ -1,11 +1,9 @@
-package com.looksee.journeyExecutor.models.journeys;
+package com.looksee.journeyExecutor.models;
 
 import org.springframework.data.neo4j.core.schema.Node;
 import org.springframework.data.neo4j.core.schema.Relationship;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
-import com.looksee.journeyExecutor.models.LookseeObject;
-import com.looksee.journeyExecutor.models.PageState;
 
 @JsonIgnoreProperties(ignoreUnknown = true)
 @Node

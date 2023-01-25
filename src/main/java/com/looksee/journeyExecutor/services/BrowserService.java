@@ -38,6 +38,7 @@ import org.openqa.selenium.WebDriverException;
 import org.openqa.selenium.WebElement;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Component;
 import org.springframework.web.bind.annotation.ResponseStatus;
@@ -77,6 +78,9 @@ public class BrowserService {
 	
 	private static String[] valid_xpath_attributes = {"class", "id", "name", "title"};
 
+	@Autowired
+	private ElementStateService element_state_service;
+	
 	/**
 	 * retrieves a new browser connection
 	 *
@@ -563,7 +567,13 @@ public class BrowserService {
 		//boolean rendering_incomplete = true;
 		URL sanitized_url = new URL(BrowserUtils.sanitizeUserUrl( page_state.getUrl() ));
 		
-		elements = getDomElementStates(page_state, xpaths, browser, elements_mapped, audit_id, sanitized_url, page_height);
+		elements = getDomElementStates(page_state, 
+									   xpaths, 
+									   browser, 
+									   elements_mapped, 
+									   audit_id, 
+									   sanitized_url, 
+									   page_height);
 
 		return elements;
 	}
@@ -694,13 +704,6 @@ public class BrowserService {
 						element_screenshot_url = GoogleCloudStorage.saveImage(element_screenshot, host, screenshot_checksum, BrowserType.create(browser.getBrowserName()));
 					}
 					catch( Exception e) {
-						//do nothing
-						/*
-						log.warn("element height :: "+element_size.getHeight());
-						log.warn("Element Y location ::  "+ element_location.getY());
-						log.warn("element width :: "+element_size.getWidth());
-						log.warn("Element X location ::  "+ element_location.getX());
-						*/
 						try {
 							BufferedImage full_page_screenshot = ImageIO.read(new URL(page_state.getFullPageScreenshotUrlComposite()));
 							int width = element_size.getWidth();
@@ -749,52 +752,57 @@ public class BrowserService {
 				Element element = elements.first();
 				
 
+				ElementState element_state = buildElementState(xpath, 
+															   attributes, 
+															   element, 
+															   web_element, 
+															   classification, 
+															   rendered_css_props, 
+															   element_screenshot_url,
+															   css_selector);
+				
 				if(isImageElement(web_element) && element_screenshot != null) {
-					//retrieve image landmark properties from google cloud vision
-					Set<ImageLandmarkInfo> landmark_info_set = CloudVisionUtils.extractImageLandmarks(element_screenshot);
-					
-					//retrieve image faces properties from google cloud vision
-					Set<ImageFaceAnnotation> faces = CloudVisionUtils.extractImageFaces(element_screenshot);
-					
-					//retrieve image reverse image search properties from google cloud vision
-					ImageSearchAnnotation image_search_set = CloudVisionUtils.searchWebForImageUsage(element_screenshot);
-					ImageSafeSearchAnnotation img_safe_search_annotation = CloudVisionUtils.detectSafeSearch(element_screenshot);
-					
-					//retrieve image logos from google cloud vision
-					Set<Logo> logos = new HashSet<>();//CloudVisionUtils.extractImageLogos(element_screenshot);
-
-					//retrieve image labels
-					Set<Label> labels = CloudVisionUtils.extractImageLabels(element_screenshot);
-					ElementState element_state = buildImageElementState(xpath, 
-																	   attributes, 
-																	   element, 
-																	   web_element, 
-																	   classification, 
-																	   rendered_css_props, 
-																	   element_screenshot_url,
-																	   css_selector,
-																	   landmark_info_set,
-																	   faces,
-																	   image_search_set,
-																	   logos,
-																	   labels,
-																	   img_safe_search_annotation);
-					
-					element_states_map.put(xpath, element_state);
-					visited_elements.add(element_state);
+					ElementState element_record = element_state_service.findByKey(element_state.getKey());
+					if(element_record == null) {
+						
+						//retrieve image landmark properties from google cloud vision
+						Set<ImageLandmarkInfo> landmark_info_set = CloudVisionUtils.extractImageLandmarks(element_screenshot);
+						
+						//retrieve image faces properties from google cloud vision
+						Set<ImageFaceAnnotation> faces = CloudVisionUtils.extractImageFaces(element_screenshot);
+						
+						//retrieve image reverse image search properties from google cloud vision
+						ImageSearchAnnotation image_search_set = CloudVisionUtils.searchWebForImageUsage(element_screenshot);
+						ImageSafeSearchAnnotation img_safe_search_annotation = CloudVisionUtils.detectSafeSearch(element_screenshot);
+						
+						//retrieve image logos from google cloud vision
+						Set<Logo> logos = new HashSet<>();//CloudVisionUtils.extractImageLogos(element_screenshot);
+	
+						//retrieve image labels
+						Set<Label> labels = CloudVisionUtils.extractImageLabels(element_screenshot);
+						element_state = buildImageElementState(xpath, 
+															   attributes, 
+															   element, 
+															   web_element, 
+															   classification, 
+															   rendered_css_props, 
+															   element_screenshot_url,
+															   css_selector,
+															   landmark_info_set,
+															   faces,
+															   image_search_set,
+															   logos,
+															   labels,
+															   img_safe_search_annotation);
+					}
+					else {
+						element_state = element_record;
+					}
 				}
-				else {
-					ElementState element_state = buildElementState(xpath, 
-																   attributes, 
-																   element, 
-																   web_element, 
-																   classification, 
-																   rendered_css_props, 
-																   element_screenshot_url,
-																   css_selector);
-					element_states_map.put(xpath, element_state);
-					visited_elements.add(element_state);
-				}
+				
+				//associate element state with its xpath and add to list of visited elements
+				element_states_map.put(xpath, element_state);
+				visited_elements.add(element_state);
 				
 				//filter all elements that have dimensions that are within another element and have a lower z-index
 				for(ElementState element1: visited_elements) {
@@ -847,7 +855,7 @@ public class BrowserService {
 			}
 			catch(NullPointerException e) {
 				log.warn("There was an NPE error finding element with xpath .... "+xpath + "   ;;   ON page :: "+page_state.getUrl());
-				//e.printStackTrace();
+				e.printStackTrace();
 			} catch (IOException e) {
 				// TODO Auto-generated catch block
 				log.warn("IOException occurred while building elements");

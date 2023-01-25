@@ -7,7 +7,7 @@ import org.springframework.stereotype.Repository;
 
 import com.looksee.journeyExecutor.models.ElementState;
 import com.looksee.journeyExecutor.models.PageState;
-import com.looksee.journeyExecutor.models.journeys.SimpleStep;
+import com.looksee.journeyExecutor.models.SimpleStep;
 
 
 @Repository

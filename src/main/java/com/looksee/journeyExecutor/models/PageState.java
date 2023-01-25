@@ -8,6 +8,7 @@ import java.net.URL;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.util.ArrayList;
+import java.util.Base64;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -351,11 +352,11 @@ public class PageState extends LookseeObject {
 	}
 
 	public String getSrc() {
-		return src;
+		return new String(Base64.getDecoder().decode(src));
 	}
 
 	public void setSrc(String src) {
-		this.src = src;
+		this.src = Base64.getEncoder().encodeToString(src.getBytes());
 	}
 
 	public long getScrollXOffset() {

@@ -6,8 +6,8 @@ import java.util.List;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.looksee.journeyExecutor.models.journeys.LoginStep;
-import com.looksee.journeyExecutor.models.journeys.Step;
+import com.looksee.journeyExecutor.models.LoginStep;
+import com.looksee.journeyExecutor.models.Step;
 
 
 public class JourneyUtils {

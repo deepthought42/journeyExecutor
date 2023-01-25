@@ -89,7 +89,7 @@ public class ImageElementState extends ElementState {
 				!image_search.getFullMatchingImages().isEmpty());
 		setLandmarkInfoSet(landmark_info_set);
 		setFaces(faces);
-		setImageSearchSet(imageSearchSet);
+		setImageSearchSet(image_search);
 		setLogos(logos);
 		setLabels(labels);
 		setAdult(safe_search_annotation.getAdult());

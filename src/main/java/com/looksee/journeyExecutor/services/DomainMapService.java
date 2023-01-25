@@ -6,8 +6,8 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
-import com.looksee.journeyExecutor.models.journeys.DomainMap;
-import com.looksee.journeyExecutor.models.journeys.SimpleStep;
+import com.looksee.journeyExecutor.models.DomainMap;
+import com.looksee.journeyExecutor.models.SimpleStep;
 import com.looksee.journeyExecutor.models.repository.DomainMapRepository;
 
 import io.github.resilience4j.retry.annotation.Retry;

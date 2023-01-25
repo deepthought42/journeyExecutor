@@ -1,4 +1,4 @@
-package com.looksee.journeyExecutor.models.journeys;
+package com.looksee.journeyExecutor.models;
 
 
 import com.looksee.journeyExecutor.models.enums.Action;
@@ -7,13 +7,13 @@ import org.springframework.data.neo4j.core.schema.Node;
 import org.springframework.data.neo4j.core.schema.Relationship;
 import org.springframework.data.neo4j.core.schema.Relationship.Direction;
 
-import com.looksee.journeyExecutor.models.ElementState;
-import com.looksee.journeyExecutor.models.PageState;
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 
 /**
  * A Step is the increment of work that start with a {@link PageState} contians an {@link ElementState} 
  * 	 that has an {@link Action} performed on it and results in an end {@link PageState}
  */
+@JsonIgnoreProperties(ignoreUnknown = true)
 @Node
 public class SimpleStep extends Step {
 	
@@ -44,7 +44,11 @@ public class SimpleStep extends Step {
 	
 	@Override
 	public SimpleStep clone() {
-		return new SimpleStep(getStartPage(), getElementState(), getAction(), getActionInput(), getEndPage());
+		return new SimpleStep(getStartPage(), 
+							  getElementState(), 
+							  getAction(), 
+							  getActionInput(), 
+							  getEndPage());
 	}
 	
 	public ElementState getElementState() {

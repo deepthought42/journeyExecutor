@@ -1,11 +1,9 @@
-package com.looksee.journeyExecutor.models.journeys;
+package com.looksee.journeyExecutor.models;
 
 import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 import org.springframework.data.neo4j.core.schema.Relationship;
-
-import com.looksee.journeyExecutor.models.LookseeObject;
 
 
 /**

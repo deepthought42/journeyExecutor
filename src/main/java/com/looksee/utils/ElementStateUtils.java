@@ -128,11 +128,17 @@ public class ElementStateUtils {
 				|| "li".equalsIgnoreCase(tag_name);
 	}
 
+	/**
+	 * Enriches background colors for a list of {@link ElementState elements}
+	 * 
+	 * @param element_states
+	 * @return
+	 */
 	public static Stream<ElementState> enrichBackgroundColor(List<ElementState> element_states) {
 		//ENRICHMENT : BACKGROUND COLORS
 		return element_states.parallelStream()
-										.filter(element -> element != null)
-										.map(element -> {
+								.filter(element -> element != null)
+								.map(element -> {
 				try {
 					ColorData font_color = new ColorData(element.getRenderedCssValues().get("color"));				
 					//extract opacity color
@@ -141,16 +147,14 @@ public class ElementStateUtils {
 					bkg_color = new ColorData(element.getRenderedCssValues().get("background-color"));
 					}
 					else {
-					//log.warn("extracting background color");
-					bkg_color = ImageUtils.extractBackgroundColor( new URL(element.getScreenshotUrl()),
-												   font_color);
-					
-					//log.warn("done extracting background color");
+						bkg_color = ImageUtils.extractBackgroundColor( new URL(element.getScreenshotUrl()),
+																		font_color);
 					}
-					String bg_color = bkg_color.rgb();	
+					
 					
 					//Identify background color by getting largest color used in picture
 					//ColorData background_color_data = ImageUtils.extractBackgroundColor(new URL(element.getScreenshotUrl()));
+					String bg_color = bkg_color.rgb();	
 					ColorData background_color = new ColorData(bg_color);
 					element.setBackgroundColor(background_color.rgb());
 					element.setForegroundColor(font_color.rgb());

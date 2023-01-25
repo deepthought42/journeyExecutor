@@ -30,16 +30,16 @@ import com.looksee.journeyExecutor.gcp.PubSubJourneyVerifiedPublisherImpl;
 import com.looksee.journeyExecutor.gcp.PubSubPageBuiltPublisherImpl;
 import com.looksee.journeyExecutor.mapper.Body;
 import com.looksee.journeyExecutor.models.Browser;
+import com.looksee.journeyExecutor.models.DomainMap;
 import com.looksee.journeyExecutor.models.ElementState;
+import com.looksee.journeyExecutor.models.Journey;
+import com.looksee.journeyExecutor.models.LoginStep;
 import com.looksee.journeyExecutor.models.PageState;
+import com.looksee.journeyExecutor.models.SimpleStep;
+import com.looksee.journeyExecutor.models.Step;
 import com.looksee.journeyExecutor.models.enums.BrowserEnvironment;
 import com.looksee.journeyExecutor.models.enums.BrowserType;
 import com.looksee.journeyExecutor.models.enums.PathStatus;
-import com.looksee.journeyExecutor.models.journeys.DomainMap;
-import com.looksee.journeyExecutor.models.journeys.Journey;
-import com.looksee.journeyExecutor.models.journeys.LoginStep;
-import com.looksee.journeyExecutor.models.journeys.SimpleStep;
-import com.looksee.journeyExecutor.models.journeys.Step;
 import com.looksee.journeyExecutor.models.message.DiscardedJourneyMessage;
 import com.looksee.journeyExecutor.models.message.JourneyCandidateMessage;
 import com.looksee.journeyExecutor.models.message.PageBuiltMessage;
@@ -127,9 +127,34 @@ public class AuditController {
 		Body.Message message = body.getMessage();
 		String data = message.getData();
 	    String target = !data.isEmpty() ? new String(Base64.getDecoder().decode(data)) : "";
+        //log.warn("verify journey msg received = "+target);
+
 	    ObjectMapper input_mapper = new ObjectMapper();
 	    JourneyCandidateMessage journey_msg = input_mapper.readValue(target, JourneyCandidateMessage.class);
-        log.warn("journey received = "+journey_msg.getSteps());
+       
+	    log.warn("-------------------------------------------");
+	    for(Step step : journey_msg.getSteps()) {
+	    	log.warn("journey received = "+step);
+	    	if(step.getKey().contains("simplestep")) {
+	    		step = (SimpleStep)step;
+	    	}
+	    	else if(step.getKey().contains("loginstep")) {
+	    		step = (LoginStep)step;
+	    	}
+	    }
+	    
+	    for(Step step : journey_msg.getSteps()) {
+	    	if(step instanceof SimpleStep) {
+	    		log.warn("simple step recieved = "+step);
+	    	}
+	    	else if(step instanceof LoginStep) {
+	    		log.warn("login step received = "+step);
+	    	}
+	    	else {
+	    		log.warn("plain step received  = "+step);
+	    	}
+	    }
+	    
 	    JsonMapper mapper = JsonMapper.builder().addModule(new JavaTimeModule()).build();
 
 		List<Step> steps = new ArrayList<>(journey_msg.getSteps());
@@ -368,9 +393,9 @@ public class AuditController {
 			page_state = page_state_service.save(page_state);
 			//audit_record_service.addPageToAuditRecord(audit_record_id, page_state.getId());
 		}
-		
+
 		List<String> xpaths = browser_service.extractAllUniqueElementXpaths(page_state.getSrc());
-		log.warn("Extracting elements");
+		log.warn("Extracting elements for page state = "+page_state.getKey());
 		List<ElementState> element_states = browser_service.buildPageElementsWithoutNavigation( page_state, 
 																								xpaths,
 																								audit_record_id,

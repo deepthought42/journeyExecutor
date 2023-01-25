@@ -10,7 +10,7 @@ import com.fasterxml.jackson.databind.exc.InvalidFormatException;
 import java.io.IOException;
 import java.util.Base64;
 
-public class Base64Deserializer extends JsonDeserializer<Object> implements ContextualDeserializer {
+public class Base64JsonDeserializer extends JsonDeserializer<Object> implements ContextualDeserializer {
 
     private Class<?> resultClass;
 

@@ -3,7 +3,7 @@ package com.looksee.utils;
 import java.util.ArrayList;
 import java.util.List;
 
-import com.looksee.journeyExecutor.models.journeys.Step;
+import com.looksee.journeyExecutor.models.Step;
 
 
 public class ListUtils {

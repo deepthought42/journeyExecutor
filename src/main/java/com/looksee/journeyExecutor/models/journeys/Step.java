@@ -1,13 +1,13 @@
-package com.looksee.journeyExecutor.models;
+package com.looksee.journeyExecutor.models.journeys;
 
-import org.springframework.data.neo4j.core.schema.Node;
 import org.springframework.data.neo4j.core.schema.Relationship;
 
-import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
+import com.looksee.journeyExecutor.mapper.StepDeserializer;
+import com.looksee.journeyExecutor.models.LookseeObject;
+import com.looksee.journeyExecutor.models.PageState;
 
-@JsonIgnoreProperties(ignoreUnknown = true)
-@Node
-public class Step extends LookseeObject {
+public abstract class Step extends LookseeObject {
 	
 	@Relationship(type = "STARTS_WITH")
 	private PageState startPage;
@@ -15,11 +15,8 @@ public class Step extends LookseeObject {
 	@Relationship(type = "ENDS_WITH")
 	private PageState endPage;
 
-	public Step() {}
-	
-	public Step(PageState start_page, PageState end_page) {
-		setStartPage(start_page);
-		setEndPage(end_page);
+	public Step() {
+		super();
 	}
 	
 	public PageState getStartPage() {
@@ -39,6 +36,14 @@ public class Step extends LookseeObject {
 		this.endPage = page_state;
 	}
 	
+	/**
+	 * {@inheritDoc}
+	 */
+	@Override
+	public String toString(){
+		return "{ start = "+this.startPage+" ;     end = "+this.endPage+ " ;  key : "+this.getKey() + " }";
+	}
+	
 	@Override
 	public String generateKey() {
 		String key = "";
@@ -55,7 +60,5 @@ public class Step extends LookseeObject {
 	 * {@inheritDoc}
 	 */
 	@Override
-	public Step clone() {
-		return new Step(getStartPage(), getEndPage());
-	}
+	public abstract Step clone();
 }

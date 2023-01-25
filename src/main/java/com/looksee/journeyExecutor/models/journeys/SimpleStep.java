@@ -1,21 +1,26 @@
-package com.looksee.journeyExecutor.models;
+package com.looksee.journeyExecutor.models.journeys;
 
 
 import com.looksee.journeyExecutor.models.enums.Action;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.data.neo4j.core.schema.Node;
 import org.springframework.data.neo4j.core.schema.Relationship;
 import org.springframework.data.neo4j.core.schema.Relationship.Direction;
 
-import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.annotation.JsonProperty;
+import com.looksee.journeyExecutor.models.ElementState;
+import com.looksee.journeyExecutor.models.PageState;
 
 /**
  * A Step is the increment of work that start with a {@link PageState} contians an {@link ElementState} 
  * 	 that has an {@link Action} performed on it and results in an end {@link PageState}
  */
-@JsonIgnoreProperties(ignoreUnknown = true)
 @Node
 public class SimpleStep extends Step {
+	private static Logger log = LoggerFactory.getLogger(SimpleStep.class);
 	
 	@Relationship(type = "HAS", direction = Direction.OUTGOING)
 	private ElementState element;
@@ -29,11 +34,13 @@ public class SimpleStep extends Step {
 		setAction(Action.UNKNOWN);
 	}
 	
-	public SimpleStep(PageState start_page,
+    @JsonCreator
+	public SimpleStep(@JsonProperty("startPage") PageState start_page,
 				ElementState element,
 				Action action,
 				String action_input, 
-				PageState end_page) {
+				PageState end_page) 
+	{
 		setStartPage(start_page);
 		setElementState(element);
 		setAction(action);
@@ -79,8 +86,10 @@ public class SimpleStep extends Step {
 		if(getEndPage() != null) {
 			key += getEndPage().getId();
 		}
+		log.warn("Step to perform "+action+" on element "+element.getId()+ " -- "+element.getName());
 		return "simplestep"+key+action+actionInput;
 	}
+
 	
 	@Override
 	public String toString() {

@@ -5,8 +5,8 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
-import com.looksee.journeyExecutor.models.Journey;
-import com.looksee.journeyExecutor.models.Step;
+import com.looksee.journeyExecutor.models.journeys.Journey;
+import com.looksee.journeyExecutor.models.journeys.Step;
 import com.looksee.journeyExecutor.models.repository.JourneyRepository;
 
 @Service

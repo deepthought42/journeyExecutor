@@ -9,10 +9,10 @@ import org.springframework.stereotype.Service;
 import com.looksee.browsing.ActionFactory;
 import com.looksee.journeyExecutor.models.Browser;
 import com.looksee.journeyExecutor.models.ElementState;
-import com.looksee.journeyExecutor.models.LoginStep;
-import com.looksee.journeyExecutor.models.SimpleStep;
-import com.looksee.journeyExecutor.models.Step;
 import com.looksee.journeyExecutor.models.enums.Action;
+import com.looksee.journeyExecutor.models.journeys.LoginStep;
+import com.looksee.journeyExecutor.models.journeys.SimpleStep;
+import com.looksee.journeyExecutor.models.journeys.Step;
 
 @Service
 public class StepExecutor {

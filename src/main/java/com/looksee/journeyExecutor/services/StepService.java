@@ -8,19 +8,19 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import com.looksee.journeyExecutor.models.ElementState;
-import com.looksee.journeyExecutor.models.LoginStep;
 import com.looksee.journeyExecutor.models.repository.LoginStepRepository;
 import com.looksee.journeyExecutor.models.repository.SimpleStepRepository;
 import com.looksee.journeyExecutor.models.repository.StepRepository;
 import com.looksee.journeyExecutor.models.PageState;
-import com.looksee.journeyExecutor.models.SimpleStep;
-import com.looksee.journeyExecutor.models.Step;
+import com.looksee.journeyExecutor.models.journeys.LoginStep;
+import com.looksee.journeyExecutor.models.journeys.SimpleStep;
+import com.looksee.journeyExecutor.models.journeys.Step;
 import com.looksee.journeyExecutor.models.repository.PageStateRepository;
 
 import io.github.resilience4j.retry.annotation.Retry;
 
 /**
- * Enables interacting with database for {@link SimpleStep Steps}
+ * Enables interacting with database for {@link InteractiveStep Steps}
  */
 @Service
 @Retry(name = "neoforj")

@@ -1,25 +1,27 @@
-package com.looksee.journeyExecutor.models;
+package com.looksee.journeyExecutor.models.journeys;
 
 import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 import org.springframework.data.neo4j.core.schema.Relationship;
 
+import com.looksee.journeyExecutor.models.LookseeObject;
+
 
 /**
  * Represents the series of steps taken for an end to end journey
  */
-public class DomainMap extends LookseeObject {
+public class JourneyMap extends LookseeObject {
 
-	@Relationship(type = "CONTAINS")
+	@Relationship(type = "JOURNEY")
 	private List<Journey> journeys;
 		
-	public DomainMap() {
+	public JourneyMap() {
 		setJourneys(new ArrayList<>());
 		setKey(generateKey());
 	}
 	
-	public DomainMap(List<Journey> journeys) {
+	public JourneyMap(List<Journey> journeys) {
 		setJourneys(journeys);
 		setKey(generateKey());
 	}
@@ -36,8 +38,8 @@ public class DomainMap extends LookseeObject {
 	 * {@inheritDoc}
 	 */
 	@Override
-	public DomainMap clone() {
-		return new DomainMap(new ArrayList<>(getJourneys()));
+	public JourneyMap clone() {
+		return new JourneyMap(new ArrayList<>(getJourneys()));
 	}
 	
 	public List<Journey> getJourneys() {

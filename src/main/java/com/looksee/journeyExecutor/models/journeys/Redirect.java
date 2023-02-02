@@ -4,6 +4,12 @@ import java.net.MalformedURLException;
 import java.util.ArrayList;
 import java.util.List;
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import com.fasterxml.jackson.annotation.JsonTypeName;
+import com.looksee.journeyExecutor.models.enums.StepType;
+
+@JsonIgnoreProperties(ignoreUnknown = true)
+@JsonTypeName("REDIRECT")
 public class Redirect extends Step {
 	private String startUrl;
 	private List<String> urls;
@@ -90,6 +96,11 @@ public class Redirect extends Step {
 	@Override
 	public Step clone() {
 		return new Redirect(getStartUrl(), getUrls());
+	}
+
+	@Override
+	StepType getStepType() {
+		return StepType.REDIRECT;
 	}
 
 }

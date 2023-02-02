@@ -8,9 +8,11 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import com.looksee.journeyExecutor.models.ElementState;
+import com.looksee.journeyExecutor.models.repository.ElementStateRepository;
 import com.looksee.journeyExecutor.models.repository.LoginStepRepository;
 import com.looksee.journeyExecutor.models.repository.SimpleStepRepository;
 import com.looksee.journeyExecutor.models.repository.StepRepository;
+import com.looksee.journeyExecutor.models.repository.TestUserRepository;
 import com.looksee.journeyExecutor.models.PageState;
 import com.looksee.journeyExecutor.models.journeys.LoginStep;
 import com.looksee.journeyExecutor.models.journeys.SimpleStep;
@@ -35,6 +37,12 @@ public class StepService {
 	private PageStateRepository page_state_repo;
 	
 	@Autowired
+	private TestUserRepository test_user_repo;
+	
+	@Autowired
+	private ElementStateRepository element_repo;
+	
+	@Autowired
 	private SimpleStepRepository simple_step_repo;
 
 	@Autowired
@@ -51,9 +59,11 @@ public class StepService {
 			SimpleStep step_record = simple_step_repo.findByKey(step.getKey());
 			
 			if(step_record != null) {
-				step_record.setElementState(simple_step_repo.getElementState(step.getKey()));
-				step_record.setStartPage(simple_step_repo.getStartPage(step.getKey()));
-				step_record.setEndPage(simple_step_repo.getEndPage(step.getKey()));
+				SimpleStep simple_step = (SimpleStep)step;
+				step_record.setElementState(simple_step.getElementState());
+				step_record.setStartPage(simple_step.getStartPage());
+				step_record.setEndPage(simple_step.getEndPage());
+				
 				return step_record;
 			}
 			
@@ -64,9 +74,17 @@ public class StepService {
 			new_simple_step.setActionInput(simple_step.getActionInput());
 			new_simple_step.setKey(simple_step.generateKey());
 			new_simple_step = simple_step_repo.save(new_simple_step);
-			new_simple_step.setStartPage(simple_step_repo.addStartPage(new_simple_step.getId(), simple_step.getStartPage().getId()));
-			new_simple_step.setEndPage(simple_step_repo.addEndPage(new_simple_step.getId(), simple_step.getEndPage().getId()));
-			new_simple_step.setElementState(simple_step_repo.addElementState(new_simple_step.getId(), simple_step.getElementState().getId()));
+			
+			simple_step_repo.addStartPage(new_simple_step.getId(), simple_step.getStartPage().getId());
+			new_simple_step.setStartPage(simple_step.getStartPage());
+			
+			simple_step_repo.addEndPage(new_simple_step.getId(), simple_step.getEndPage().getId());
+			new_simple_step.setEndPage(simple_step.getEndPage());
+			
+			log.warn("adding element "+simple_step.getElementState().getId() + "   to step  = "+new_simple_step.getId());
+			simple_step_repo.addElementState(new_simple_step.getId(), simple_step.getElementState().getId());
+			new_simple_step.setElementState(simple_step.getElementState());
+			
 			return new_simple_step;
 		}
 		else if(step instanceof LoginStep) {
@@ -75,12 +93,13 @@ public class StepService {
 			if(step_record != null) {
 				log.warn("found login step with key :: "+step_record.getKey());
 				log.warn("loading LOGIN STEP connections...");
-				step_record.setTestUser(login_step_repo.getTestUser(step_record.getId()));
-				step_record.setUsernameElement(login_step_repo.getUsernameElement(step_record.getId()));
-				step_record.setPasswordElement(login_step_repo.getPasswordElement(step_record.getId()));
-				step_record.setSubmitElement(login_step_repo.getSubmitElement(step_record.getId()));
-				step_record.setStartPage(login_step_repo.getStartPage(step_record.getId()));
-				step_record.setEndPage(login_step_repo.getEndPage(step_record.getId()));
+				LoginStep login_step = (LoginStep)step;
+				step_record.setTestUser(step_record.getTestUser());
+				step_record.setUsernameElement(step_record.getUsernameElement());
+				step_record.setPasswordElement(step_record.getPasswordElement());
+				step_record.setSubmitElement(step_record.getSubmitElement());
+				step_record.setStartPage(step_record.getStartPage());
+				step_record.setEndPage(step_record.getEndPage());
 
 				return step_record;
 			}
@@ -92,26 +111,32 @@ public class StepService {
 			log.warn("saving login step");
 			new_login_step = login_step_repo.save(new_login_step);
 			log.warn("adding start page to login step");
-			new_login_step.setStartPage(login_step_repo.addStartPage(new_login_step.getId(), login_step.getStartPage().getId()));
+			login_step_repo.addStartPage(new_login_step.getId(), login_step.getStartPage().getId());
+			new_login_step.setStartPage(login_step.getStartPage());
 			
 			log.warn("setting end page");
-			new_login_step.setEndPage(login_step_repo.addEndPage(new_login_step.getId(), login_step.getEndPage().getId()));
+			login_step_repo.addEndPage(new_login_step.getId(), login_step.getEndPage().getId());
+			new_login_step.setEndPage(login_step.getEndPage());
 			
 			//ElementState username_input = element_state_service.findById(login_step.getUsernameElement().getId());
 			log.warn("adding username element to login step");
-			new_login_step.setUsernameElement(login_step_repo.addUsernameElement(new_login_step.getId(), login_step.getUsernameElement().getId()));
+			login_step_repo.addUsernameElement(new_login_step.getId(), login_step.getUsernameElement().getId());
+			new_login_step.setUsernameElement(login_step.getUsernameElement());
 			
 			//ElementState password_input = element_state_service.findById(login_step.getPasswordElement().getId());
 			log.warn("adding password element to login step");
-			new_login_step.setPasswordElement(login_step_repo.addPasswordElement(new_login_step.getId(), login_step.getPasswordElement().getId()));
+			login_step_repo.addPasswordElement(new_login_step.getId(), login_step.getPasswordElement().getId());
+			new_login_step.setPasswordElement(login_step.getPasswordElement());
 			
 			//ElementState submit_element = element_state_service.findById(login_step.getSubmitElement().getId());
 			log.warn("adding submit element to login step");
-			new_login_step.setSubmitElement(login_step_repo.addSubmitElement(new_login_step.getId(), login_step.getSubmitElement().getId()));
+			login_step_repo.addSubmitElement(new_login_step.getId(), login_step.getSubmitElement().getId());
+			new_login_step.setSubmitElement(login_step.getSubmitElement());
 			
 			//TestUser user = test_user_service.findById(login_step.getTestUser().getId());
 			log.warn("login step test user id :: "+login_step.getTestUser().getId());
-			new_login_step.setTestUser(login_step_repo.addTestUser(new_login_step.getId(), login_step.getTestUser().getId()));
+			login_step_repo.addTestUser(new_login_step.getId(), login_step.getTestUser().getId());
+			new_login_step.setTestUser(login_step.getTestUser());
 			
 			return new_login_step;
 		}

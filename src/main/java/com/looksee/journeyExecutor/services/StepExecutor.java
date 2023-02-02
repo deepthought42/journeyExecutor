@@ -9,10 +9,13 @@ import org.springframework.stereotype.Service;
 import com.looksee.browsing.ActionFactory;
 import com.looksee.journeyExecutor.models.Browser;
 import com.looksee.journeyExecutor.models.ElementState;
+import com.looksee.journeyExecutor.models.PageState;
 import com.looksee.journeyExecutor.models.enums.Action;
+import com.looksee.journeyExecutor.models.journeys.LandingStep;
 import com.looksee.journeyExecutor.models.journeys.LoginStep;
 import com.looksee.journeyExecutor.models.journeys.SimpleStep;
 import com.looksee.journeyExecutor.models.journeys.Step;
+import com.looksee.utils.BrowserUtils;
 
 @Service
 public class StepExecutor {
@@ -33,7 +36,7 @@ public class StepExecutor {
 		}
 		else if(step instanceof LoginStep) {
 			LoginStep login_step = (LoginStep)step;
-			log.warn("executing login step= "+  ((SimpleStep)step).getElementState());
+			log.warn("executing login step= "+  ((LoginStep)step).getUsernameElement());
 			WebElement username_element = browser.getDriver().findElement(By.xpath(login_step.getUsernameElement().getXpath()));
 			action_factory.execAction(username_element, login_step.getTestUser().getUsername(), Action.SEND_KEYS);
 			
@@ -42,6 +45,14 @@ public class StepExecutor {
 
 			WebElement submit_element = browser.getDriver().findElement(By.xpath(login_step.getSubmitElement().getXpath()));
 			action_factory.execAction(submit_element, "", Action.CLICK);
+		}
+		else if(step instanceof LandingStep) {
+			LandingStep landing_step = (LandingStep)step;
+			log.warn("executing landing step= "+  landing_step);
+			PageState initial_page = landing_step.getStartPage();
+			String sanitized_url = BrowserUtils.sanitizeUrl(initial_page.getUrl(), initial_page.isSecured());
+
+			browser.navigateTo(sanitized_url);
 		}
 		else {
 			log.warn("Executing plain step with key = " + step.getKey());

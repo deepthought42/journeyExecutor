@@ -71,4 +71,7 @@ public interface ElementStateRepository extends Neo4jRepository<ElementState, Lo
 	
 	@Query("MATCH (p:PageState) WITH p WHERE id(p)=$page_state_id MATCH (p)-[:HAS]->(e:ElementState) where e.visible=true AND e.classification='leaf' RETURN e")
 	public List<ElementState> getVisibleLeafElements(@Param("page_state_id") long page_state_id);
+	
+	@Query("MATCH (:SimpleStep{key:$step_key})-[:HAS]->(e:ElementState) RETURN e")
+	public ElementState getElementStateForStep(@Param("step_key") String step_key);
 }

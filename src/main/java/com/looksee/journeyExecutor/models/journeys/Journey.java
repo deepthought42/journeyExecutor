@@ -8,12 +8,14 @@ import org.apache.commons.lang3.StringUtils;
 import org.springframework.data.neo4j.core.schema.Node;
 import org.springframework.data.neo4j.core.schema.Relationship;
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.looksee.journeyExecutor.models.LookseeObject;
 
 
 /**
  * Represents the series of steps taken for an end to end journey
  */
+@JsonIgnoreProperties(ignoreUnknown = true)
 @Node
 public class Journey extends LookseeObject {
 

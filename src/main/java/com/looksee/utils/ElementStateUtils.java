@@ -140,7 +140,13 @@ public class ElementStateUtils {
 								.filter(element -> element != null)
 								.map(element -> {
 				try {
-					ColorData font_color = new ColorData(element.getRenderedCssValues().get("color"));				
+					String color_css = element.getRenderedCssValues().get("color");
+					if(color_css == null) {
+						color_css = "#000000";
+					}
+					
+					ColorData font_color = new ColorData(color_css);
+					
 					//extract opacity color
 					ColorData bkg_color = null;
 					if(element.getScreenshotUrl().trim().isEmpty()) {

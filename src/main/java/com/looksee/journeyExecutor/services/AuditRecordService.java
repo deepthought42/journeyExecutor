@@ -377,4 +377,8 @@ public class AuditRecordService {
 	public PageState findPageWithUrl(long audit_record_id, String url) {
 		return audit_record_repo.findPageWithUrl(audit_record_id, url);
 	}
+	
+	public void addDomainMap(long domainAuditId, long domainMapId) {
+		audit_record_repo.addDomainMap(domainAuditId, domainMapId);
+	}
 }

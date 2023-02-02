@@ -823,13 +823,14 @@ public class BrowserService {
 						//log.warn("element2 z-index :: "+element2.getRenderedCssValues().get("z-index"));
 
 						String element1_z_index = element1.getRenderedCssValues().get("z-index");
-						if(element1_z_index.contentEquals("auto")) {
+						if(element1_z_index == null || "auto".equals(element1_z_index)) {
 							element1_z_index = "0";
 						}
 						String element2_z_index = element2.getRenderedCssValues().get("z-index");
-						if(element2_z_index.contentEquals("auto")) {
+						if(element2_z_index == null || "auto".equals(element2_z_index)) {
 							element2_z_index = "0";
 						}
+						
 						boolean z_index_overlap = Integer.parseInt(element1_z_index) < Integer.parseInt(element2_z_index);
 						if(x_overlap && y_overlap && z_index_overlap) {
 							overlap_exists = true;

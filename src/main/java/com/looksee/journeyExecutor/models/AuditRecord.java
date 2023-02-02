@@ -5,8 +5,11 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 
+import org.springframework.data.neo4j.core.schema.Relationship;
+
 import com.looksee.journeyExecutor.models.enums.AuditLevel;
 import com.looksee.journeyExecutor.models.enums.ExecutionStatus;
+import com.looksee.journeyExecutor.models.journeys.DomainMap;
 
 /**
  * Record detailing an set of {@link Audit audits}.
@@ -36,6 +39,9 @@ public class AuditRecord extends LookseeObject {
 
 	//DESIGN SYSTEM VALUES
 	private List<String> colors;
+	
+	@Relationship(type="CONTAINS")
+	private DomainMap domain_map;
 	
 	public AuditRecord() {
 		setStartTime(LocalDateTime.now());
@@ -273,5 +279,13 @@ public class AuditRecord extends LookseeObject {
 		}
 		
 		return true;	
+	}
+
+	public DomainMap getDomainMap() {
+		return domain_map;
+	}
+
+	public void setDomainMap(DomainMap domain_map) {
+		this.domain_map = domain_map;
 	}
 }

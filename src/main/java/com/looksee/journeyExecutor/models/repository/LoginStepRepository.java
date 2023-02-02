@@ -46,10 +46,8 @@ public interface LoginStepRepository extends Neo4jRepository<LoginStep, Long> {
 	
 	@Query("MATCH (s:Step)-[:ENDS_WITH]->(page:PageState) WHERE id(s)=$step_id RETURN page")
 	public PageState getEndPage(@Param("step_id") long id);
-	
-	@Query("MATCH (s:Step) WITH s MATCH (user:TestUser) WHERE id(s)=$step_id AND id(user)=$user_id MERGE (s)-[:USES]->(user) RETURN user")
-	public TestUser addTestUser(@Param("step_id") long id, @Param("user_id") long user_id);
 
-	@Query("MATCH (s:LoginStep)-[:USES]->(user:TestUser) WHERE id(s)=$step_id RETURN user")
-	public TestUser getTestUser(@Param("step_id") long id);
+	@Query("MATCH (s:Step) WITH s MATCH (user:TestUser) WHERE id(s)=$step_id AND id(user)=$user_id MERGE (s)-[:USES]->(user) RETURN s")
+	public LoginStep addTestUser(@Param("step_id") long id, @Param("user_id") long user_id);
+
 }

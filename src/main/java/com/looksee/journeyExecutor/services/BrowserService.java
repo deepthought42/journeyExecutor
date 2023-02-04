@@ -1462,7 +1462,7 @@ public class BrowserService {
 		Map<String, Template> element_templates = new HashMap<>();
 		List<com.looksee.journeyExecutor.models.Element> parents_only_element_list = new ArrayList<>();
 		for(com.looksee.journeyExecutor.models.Element element : element_list) {
-			if(!element.isLeaf()) {
+			if(!ElementClassification.LEAF.equals(element.getClassification())) {
 				parents_only_element_list.add(element);
 			}
 		}

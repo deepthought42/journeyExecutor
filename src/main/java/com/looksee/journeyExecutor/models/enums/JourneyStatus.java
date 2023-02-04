@@ -2,15 +2,19 @@ package com.looksee.journeyExecutor.models.enums;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
 
-public enum TestStatus {
-	PASSING("PASSING"), 
-	FAILING("FAILING"), 
-	UNVERIFIED("UNVERIFIED"), 
-	RUNNING("RUNNING");
+/**
+ * ready - ready for expansion
+ * expanded - path has already been expanded and is ready for exploration
+ */
+public enum JourneyStatus {
+	READY("READY"), 
+	EXPANDED("EXPANDED"),
+	DISCARDED("DISCARDED"),
+	EXAMINED("EXAMINED");
 	
 	private String shortName;
 
-    TestStatus (String shortName) {
+	JourneyStatus (String shortName) {
         this.shortName = shortName;
     }
 
@@ -20,11 +24,11 @@ public enum TestStatus {
     }
 
     @JsonCreator
-    public static TestStatus create (String value) {
+    public static JourneyStatus create (String value) {
         if(value == null) {
             throw new IllegalArgumentException();
         }
-        for(TestStatus v : values()) {
+        for(JourneyStatus v : values()) {
             if(value.equalsIgnoreCase(v.getShortName())) {
                 return v;
             }

@@ -8,12 +8,12 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import com.looksee.journeyExecutor.models.ElementState;
-import com.looksee.journeyExecutor.models.repository.ElementStateRepository;
+import com.looksee.journeyExecutor.models.repository.LandingStepRepository;
 import com.looksee.journeyExecutor.models.repository.LoginStepRepository;
 import com.looksee.journeyExecutor.models.repository.SimpleStepRepository;
 import com.looksee.journeyExecutor.models.repository.StepRepository;
-import com.looksee.journeyExecutor.models.repository.TestUserRepository;
 import com.looksee.journeyExecutor.models.PageState;
+import com.looksee.journeyExecutor.models.journeys.LandingStep;
 import com.looksee.journeyExecutor.models.journeys.LoginStep;
 import com.looksee.journeyExecutor.models.journeys.SimpleStep;
 import com.looksee.journeyExecutor.models.journeys.Step;
@@ -37,10 +37,7 @@ public class StepService {
 	private PageStateRepository page_state_repo;
 	
 	@Autowired
-	private TestUserRepository test_user_repo;
-	
-	@Autowired
-	private ElementStateRepository element_repo;
+	private LandingStepRepository landing_step_repo;
 	
 	@Autowired
 	private SimpleStepRepository simple_step_repo;
@@ -93,7 +90,6 @@ public class StepService {
 			if(step_record != null) {
 				log.warn("found login step with key :: "+step_record.getKey());
 				log.warn("loading LOGIN STEP connections...");
-				LoginStep login_step = (LoginStep)step;
 				step_record.setTestUser(step_record.getTestUser());
 				step_record.setUsernameElement(step_record.getUsernameElement());
 				step_record.setPasswordElement(step_record.getPasswordElement());
@@ -139,6 +135,24 @@ public class StepService {
 			new_login_step.setTestUser(login_step.getTestUser());
 			
 			return new_login_step;
+		}
+		else if(step instanceof LandingStep) {
+			LandingStep landing_step_record = landing_step_repo.findByKey(step.getKey());
+			
+			if(landing_step_record != null) {
+				landing_step_record.setStartPage(step.getStartPage());
+				
+				return landing_step_record;
+			}
+			else {
+				LandingStep landing_step = (LandingStep)step;
+				
+				Step saved_step = landing_step_repo.save(landing_step);
+				step_repo.addStartPage(saved_step.getId(), saved_step.getStartPage().getId());
+				saved_step.setStartPage(saved_step.getStartPage());
+				
+				return saved_step;
+			}
 		}
 		else {
 			Step step_record = step_repo.findByKey(step.getKey());

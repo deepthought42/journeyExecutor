@@ -7,7 +7,6 @@ import org.springframework.stereotype.Repository;
 
 import com.looksee.journeyExecutor.models.ElementState;
 import com.looksee.journeyExecutor.models.PageState;
-import com.looksee.journeyExecutor.models.TestUser;
 import com.looksee.journeyExecutor.models.journeys.LoginStep;
 
 

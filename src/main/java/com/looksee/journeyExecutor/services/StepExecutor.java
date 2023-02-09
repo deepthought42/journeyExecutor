@@ -47,15 +47,14 @@ public class StepExecutor {
 			action_factory.execAction(submit_element, "", Action.CLICK);
 		}
 		else if(step instanceof LandingStep) {
-			LandingStep landing_step = (LandingStep)step;
-			log.warn("executing landing step= "+  landing_step);
-			PageState initial_page = landing_step.getStartPage();
+			log.warn("executing landing step= "+  ((LandingStep)step));
+			PageState initial_page = step.getStartPage();
 			String sanitized_url = BrowserUtils.sanitizeUrl(initial_page.getUrl(), initial_page.isSecured());
 
 			browser.navigateTo(sanitized_url);
 		}
 		else {
-			log.warn("Executing plain step with key = " + step.getKey());
+			log.warn("Unknown step type during execution = " + step.getKey());
 		}
 	}
 }

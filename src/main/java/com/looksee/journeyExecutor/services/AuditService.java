@@ -30,6 +30,7 @@ import com.looksee.journeyExecutor.models.enums.AuditName;
 import com.looksee.journeyExecutor.models.enums.AuditSubcategory;
 import com.looksee.journeyExecutor.models.enums.ObservationType;
 import com.looksee.journeyExecutor.models.repository.AuditRepository;
+import com.looksee.journeyExecutor.models.repository.ElementStateRepository;
 
 import io.github.resilience4j.retry.annotation.Retry;
 
@@ -46,11 +47,11 @@ public class AuditService {
 	private AuditRepository audit_repo;
 	
 	@Autowired
-	private UXIssueMessageService ux_issue_service;
-	
-	@Autowired
 	private PageStateService page_state_service;
 
+	@Autowired
+	private ElementStateRepository element_state_repo;
+	
 	public Audit save(Audit audit) {
 		assert audit != null;
 		
@@ -164,7 +165,7 @@ public class AuditService {
 
 			for(UXIssueMessage issue_msg : issues ) {
 				
-				ElementState element = ux_issue_service.getElement(issue_msg.getId());
+				ElementState element = element_state_repo.getElement(issue_msg.getId());
 				if(element == null) {
 					continue;
 				}
@@ -203,7 +204,7 @@ public class AuditService {
 			for(UXIssueMessage issue_msg : issues ) {
 				if(issue_msg.getType().equals(ObservationType.COLOR_CONTRAST) || 
 						issue_msg.getType().equals(ObservationType.ELEMENT) ) {
-					ElementState element = ux_issue_service.getElement(issue_msg.getId());
+					ElementState element = element_state_repo.getElement(issue_msg.getId());
 					if(element == null) {
 						log.warn("element issue map:: element is null for issue msg ... "+issue_msg.getId());
 						continue;
@@ -275,7 +276,7 @@ public class AuditService {
 			if(ux_issue.getType().equals(ObservationType.COLOR_CONTRAST) || 
 					ux_issue.getType().equals(ObservationType.ELEMENT) ) {
 
-				ElementState element = ux_issue_service.getElement(ux_issue.getId());
+				ElementState element = element_state_repo.getElement(ux_issue.getId());
 				if(element == null) {
 					return element_map.values();
 				}

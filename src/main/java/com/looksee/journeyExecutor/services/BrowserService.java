@@ -130,7 +130,7 @@ public class BrowserService {
 			Map<String, String> rendered_css_values, 
 			String screenshot_url,
 			String css_selector
-	) throws IOException{
+	) throws IOException {
 		assert xpath != null && !xpath.isEmpty();
 		assert attributes != null;
 		assert element != null;
@@ -722,7 +722,6 @@ public class BrowserService {
 						catch(Exception e1){
 							e1.printStackTrace();
 						}
-						//e.printStackTrace();
 					}
 				}
 				else {
@@ -750,7 +749,6 @@ public class BrowserService {
 				}
 								
 				Element element = elements.first();
-				
 
 				ElementState element_state = buildElementState(xpath, 
 															   attributes, 
@@ -776,7 +774,8 @@ public class BrowserService {
 						ImageSafeSearchAnnotation img_safe_search_annotation = CloudVisionUtils.detectSafeSearch(element_screenshot);
 						
 						//retrieve image logos from google cloud vision
-						Set<Logo> logos = new HashSet<>();//CloudVisionUtils.extractImageLogos(element_screenshot);
+						Set<Logo> logos = new HashSet<>();
+						//CloudVisionUtils.extractImageLogos(element_screenshot);
 	
 						//retrieve image labels
 						Set<Label> labels = CloudVisionUtils.extractImageLabels(element_screenshot);
@@ -863,6 +862,7 @@ public class BrowserService {
 				//e.printStackTrace();
 			}
 		}
+		
 		return filtered_elements;
 	}
 

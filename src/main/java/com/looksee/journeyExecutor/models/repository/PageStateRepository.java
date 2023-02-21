@@ -53,7 +53,7 @@ public interface PageStateRepository extends Neo4jRepository<PageState, Long> {
 	@Query("MATCH (ps:PageState) WHERE id(ps)=$id SET ps.fullPageScreenshotUrlComposite = $composite_img_url RETURN ps")
 	public void updateCompositeImageUrl(@Param("id") long id, @Param("composite_img_url") String composite_img_url);
 
-	@Query("MATCH (p:PageState) WITH p MATCH (element:ElementState) WHERE id(p)=$page_state_id AND id(element) IN $element_id_list MERGE (p)-[:HAS]->(element) RETURN element")
+	@Query("MATCH (p:PageState) WITH p WHERE id(p)=$page_state_id MATCH (element:ElementState) WHERE id(element) IN $element_id_list MERGE (p)-[:HAS]->(element) RETURN p LIMIT 1")
 	public void addAllElements(@Param("page_state_id") long page_state_id, @Param("element_id_list") List<Long> element_id_list);
 	
 	@Query("MATCH (domain_audit:DomainAuditRecord)-[]->(page_state:PageState) WHERE id(domain_audit)=$domain_audit_id RETURN page_state")
@@ -100,5 +100,8 @@ public interface PageStateRepository extends Neo4jRepository<PageState, Long> {
 
 	@Query("MATCH (domain_audit:DomainAuditRecord)-[]->(page_state:PageState) WHERE id(domain_audit)=$domain_audit_id AND id(page_state)=$page_state_id RETURN page_state")
 	public PageState findByDomainAudit(@Param("domain_audit_id") long domainAuditRecordId, @Param("page_state_id") long page_state_id);
+
+	@Query("MATCH (audit_record:DomainAuditRecord) WITH audit_record WHERE id(audit_record)=$audit_record_id MATCH (audit_record)-[:HAS]->(page:PageState) WHERE page.key=$page_key RETURN page")
+	public PageState findPageWithKey(@Param("audit_record_id") long audit_record_id, @Param("page_key") String key);
 	
 }

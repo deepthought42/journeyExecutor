@@ -404,4 +404,8 @@ public class AuditRecordService {
 	public void addDomainMap(long domainAuditId, long domainMapId) {
 		audit_record_repo.addDomainMap(domainAuditId, domainMapId);
 	}
+
+	public PageState findPageWithKey(long audit_record_id, String key) {
+		return page_state_repo.findPageWithKey(audit_record_id, key);
+	}
 }

@@ -67,6 +67,7 @@ public class ElementStateService {
 		if(element_record == null){			
 			element_record = element_repo.save(element);
 		}
+		/*
 		else{
 			if(element.getScreenshotUrl() != null && !element.getScreenshotUrl().isEmpty()) {
 				element_record.setScreenshotUrl(element.getScreenshotUrl());
@@ -75,6 +76,7 @@ public class ElementStateService {
 				element_record = element_repo.save(element_record);
 			}
 		}
+		*/
 		return element_record;
 	}
 

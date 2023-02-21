@@ -1,6 +1,5 @@
 package com.looksee.journeyExecutor;
 
-import java.net.URL;
 import java.util.ArrayList;
 import java.util.Base64;
 import java.util.List;
@@ -53,7 +52,6 @@ import com.looksee.journeyExecutor.services.StepService;
 import com.looksee.journeyExecutor.services.StepExecutor;
 import com.looksee.journeyExecutor.models.enums.AuditCategory;
 import com.looksee.journeyExecutor.models.message.AuditError;
-import com.looksee.utils.BrowserUtils;
 import com.looksee.utils.ElementStateUtils;
 import com.looksee.utils.JourneyUtils;
 import com.looksee.utils.PathUtils;
@@ -162,10 +160,7 @@ public class AuditController {
 					steps.set(steps.size()-1, final_step);
 				}
 				else if(final_step.getStartPage().getUrl().equals(final_step.getEndPage().getUrl())) {
-						
-	
-					// if end page for final step doesn't already exist for domain then create a page load step
-					
+					// if end page for final step doesn't already exist for domain then create a page load step					
 					final_step = step_service.save(final_step);
 
 					steps.add(final_step);
@@ -187,15 +182,26 @@ public class AuditController {
 					//create landing step
 					log.warn("sending landing step ");
 					LandingStep landing_step = new LandingStep(final_step.getEndPage());
+					log.warn("landing step pojo "+landing_step);
 					Step step_record = step_service.save(landing_step);
 					landing_step.setId(step_record.getId());
 					steps = new ArrayList<>();
 					steps.add(landing_step);
 				}
-					
+				
 				log.warn("saving journey");
+				boolean journey_exists = false;
+								
 				Journey journey = new Journey(steps);
-				Journey journey_record = journey_service.save(journey);
+				
+				Journey journey_record = journey_service.findByKey(journey.getKey());
+				if(journey_record == null) {
+					journey_record = journey_service.save(journey);
+				}
+				else {
+					journey_exists = true;
+				}
+				
 				journey.setId(journey_record.getId());
 				
 				log.warn("adding journey to domain map");
@@ -208,10 +214,11 @@ public class AuditController {
 				domain_map_service.addJourneyToDomainMap(journey.getId(), domain_map.getId());
 				
 				log.warn("done processing journey = "+journey);
-				processIfStepsShouldBeExpanded(journey, 
+				processIfStepsShouldBeExpanded( journey, 
 												journey_msg.getDomainId(), 
 												journey_msg.getAccountId(), 
-												journey_msg.getDomainAuditRecordId());
+												journey_msg.getDomainAuditRecordId(),
+												journey_exists);
 									
 			}
 			
@@ -260,14 +267,23 @@ public class AuditController {
 	private void processIfStepsShouldBeExpanded(Journey journey, 
 												long domain_id, 
 												long account_id, 
-												long audit_record_id 
+												long audit_record_id,
+												boolean journey_exists
 			) throws JsonProcessingException, ExecutionException, InterruptedException 
 	{
 		try {
+			
+			//get last step
+			Step last_step = journey.getSteps().get(journey.getSteps().size()-1);
+			
 			PageState second_to_last_page = PathUtils.getSecondToLastPageState(journey.getSteps());
 			PageState final_page = PathUtils.getLastPageState(journey.getSteps());
 			//is end_page PageState different from second to last PageState
-			if(final_page == null || (final_page.equals(second_to_last_page) && journey.getSteps().size() > 1)) {
+			if(journey_exists) {
+				log.warn("Ignoring journey :: "+journey.getKey());
+				return;
+			}
+			else if(((journey.getSteps().size() > 1 && !(last_step instanceof LandingStep)) && final_page.equals(second_to_last_page))) {
 				log.warn("publishing discarded journey...");
 				//tell parent that we processed a journey that is being discarded
 				DiscardedJourneyMessage journey_message = new DiscardedJourneyMessage(	journey, 
@@ -305,6 +321,7 @@ public class AuditController {
 
 			JsonMapper mapper = JsonMapper.builder().addModule(new JavaTimeModule()).build();
 			String audit_record_json = mapper.writeValueAsString(journey_message);
+			
 			log.warn("An exception occured while evaluating if journey should be expanded = "+audit_record_json);
 			//TODO: SEND PUB SUB MESSAGE THAT AUDIT RECORD NOT FOUND WITH PAGE DATA EXTRACTION MESSAGE
 			discarded_journey_topic.publish(audit_record_json);		
@@ -324,19 +341,28 @@ public class AuditController {
 	private PageState buildPage(long audit_record_id, Browser browser) throws Exception {
 		assert browser != null;
 		
-		URL current_url = new URL(browser.getDriver().getCurrentUrl());
-		String url_without_protocol = BrowserUtils.getPageUrl(current_url.toString());
+		//URL current_url = new URL(browser.getDriver().getCurrentUrl());
+		//String url_without_protocol = BrowserUtils.getPageUrl(current_url.toString());
 	
-		PageState page_state = audit_record_service.findPageWithUrl(audit_record_id, url_without_protocol);
-		if(page_state == null) {
+		//PageState page_state = audit_record_service.findPageWithUrl(audit_record_id, url_without_protocol);
+		//if(page_state == null) {
 			log.warn("performing build page process");
-			page_state = browser_service.performBuildPageProcess(browser);
-			page_state = page_state_service.save(page_state);
-			//audit_record_service.addPageToAuditRecord(audit_record_id, page_state.getId());
-		}
+			PageState page_state = browser_service.performBuildPageProcess(browser);
+			
+			//check if page state with key already exists
+			PageState page_state_record = audit_record_service.findPageWithKey(audit_record_id, page_state.getKey());
+			
+			if(page_state_record == null) {
+				page_state = page_state_service.save(page_state);
+			}
+			else {
+				page_state = page_state_record;
+			}
+		//}
 
 		List<String> xpaths = browser_service.extractAllUniqueElementXpaths(page_state.getSrc());
 		log.warn("Extracting elements for page state = "+page_state.getKey());
+		
 		List<ElementState> element_states = browser_service.buildPageElementsWithoutNavigation( page_state, 
 																								xpaths,
 																								audit_record_id,
@@ -405,10 +431,10 @@ public class AuditController {
 		assert !steps.isEmpty();
 				
 		
-		PageState initial_page = steps.get(0).getStartPage();
-		String sanitized_url = BrowserUtils.sanitizeUrl(initial_page.getUrl(), initial_page.isSecured());
+		//PageState initial_page = steps.get(0).getStartPage();
+		//String sanitized_url = BrowserUtils.sanitizeUrl(initial_page.getUrl(), initial_page.isSecured());
 
-		browser.navigateTo(sanitized_url);
+		//browser.navigateTo(sanitized_url);
 		
 		//execute all steps sequentially in the journey
 		for(Step step: steps) {

@@ -37,6 +37,7 @@ resilience4j.retry:
                 - org.neo4j.ogm.exception.CypherException
                 - java.net.SocketException
                 - java.util.NoSuchElementException
+                - org.neo4j.driver.exceptions.ServiceUnavailableException
         gcp:
             maxAttempts: 5
             waitDuration: 5s

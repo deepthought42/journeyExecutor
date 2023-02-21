@@ -33,10 +33,10 @@ import com.looksee.journeyExecutor.models.ElementState;
 import com.looksee.journeyExecutor.models.PageState;
 import com.looksee.journeyExecutor.models.enums.BrowserEnvironment;
 import com.looksee.journeyExecutor.models.enums.BrowserType;
+import com.looksee.journeyExecutor.models.enums.JourneyStatus;
 import com.looksee.journeyExecutor.models.enums.PathStatus;
 import com.looksee.journeyExecutor.models.journeys.Journey;
 import com.looksee.journeyExecutor.models.journeys.LandingStep;
-import com.looksee.journeyExecutor.models.journeys.DomainMap;
 import com.looksee.journeyExecutor.models.journeys.Step;
 import com.looksee.journeyExecutor.models.message.DiscardedJourneyMessage;
 import com.looksee.journeyExecutor.models.message.JourneyCandidateMessage;
@@ -44,7 +44,6 @@ import com.looksee.journeyExecutor.models.message.PageBuiltMessage;
 import com.looksee.journeyExecutor.models.message.VerifiedJourneyMessage;
 import com.looksee.journeyExecutor.services.AuditRecordService;
 import com.looksee.journeyExecutor.services.BrowserService;
-import com.looksee.journeyExecutor.services.DomainMapService;
 import com.looksee.journeyExecutor.services.ElementStateService;
 import com.looksee.journeyExecutor.services.JourneyService;
 import com.looksee.journeyExecutor.services.PageStateService;
@@ -85,13 +84,13 @@ public class AuditController {
 	private BrowserService browser_service;
 	
 	@Autowired
-	private JourneyService journey_service;
-	
-	@Autowired
 	private PageStateService page_state_service;
 	
 	@Autowired
 	private StepService step_service;
+	
+	@Autowired
+	private JourneyService journey_service;
 	
 	@Autowired
 	private ElementStateService element_state_service;
@@ -107,9 +106,6 @@ public class AuditController {
 	
 	@Autowired
 	private PubSubDiscardedJourneyPublisherImpl discarded_journey_topic;
-	
-	@Autowired
-	private DomainMapService domain_map_service;
 	
 	@Autowired
 	private StepExecutor step_executor;
@@ -191,9 +187,20 @@ public class AuditController {
 				
 				log.warn("saving journey");
 				boolean journey_exists = false;
-								
-				Journey journey = new Journey(steps);
 				
+				//Journey journey = new Journey(steps);
+				
+				//lookup journey by id
+				Journey journey = journey_msg.getJourney();
+				
+				//set journey steps
+				journey.setSteps(steps);
+				
+				//update journey key
+				journey.setKey(journey.generateKey());
+				//update journey status
+				
+				/*
 				Journey journey_record = journey_service.findByKey(journey.getKey());
 				if(journey_record == null) {
 					journey_record = journey_service.save(journey);
@@ -203,8 +210,10 @@ public class AuditController {
 				}
 				
 				journey.setId(journey_record.getId());
+				 */
 				
 				log.warn("adding journey to domain map");
+				/*
 				DomainMap domain_map = domain_map_service.findByDomainAuditId(journey_msg.getDomainAuditRecordId());
 				if(domain_map == null) {
 					domain_map = domain_map_service.save(new DomainMap());
@@ -212,7 +221,7 @@ public class AuditController {
 					audit_record_service.addDomainMap(journey_msg.getDomainAuditRecordId(), domain_map.getId());
 				}
 				domain_map_service.addJourneyToDomainMap(journey.getId(), domain_map.getId());
-				
+				*/
 				log.warn("done processing journey = "+journey);
 				processIfStepsShouldBeExpanded( journey, 
 												journey_msg.getDomainId(), 
@@ -285,6 +294,8 @@ public class AuditController {
 			}
 			else if(((journey.getSteps().size() > 1 && !(last_step instanceof LandingStep)) && final_page.equals(second_to_last_page))) {
 				log.warn("publishing discarded journey...");
+				journey.setStatus(JourneyStatus.DISCARDED);
+				journey_service.save(journey);
 				//tell parent that we processed a journey that is being discarded
 				DiscardedJourneyMessage journey_message = new DiscardedJourneyMessage(	journey, 
 																						BrowserType.CHROME, 
@@ -299,6 +310,9 @@ public class AuditController {
 			}
 			else {
 				log.warn("publishing journey verified message...");
+				journey.setStatus(JourneyStatus.VERIFIED);
+				journey_service.save(journey);
+
 				VerifiedJourneyMessage journey_message = new VerifiedJourneyMessage(journey,
 																					PathStatus.EXAMINED, 
 																					BrowserType.CHROME, 
@@ -312,6 +326,9 @@ public class AuditController {
 			    journey_verified_topic.publish(journey_json);
 			}
 		}catch(Exception e) {
+			journey.setStatus(JourneyStatus.DISCARDED);
+			journey_service.save(journey);
+
 			e.printStackTrace();
 			DiscardedJourneyMessage journey_message = new DiscardedJourneyMessage(	journey, 
 																					BrowserType.CHROME, 

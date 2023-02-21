@@ -7,7 +7,9 @@ import org.springframework.data.neo4j.repository.query.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
+import com.looksee.journeyExecutor.models.ElementState;
 import com.looksee.journeyExecutor.models.UXIssueMessage;
+
 
 @Repository
 public interface UXIssueMessageRepository extends Neo4jRepository<UXIssueMessage, Long>  {
@@ -21,5 +23,12 @@ public interface UXIssueMessageRepository extends Neo4jRepository<UXIssueMessage
 	
 	@Query("MATCH (audit_record:PageAuditRecord)-[]-(audit:Audit)  MATCH (audit)-[:HAS]-(issue:UXIssueMessage) WHERE id(audit_record)=$audit_record_id RETURN issue")
 	public Set<UXIssueMessage> getIssues(@Param("audit_record_id") long audit_record_id);
+
+	@Query("MATCH (uim:UXIssueMessage)-[:FOR]->(e:ElementState) WHERE id(uim)=$id RETURN e")
+	public ElementState getElement(@Param("id") long id);
+
+	@Query("MATCH (uim:UXIssueMessage)-[:EXAMPLE]->(e:ElementState) WHERE id(uim)=$id RETURN e")
+	public ElementState getGoodExample(@Param("id") long issue_id);
+
 
 }

@@ -194,9 +194,19 @@ public class ElementStateService {
 	}
 
 	public List<ElementState> saveAll(List<ElementState> element_states) {
-		return element_states.stream()
-						   .map(element -> save(element))
-						   .collect(Collectors.toList());
+		List<ElementState> existing_elements = element_states.stream()
+															 .map(element -> element_repo.findByKey(element.getKey()))
+															 .filter(element -> element != null)
+															 .collect(Collectors.toList());
+		
+		List<ElementState> saved_elements = element_states.stream()
+												  		   .filter(element -> !existing_elements.contains(element))
+														   .map(element -> save(element))
+														   .collect(Collectors.toList());
+		
+		saved_elements.addAll(existing_elements);
+		
+		return saved_elements;
 	}
 
 	/**

@@ -759,6 +759,7 @@ public class BrowserService {
 															   element_screenshot_url,
 															   css_selector);
 				
+				
 				if(isImageElement(web_element) && element_screenshot != null) {
 					ElementState element_record = element_state_service.findByKey(element_state.getKey());
 					if(element_record == null) {

@@ -93,9 +93,6 @@ public class AuditController {
 	private JourneyService journey_service;
 	
 	@Autowired
-	private ElementStateService element_state_service;
-	
-	@Autowired
 	private AuditRecordService audit_record_service;
 	
 	@Autowired
@@ -130,7 +127,14 @@ public class AuditController {
 		List<Step> steps = new ArrayList<>(journey_msg.getJourney().getSteps());
 		Browser browser = null;
 
-		try {		
+		try {
+			//if journey with same candidate key exists that also has a status of VERIFIED or DISCARDED then don't iterate
+			log.warn("candidate key  =  "+journey_msg.getJourney().getCandidateKey());
+			Journey journey_record = journey_service.findByCandidateKey(journey_msg.getJourney().getCandidateKey());
+			if(journey_record != null && !JourneyStatus.CANDIDATE.equals(journey_record.getStatus())) {
+				return new ResponseEntity<String>("Journey has already been expanded", HttpStatus.OK);
+			}
+			
 			PageState page_state = iterateThroughJourneySteps(steps, 
 															  journey_msg.getDomainId(), 
 															  journey_msg.getAccountId(), 
@@ -144,7 +148,7 @@ public class AuditController {
 			
 			if(existsInJourney(steps, final_step)) {
 				log.warn("step already exists in journey :: "+steps+"  =  "+final_step);
-				return null;
+				return new ResponseEntity<String>("Step already exists in Journey", HttpStatus.OK);
 			}
 			
 			if(!final_step.getStartPage().equals(page_state)) {
@@ -185,9 +189,8 @@ public class AuditController {
 					steps.add(landing_step);
 				}
 				
-				log.warn("saving journey");
+				log.warn("Creating new journey");
 				boolean journey_exists = false;
-				
 				//Journey journey = new Journey(steps);
 				
 				//lookup journey by id
@@ -370,6 +373,19 @@ public class AuditController {
 			PageState page_state_record = audit_record_service.findPageWithKey(audit_record_id, page_state.getKey());
 			
 			if(page_state_record == null) {
+
+				List<String> xpaths = browser_service.extractAllUniqueElementXpaths(page_state.getSrc());
+				log.warn("Extracting elements for page state = "+page_state.getKey());
+				
+				List<ElementState> element_states = browser_service.buildPageElementsWithoutNavigation( page_state, 
+																										xpaths,
+																										audit_record_id,
+																										page_state.getFullPageHeight(),
+																										browser);
+
+				element_states = ElementStateUtils.enrichBackgroundColor(element_states).collect(Collectors.toList());
+				page_state.setElements(element_states);
+				
 				page_state = page_state_service.save(page_state);
 			}
 			else {
@@ -377,6 +393,7 @@ public class AuditController {
 			}
 		//}
 
+			/* temporarily moved.
 		List<String> xpaths = browser_service.extractAllUniqueElementXpaths(page_state.getSrc());
 		log.warn("Extracting elements for page state = "+page_state.getKey());
 		
@@ -388,14 +405,17 @@ public class AuditController {
 
 		element_states = ElementStateUtils.enrichBackgroundColor(element_states).collect(Collectors.toList());
 		page_state.setElements(element_states);
-		
-		
+		*/
+		/*
 		List<ElementState> saved_elements = element_state_service.saveAll(element_states);
 		List<Long> element_ids = saved_elements.parallelStream()
 											   .map(element -> element.getId())
 											   .collect(Collectors.toList());
 
 		page_state_service.addAllElements(page_state.getId(), element_ids);
+		page_state = page_state_service.save(page_state);
+
+		 */
 		
 		return page_state;
 	}

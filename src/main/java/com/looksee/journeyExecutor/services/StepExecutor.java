@@ -30,13 +30,11 @@ public class StepExecutor {
 
 		if(step instanceof SimpleStep) {
 			ElementState element = ((SimpleStep)step).getElementState();
-			log.warn("executing simple step with element = "+  ((SimpleStep)step).getElementState());
 			WebElement web_element = browser.getDriver().findElement(By.xpath(element.getXpath()));
 			action_factory.execAction(web_element, "", ((SimpleStep)step).getAction());
 		}
 		else if(step instanceof LoginStep) {
 			LoginStep login_step = (LoginStep)step;
-			log.warn("executing login step= "+  ((LoginStep)step).getUsernameElement());
 			WebElement username_element = browser.getDriver().findElement(By.xpath(login_step.getUsernameElement().getXpath()));
 			action_factory.execAction(username_element, login_step.getTestUser().getUsername(), Action.SEND_KEYS);
 			
@@ -47,7 +45,6 @@ public class StepExecutor {
 			action_factory.execAction(submit_element, "", Action.CLICK);
 		}
 		else if(step instanceof LandingStep) {
-			log.warn("executing landing step= "+  ((LandingStep)step));
 			PageState initial_page = step.getStartPage();
 			String sanitized_url = BrowserUtils.sanitizeUrl(initial_page.getUrl(), initial_page.isSecured());
 

@@ -23,6 +23,8 @@ import com.looksee.journeyExecutor.models.repository.ElementStateRepository;
 import com.looksee.journeyExecutor.models.repository.PageStateRepository;
 import com.looksee.journeyExecutor.models.repository.ScreenshotRepository;
 
+import io.github.resilience4j.retry.annotation.Retry;
+
 
 
 /**
@@ -57,6 +59,7 @@ public class PageStateService {
 	 * 
 	 * @pre page_state != null
 	 */
+	@Retry(name = "neoforj")
 	public PageState save(PageState page_state) throws Exception {
 		assert page_state != null;
 		
@@ -64,7 +67,7 @@ public class PageStateService {
 		
 		if(page_state_record == null) {
 			log.warn("page state wasn't found in database. Saving new page state to neo4j");
-
+			
 			return page_state_repo.save(page_state);
 		}
 
@@ -190,5 +193,13 @@ public class PageStateService {
 
 	public PageState findByDomainAudit(long domainAuditRecordId, long page_state_id) {
 		return page_state_repo.findByDomainAudit(domainAuditRecordId, page_state_id);
+	}
+
+	public PageState findByDomainAudit(long domainAuditRecordId, String current_url) {
+		return page_state_repo.findByDomainAudit(domainAuditRecordId, current_url);
+	}
+
+	public long getElementStateCount(long page_state_id) {
+		return element_state_repo.getElementStateCount(page_state_id);		
 	}
 }

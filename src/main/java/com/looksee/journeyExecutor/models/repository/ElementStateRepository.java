@@ -124,4 +124,7 @@ public interface ElementStateRepository extends Neo4jRepository<ElementState, Lo
 	@Query("MATCH (uim:UXIssueMessage)-[:EXAMPLE]->(e:ElementState) WHERE id(uim)=$id RETURN e")
 	public ElementState getGoodExample(@Param("id") long issue_id);
 
+	@Query("MATCH (p:PageState)-[]->(e:ElementState) WHERE id(p)=$page_state_id RETURN COUNT(e)")
+	public long getElementStateCount(@Param("page_state_id") long page_state_id);
+
 }

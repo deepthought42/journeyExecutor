@@ -39,7 +39,7 @@ public class PageState extends LookseeObject {
 	@SuppressWarnings("unused")
 	private static Logger log = LoggerFactory.getLogger(PageState.class);
 
-	@JsonIgnore
+	//@JsonIgnore
 	private String src;
 	private String url;
 	private String urlAfterLoading;
@@ -68,7 +68,7 @@ public class PageState extends LookseeObject {
 	private Set<String> keywords;
 	private int httpStatus;
 	
-	@Relationship(type = "HAS", direction = Direction.INCOMING)
+	@Relationship(type = "HAS", direction = Direction.OUTGOING)
 	private List<ElementState> elements;
 
 
@@ -127,6 +127,7 @@ public class PageState extends LookseeObject {
 		assert screenshot_url != null;
 		assert elements != null;
 		assert src != null;
+		assert !src.isEmpty();
 		assert browser_type != null;
 		assert full_page_screenshot_url_onload != null;
 		assert url != null;

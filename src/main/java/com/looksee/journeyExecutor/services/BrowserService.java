@@ -322,7 +322,6 @@ public class BrowserService {
 		boolean complete = false;
 		int cnt = 0;
 		do {
-			log.warn("getting browser connection... ");
 			Browser browser = null;
 			try {
 				browser = getConnection(BrowserType.CHROME, BrowserEnvironment.DISCOVERY);
@@ -387,6 +386,8 @@ public class BrowserService {
 			browser.close();
 			throw new ServiceUnavailableException("503(Service Unavailable) Error encountered. Starting over..");
 		}
+		
+        //remove 3rd party chat apps such as drift, and ...(NB: fill in as more identified)
 		browser.removeDriftChat();
 		
 		return buildPageState(browser);
@@ -415,11 +416,8 @@ public class BrowserService {
 		boolean is_secure = BrowserUtils.checkIfSecure(current_url);
         int status_code = BrowserUtils.getHttpStatus(current_url);
 
-        //remove 3rd party chat apps such as drift, and ...(NB: fill in as more identified)
-        //browser.removeDriftChat();
-        
         //scroll to bottom then back to top to make sure all elements that may be hidden until the page is scrolled
-		String source = browser.getDriver().getPageSource();
+		String source = Browser.cleanSrc(browser.getDriver().getPageSource());
 		String title = browser.getDriver().getTitle();
 
 		//List<ElementState> elements = extractElementStates(source, url, browser);
@@ -432,14 +430,7 @@ public class BrowserService {
 		viewport_screenshot.flush();
 		
 		BufferedImage full_page_screenshot = browser.getFullPageScreenshotStitched();		
-		
-		//BufferedImage shutterbug_fullpage_screenshot = browser.getFullPageScreenshot();
-		
-		/*
-		if(full_page_screenshot.getHeight() < (shutterbug_fullpage_screenshot.getHeight() - viewport_screenshot.getHeight()) ) {
-			full_page_screenshot = shutterbug_fullpage_screenshot;
-		}
-		*/
+
 		String full_page_screenshot_checksum = ImageUtils.getChecksum(full_page_screenshot);
 		String full_page_screenshot_url = GoogleCloudStorage.saveImage(full_page_screenshot, 
 																		current_url.getHost(), 
@@ -514,7 +505,7 @@ public class BrowserService {
 				
 				//get ElementState List by asking multiple bots to build xpaths in parallel
 				//for each xpath then extract element state
-				elements = getDomElementStates(page_state, xpaths, browser, elements_mapped, audit_id, sanitized_url, page_height);
+				elements = getDomElementStates(page_state, xpaths, browser, elements_mapped, sanitized_url, page_height);
 				break;
 			}
 			catch (NullPointerException e) {
@@ -546,7 +537,6 @@ public class BrowserService {
 	/**
 	 * Process used by the web crawler to build {@link PageElement} list based on the xpaths on the page
 	 * @param xpaths TODO
-	 * @param audit_id TODO
 	 * @param url TODO
 	 * @param url
 	 * @param height TODO
@@ -556,8 +546,7 @@ public class BrowserService {
 	 */
 	public List<ElementState> buildPageElementsWithoutNavigation(PageState page_state, 
 																 List<String> xpaths, 
-															 	 long audit_id, 
-															 	 int page_height,
+															 	 int page_height, 
 															 	 Browser browser
 	) throws MalformedURLException {
 		assert page_state != null;
@@ -571,7 +560,6 @@ public class BrowserService {
 									   xpaths, 
 									   browser, 
 									   elements_mapped, 
-									   audit_id, 
 									   sanitized_url, 
 									   page_height);
 
@@ -601,7 +589,7 @@ public class BrowserService {
 			
 			//get ElementState List by asking multiple bots to build xpaths in parallel
 			//for each xpath then extract element state
-			elements = getDomElementStates(page_state, xpaths, browser, elements_mapped, audit_id, sanitized_url, page_height);
+			elements = getDomElementStates(page_state, xpaths, browser, elements_mapped, sanitized_url, page_height);
 			return false;
 		}
 		catch (NullPointerException e) {
@@ -625,7 +613,6 @@ public class BrowserService {
 	
 	/**
 	 * identify and collect data for elements within the Document Object Model 
-	 * @param audit_record_id TODO
 	 * @param url TODO
 	 * @param url
 	 * @param page_height TODO
@@ -646,7 +633,6 @@ public class BrowserService {
 			List<String> xpaths, 
 			Browser browser, 
 			Map<String, ElementState> element_states_map, 
-			long audit_record_id, 
 			URL url, 
 			int page_height
 	) {
@@ -744,10 +730,6 @@ public class BrowserService {
 				
 				//load json element
 				Elements elements = Xsoup.compile(xpath).evaluate(html_doc).getElements();
-				if(elements.size() == 0) {
-					log.warn("NO ELEMENTS WITH XPATH FOUND :: "+xpath);
-				}
-								
 				Element element = elements.first();
 
 				ElementState element_state = buildElementState(xpath, 
@@ -858,7 +840,6 @@ public class BrowserService {
 				log.warn("There was an NPE error finding element with xpath .... "+xpath + "   ;;   ON page :: "+page_state.getUrl());
 				e.printStackTrace();
 			} catch (IOException e) {
-				// TODO Auto-generated catch block
 				log.warn("IOException occurred while building elements");
 				//e.printStackTrace();
 			}

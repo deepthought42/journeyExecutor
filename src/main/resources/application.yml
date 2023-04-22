@@ -12,7 +12,7 @@ resilience4j.retry:
                 - java.lang.Exception
         webdriver:
             maxAttempts: 1
-            waitDuration: 1s
+            waitDuration: 5s
             retryExceptions:
                 - org.openqa.selenium.WebDriverException
                 - org.openqa.grid.common.exception.GridException
@@ -24,20 +24,20 @@ resilience4j.retry:
                 - java.io.IOException
                 - java.net.ConnectException
                 - java.net.SocketException
-                - java.lang.NullPointerException
         neoforj:
-            maxAttempts: 5
-            waitDuration: 15s
+            maxAttempts: 10
+            waitDuration: 5s
             retryExceptions:
                 - org.neo4j.ogm.exception.ConnectionException
                 - org.neo4j.driver.exceptions.SessionExpiredException
                 - org.neo4j.driver.exceptions.DiscoveryException
                 - org.neo4j.driver.exceptions.TransientException
+                - org.neo4j.driver.exceptions.ServiceUnavailableException
                 - org.neo4j.ogm.exception.TransactionException
                 - org.neo4j.ogm.exception.CypherException
                 - java.net.SocketException
                 - java.util.NoSuchElementException
-                - org.neo4j.driver.exceptions.ServiceUnavailableException
+                - org.springframework.dao.TransientDataAccessResourceException
         gcp:
             maxAttempts: 5
             waitDuration: 5s

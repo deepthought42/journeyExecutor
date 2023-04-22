@@ -23,7 +23,6 @@ import com.looksee.journeyExecutor.models.enums.ExecutionStatus;
 import com.looksee.journeyExecutor.models.repository.AuditRecordRepository;
 import com.looksee.journeyExecutor.models.repository.AuditRepository;
 import com.looksee.journeyExecutor.models.repository.DesignSystemRepository;
-import com.looksee.journeyExecutor.models.repository.DomainMapRepository;
 import com.looksee.journeyExecutor.models.repository.LabelRepository;
 import com.looksee.journeyExecutor.models.repository.PageStateRepository;
 import com.looksee.journeyExecutor.models.repository.UXIssueMessageRepository;
@@ -39,9 +38,6 @@ import io.github.resilience4j.retry.annotation.Retry;
 public class AuditRecordService {
 	@SuppressWarnings("unused")
 	private static Logger log = LoggerFactory.getLogger(AuditRecordService.class);
-
-	@Autowired
-	private DomainService domain_service;
 	
 	@Autowired
 	private AuditRecordRepository audit_record_repo;
@@ -63,9 +59,6 @@ public class AuditRecordService {
 	
 	@Autowired
 	private DesignSystemRepository design_system_repo;
-	
-	@Autowired
-	private DomainMapRepository domain_map_repo;
 	
 	public AuditRecord save(AuditRecord audit) {
 		assert audit != null;

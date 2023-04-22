@@ -34,3 +34,5 @@ hs_err_pid*
 *.properties
 
 *.prod
+
+LOG_FILE_IS_UNDEFINED

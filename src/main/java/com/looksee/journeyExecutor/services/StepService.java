@@ -13,10 +13,8 @@ import com.looksee.journeyExecutor.models.journeys.Step;
 import com.looksee.journeyExecutor.models.repository.ElementStateRepository;
 import com.looksee.journeyExecutor.models.repository.LandingStepRepository;
 import com.looksee.journeyExecutor.models.repository.LoginStepRepository;
-import com.looksee.journeyExecutor.models.repository.PageStateRepository;
 import com.looksee.journeyExecutor.models.repository.SimpleStepRepository;
 import com.looksee.journeyExecutor.models.repository.StepRepository;
-import com.looksee.journeyExecutor.models.repository.TestUserRepository;
 
 
 /**
@@ -40,12 +38,6 @@ public class StepService {
 	private ElementStateRepository element_state_repo;
 	
 	@Autowired
-	private PageStateRepository page_state_repo;
-	
-	@Autowired
-	private TestUserRepository test_user_repo;
-	
-	@Autowired
 	private LandingStepRepository landing_step_repo;
 	
 	public Step findByKey(String step_key) {
@@ -67,12 +59,13 @@ public class StepService {
 				return step_record;
 			}
 			
-			
+			/*
 			SimpleStep new_simple_step = new SimpleStep();
 			new_simple_step.setAction(simple_step.getAction());
 			new_simple_step.setActionInput(simple_step.getActionInput());
 			new_simple_step.setKey(simple_step.generateKey());
-			new_simple_step = simple_step_repo.save(new_simple_step);
+			*/
+			SimpleStep new_simple_step = simple_step_repo.save(simple_step);
 			//new_simple_step.setStartPage(simple_step_repo.addStartPage(new_simple_step.getId(), simple_step.getStartPage().getId()));
 			new_simple_step.setStartPage(simple_step.getStartPage());
 			//new_simple_step.setEndPage(simple_step_repo.addEndPage(new_simple_step.getId(), simple_step.getEndPage().getId()));
@@ -98,7 +91,6 @@ public class StepService {
 
 				return step_record;
 			}
-			
 			
 			LoginStep new_login_step = new LoginStep();
 			new_login_step.setKey(login_step.generateKey());
@@ -165,6 +157,14 @@ public class StepService {
 
 	public ElementState getElementState(String step_key) {
 		return element_state_repo.getElementStateForStep(step_key);
+	}
+
+	public Step addEndPage(long step_id, long page_id) {
+		return step_repo.addEndPage(step_id, page_id);
+	}
+
+	public Step updateKey(long step_id, String key) {
+		return step_repo.updateKey(step_id, key);
 	}
 }
 

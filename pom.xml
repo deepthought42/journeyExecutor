@@ -6,7 +6,7 @@
 	<packaging>jar</packaging>
 
   	<properties>
-	    <selenium-version>3.141.59</selenium-version>
+	    <selenium-version>4.9.1</selenium-version>
 	    <maven.compiler.source>1.8</maven.compiler.source>
 	    <maven.compiler.target>1.8</maven.compiler.target>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
@@ -257,44 +257,53 @@
 	    	<groupId>org.seleniumhq.selenium</groupId>
 	        <artifactId>selenium-java</artifactId>
 	        <version>${selenium-version}</version>
-	        <exclusions>
-			    <exclusion>
-			        <groupId>javax.servlet</groupId>
-			        <artifactId>servlet-api</artifactId>
-			    </exclusion>
-			</exclusions>
+	    </dependency>
+		
+		<dependency>
+		  <groupId>org.seleniumhq.selenium</groupId>
+		  <artifactId>selenium-http-jdk-client</artifactId>
+	        <version>${selenium-version}</version>
+		</dependency>
+
+		<!-- https://mvnrepository.com/artifact/org.seleniumhq.selenium/selenium-java -->
+		<dependency>
+	    	<groupId>org.seleniumhq.selenium</groupId>
+	        <artifactId>selenium-java</artifactId>
+	        <version>${selenium-version}</version>
 	    </dependency>
 	    
-	    <!-- https://mvnrepository.com/artifact/org.seleniumhq.selenium/selenium-server -->
+	    <!-- https://mvnrepository.com/artifact/org.seleniumhq.selenium/selenium-api -->
 		<dependency>
 		    <groupId>org.seleniumhq.selenium</groupId>
-		    <artifactId>selenium-server</artifactId>
-		    <version>${selenium-version}</version>
-		    <exclusions>
-			    <exclusion>
-			        <groupId>javax.servlet</groupId>
-			        <artifactId>servlet-api</artifactId>
-			    </exclusion>
-			</exclusions>
+		    <artifactId>selenium-api</artifactId>
+	        <version>${selenium-version}</version>
+		</dependency>
+
+	    <!-- https://mvnrepository.com/artifact/org.seleniumhq.selenium/selenium-chrome-driver -->
+		<dependency>
+		    <groupId>org.seleniumhq.selenium</groupId>
+		    <artifactId>selenium-chrome-driver</artifactId>
+	        <version>${selenium-version}</version>
+		</dependency>
+
+		<!-- https://mvnrepository.com/artifact/org.seleniumhq.selenium/selenium-remote-driver -->
+		<dependency>
+		    <groupId>org.seleniumhq.selenium</groupId>
+		    <artifactId>selenium-remote-driver</artifactId>
+	        <version>${selenium-version}</version>
 		</dependency>
 		
 		<!-- https://mvnrepository.com/artifact/com.assertthat/selenium-shutterbug -->
 		<dependency>
 		    <groupId>com.assertthat</groupId>
 		    <artifactId>selenium-shutterbug</artifactId>
-		    <version>1.5</version>
+		    <version>1.6</version>
 		    <exclusions>
 		        <exclusion>
 				    <groupId>org.seleniumhq.selenium</groupId>
 				    <artifactId>selenium-java</artifactId>
 				</exclusion>
 	     	</exclusions>
-		</dependency>
-		
-		<dependency>
-			<groupId>com.looksee</groupId>
-			<artifactId>journeyExpander</artifactId>
-			<version>0.0.1-SNAPSHOT</version>
 		</dependency>
 	  </dependencies>
 

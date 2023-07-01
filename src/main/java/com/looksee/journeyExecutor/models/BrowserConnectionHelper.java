@@ -10,9 +10,7 @@ import org.slf4j.LoggerFactory;
 import com.looksee.journeyExecutor.models.enums.BrowserEnvironment;
 import com.looksee.journeyExecutor.models.enums.BrowserType;
 
-import io.github.resilience4j.retry.annotation.Retry;
-
-@Retry(name="webdriver")
+//@Retry(name="webdriver")
 public class BrowserConnectionHelper {
 	@SuppressWarnings("unused")
 	private static Logger log = LoggerFactory.getLogger(BrowserConnectionHelper.class);
@@ -50,7 +48,7 @@ public class BrowserConnectionHelper {
 	 * 
 	 * @throws MalformedURLException
 	 */
-    @Retry(name="webdriver")
+    //@Retry(name="webdriver")
 	public static Browser getConnection(BrowserType browser, BrowserEnvironment environment) throws MalformedURLException{
 		assert browser != null;
 		assert environment != null;
@@ -62,12 +60,12 @@ public class BrowserConnectionHelper {
 		else if(environment.equals(BrowserEnvironment.DISCOVERY) && "chrome".equalsIgnoreCase(browser.toString())){
 			Random randomGenerator = new Random();
 			int randomInt = randomGenerator.nextInt(RESOURCE_HEAVY_REQUEST_HUB_IP_ADDRESS.length);
-			hub_url = new URL( "http://"+RESOURCE_HEAVY_REQUEST_HUB_IP_ADDRESS[randomInt]+"/wd/hub");
+			hub_url = new URL( "https://"+RESOURCE_HEAVY_REQUEST_HUB_IP_ADDRESS[randomInt]+"/wd/hub");
 		}
 		else if(environment.equals(BrowserEnvironment.DISCOVERY) && "firefox".equalsIgnoreCase(browser.toString())){
 			Random randomGenerator = new Random();
 			int randomInt = randomGenerator.nextInt(RESOURCE_HEAVY_REQUEST_HUB_IP_ADDRESS.length);
-			hub_url = new URL( "http://"+RESOURCE_HEAVY_REQUEST_HUB_IP_ADDRESS[randomInt]+"/wd/hub");
+			hub_url = new URL( "https://"+RESOURCE_HEAVY_REQUEST_HUB_IP_ADDRESS[randomInt]+"/wd/hub");
 		}
 
 		return new Browser(browser.toString(), hub_url);

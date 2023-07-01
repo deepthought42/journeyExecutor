@@ -26,6 +26,7 @@ public class Application {
 	private static final Random rand = new Random(2020);
 
 	public static void main(String[] args)  {
+		System.setProperty("webdriver.http.factory", "jdk-http-client");
 		SpringApplication.run(Application.class, args);
 	}
 

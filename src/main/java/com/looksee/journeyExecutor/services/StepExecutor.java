@@ -27,11 +27,13 @@ public class StepExecutor {
 		assert step != null;
 		
 		ActionFactory action_factory = new ActionFactory(browser.getDriver());
-
+		
 		if(step instanceof SimpleStep) {
-			ElementState element = ((SimpleStep)step).getElementState();
+			SimpleStep simple_step = (SimpleStep)step;
+			log.warn(simple_step.getAction() + "  on element = "+simple_step.getElementState());
+			ElementState element = simple_step.getElementState();
 			WebElement web_element = browser.getDriver().findElement(By.xpath(element.getXpath()));
-			action_factory.execAction(web_element, "", ((SimpleStep)step).getAction());
+			action_factory.execAction(web_element, "", simple_step.getAction());
 		}
 		else if(step instanceof LoginStep) {
 			LoginStep login_step = (LoginStep)step;
@@ -45,10 +47,11 @@ public class StepExecutor {
 			action_factory.execAction(submit_element, "", Action.CLICK);
 		}
 		else if(step instanceof LandingStep) {
+			log.warn("performing landing step for page = "+step.getStartPage().getUrl());
 			PageState initial_page = step.getStartPage();
 			String sanitized_url = BrowserUtils.sanitizeUrl(initial_page.getUrl(), initial_page.isSecured());
-
 			browser.navigateTo(sanitized_url);
+			log.warn("page source size = "+browser.getDriver().getPageSource().length());
 		}
 		else {
 			log.warn("Unknown step type during execution = " + step.getKey());

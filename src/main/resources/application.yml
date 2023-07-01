@@ -12,10 +12,9 @@ resilience4j.retry:
                 - java.lang.Exception
         webdriver:
             maxAttempts: 1
-            waitDuration: 5s
+            waitDuration: 1s
             retryExceptions:
                 - org.openqa.selenium.WebDriverException
-                - org.openqa.grid.common.exception.GridException
                 - org.openqa.selenium.remote.UnreachableBrowserException
                 - org.openqa.selenium.NoSuchSessionException
                 - org.openqa.selenium.NoSuchElementException
@@ -26,7 +25,7 @@ resilience4j.retry:
                 - java.net.SocketException
         neoforj:
             maxAttempts: 10
-            waitDuration: 5s
+            waitDuration: 1s
             retryExceptions:
                 - org.neo4j.ogm.exception.ConnectionException
                 - org.neo4j.driver.exceptions.SessionExpiredException
@@ -39,8 +38,8 @@ resilience4j.retry:
                 - java.util.NoSuchElementException
                 - org.springframework.dao.TransientDataAccessResourceException
         gcp:
-            maxAttempts: 5
-            waitDuration: 5s
+            maxAttempts: 10
+            waitDuration: 1s
             retryExceptions:
                 - java.io.IOException
                 - com.google.cloud.storage.StorageException
@@ -55,7 +54,6 @@ resilience4j.retry:
             waitDuration: 2s
             retryExceptions:
                 - org.openqa.selenium.WebDriverException
-                - org.openqa.grid.common.exception.GridException
                 - org.openqa.selenium.remote.UnreachableBrowserException
                 - org.openqa.selenium.NoSuchSessionException
                 - java.io.IOException

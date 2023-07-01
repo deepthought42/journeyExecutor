@@ -9,10 +9,13 @@ import org.springframework.stereotype.Service;
 import com.looksee.browsing.ActionFactory;
 import com.looksee.journeyExecutor.models.Browser;
 import com.looksee.journeyExecutor.models.ElementState;
-import com.looksee.journeyExecutor.models.LoginStep;
-import com.looksee.journeyExecutor.models.SimpleStep;
-import com.looksee.journeyExecutor.models.Step;
+import com.looksee.journeyExecutor.models.PageState;
 import com.looksee.journeyExecutor.models.enums.Action;
+import com.looksee.journeyExecutor.models.journeys.LandingStep;
+import com.looksee.journeyExecutor.models.journeys.LoginStep;
+import com.looksee.journeyExecutor.models.journeys.SimpleStep;
+import com.looksee.journeyExecutor.models.journeys.Step;
+import com.looksee.utils.BrowserUtils;
 
 @Service
 public class StepExecutor {
@@ -24,16 +27,16 @@ public class StepExecutor {
 		assert step != null;
 		
 		ActionFactory action_factory = new ActionFactory(browser.getDriver());
-
+		
 		if(step instanceof SimpleStep) {
-			ElementState element = ((SimpleStep)step).getElementState();
-			log.warn("executing simple step with element = "+  ((SimpleStep)step).getElementState());
+			SimpleStep simple_step = (SimpleStep)step;
+			log.warn(simple_step.getAction() + "  on element = "+simple_step.getElementState());
+			ElementState element = simple_step.getElementState();
 			WebElement web_element = browser.getDriver().findElement(By.xpath(element.getXpath()));
-			action_factory.execAction(web_element, "", ((SimpleStep)step).getAction());
+			action_factory.execAction(web_element, "", simple_step.getAction());
 		}
 		else if(step instanceof LoginStep) {
 			LoginStep login_step = (LoginStep)step;
-			log.warn("executing login step= "+  ((SimpleStep)step).getElementState());
 			WebElement username_element = browser.getDriver().findElement(By.xpath(login_step.getUsernameElement().getXpath()));
 			action_factory.execAction(username_element, login_step.getTestUser().getUsername(), Action.SEND_KEYS);
 			
@@ -43,8 +46,15 @@ public class StepExecutor {
 			WebElement submit_element = browser.getDriver().findElement(By.xpath(login_step.getSubmitElement().getXpath()));
 			action_factory.execAction(submit_element, "", Action.CLICK);
 		}
+		else if(step instanceof LandingStep) {
+			log.warn("performing landing step for page = "+step.getStartPage().getUrl());
+			PageState initial_page = step.getStartPage();
+			String sanitized_url = BrowserUtils.sanitizeUrl(initial_page.getUrl(), initial_page.isSecured());
+			browser.navigateTo(sanitized_url);
+			log.warn("page source size = "+browser.getDriver().getPageSource().length());
+		}
 		else {
-			log.warn("Executing plain step with key = " + step.getKey());
+			log.warn("Unknown step type during execution = " + step.getKey());
 		}
 	}
 }

@@ -9,6 +9,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.data.neo4j.core.schema.Node;
 import org.springframework.data.neo4j.core.schema.Relationship;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.looksee.journeyExecutor.gcp.ImageSafeSearchAnnotation;
 import com.looksee.journeyExecutor.models.enums.ElementClassification;
 
@@ -128,6 +129,7 @@ public class ImageElementState extends ElementState {
 		this.imageSearchSet = image_search_set;
 	}
 
+	@JsonIgnore
 	public boolean isAdultContent() {
 		if(getAdult() == null || getRacy() == null) {
 			return false;
@@ -136,6 +138,7 @@ public class ImageElementState extends ElementState {
 				|| getRacy().contains("LIKELY");					
 	}
 	
+	@JsonIgnore
 	public boolean isViolentContent() {
 		return getViolence().contains("LIKELY");
 					

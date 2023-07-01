@@ -15,7 +15,6 @@ resilience4j.retry:
             waitDuration: 1s
             retryExceptions:
                 - org.openqa.selenium.WebDriverException
-                - org.openqa.grid.common.exception.GridException
                 - org.openqa.selenium.remote.UnreachableBrowserException
                 - org.openqa.selenium.NoSuchSessionException
                 - org.openqa.selenium.NoSuchElementException
@@ -24,22 +23,23 @@ resilience4j.retry:
                 - java.io.IOException
                 - java.net.ConnectException
                 - java.net.SocketException
-                - java.lang.NullPointerException
         neoforj:
-            maxAttempts: 20
-            waitDuration: 2s
+            maxAttempts: 10
+            waitDuration: 1s
             retryExceptions:
                 - org.neo4j.ogm.exception.ConnectionException
                 - org.neo4j.driver.exceptions.SessionExpiredException
                 - org.neo4j.driver.exceptions.DiscoveryException
                 - org.neo4j.driver.exceptions.TransientException
+                - org.neo4j.driver.exceptions.ServiceUnavailableException
                 - org.neo4j.ogm.exception.TransactionException
                 - org.neo4j.ogm.exception.CypherException
                 - java.net.SocketException
                 - java.util.NoSuchElementException
+                - org.springframework.dao.TransientDataAccessResourceException
         gcp:
-            maxAttempts: 5
-            waitDuration: 5s
+            maxAttempts: 10
+            waitDuration: 1s
             retryExceptions:
                 - java.io.IOException
                 - com.google.cloud.storage.StorageException
@@ -54,7 +54,6 @@ resilience4j.retry:
             waitDuration: 2s
             retryExceptions:
                 - org.openqa.selenium.WebDriverException
-                - org.openqa.grid.common.exception.GridException
                 - org.openqa.selenium.remote.UnreachableBrowserException
                 - org.openqa.selenium.NoSuchSessionException
                 - java.io.IOException

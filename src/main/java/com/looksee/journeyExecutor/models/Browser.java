@@ -10,6 +10,7 @@ import java.net.MalformedURLException;
 import java.net.URL;
 import java.security.KeyManagementException;
 import java.security.NoSuchAlgorithmException;
+import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
@@ -17,7 +18,6 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.concurrent.TimeUnit;
 import java.util.zip.GZIPInputStream;
 
 import javax.imageio.ImageIO;
@@ -32,15 +32,14 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
 import org.w3c.dom.Node;
-
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
 import org.jsoup.nodes.Element;
 import org.jsoup.select.Elements;
-import org.openqa.grid.common.exception.GridException;
 import org.openqa.selenium.Alert;
 import org.openqa.selenium.By;
 import org.openqa.selenium.Dimension;
+import org.openqa.selenium.ImmutableCapabilities;
 import org.openqa.selenium.JavascriptExecutor;
 import org.openqa.selenium.NoAlertPresentException;
 import org.openqa.selenium.OutputType;
@@ -51,9 +50,7 @@ import org.openqa.selenium.WebDriver;
 import org.openqa.selenium.WebDriverException;
 import org.openqa.selenium.WebElement;
 import org.openqa.selenium.chrome.ChromeOptions;
-import org.openqa.selenium.firefox.FirefoxOptions;
 import org.openqa.selenium.interactions.Actions;
-import org.openqa.selenium.remote.DesiredCapabilities;
 import org.openqa.selenium.remote.RemoteWebDriver;
 import org.openqa.selenium.remote.UnreachableBrowserException;
 import org.openqa.selenium.support.ui.ExpectedCondition;
@@ -131,12 +128,14 @@ public class Browser {
 		else if("internet_explorer".equals(browser)){
 			this.driver = openWithInternetExplorer(hub_node_url);
 		}
+		/*
 		else if("safari".equals(browser)){
 			this.driver = openWithSafari(hub_node_url);
 		}
 		else if("opera".equals(browser)){
 			this.driver = openWithOpera(hub_node_url);
 		}
+		*/
 		setYScrollOffset(0);
 		setXScrollOffset(0);
 		setViewportSize(getViewportSize(driver));
@@ -160,9 +159,9 @@ public class Browser {
 		
 		try {
 			waitForPageToLoad();
-		}catch(Exception e) {
-			/*
+		}catch(Exception e) {		
 			e.printStackTrace();
+			/*
 			Alert alert = isAlertPresent();
 			if(alert != null){
 				log.debug("Alert was encountered during navigation page load!!!");
@@ -172,6 +171,7 @@ public class Browser {
 			}
 			 */
 		}
+		//TimingUtils.pauseThread(15);
 	}
 
 	/**
@@ -225,12 +225,14 @@ public class Browser {
 	 * @return firefox web driver
 	 * @throws MalformedURLException 
 	 */
-	public static WebDriver openWithFirefox(URL hub_node_url) throws MalformedURLException, UnreachableBrowserException, GridException{
-		FirefoxOptions options = new FirefoxOptions();
-		options.addArguments("user-agent=QanairyBot");
+	public static WebDriver openWithFirefox(URL hub_node_url) 
+			throws MalformedURLException, UnreachableBrowserException {
+		//FirefoxOptions options = new FirefoxOptions();
+		//options.addArguments("user-agent=LookseeBot");
+		ImmutableCapabilities capabilities = new ImmutableCapabilities("browserName", "firefox");
 
 		//options.setHeadless(true);
-	    RemoteWebDriver driver = new RemoteWebDriver(hub_node_url, options);
+	    RemoteWebDriver driver = new RemoteWebDriver(hub_node_url, capabilities);
 		driver.manage().window().maximize();
 
 	    //driver.manage().window().setSize(new Dimension(1024, 768));
@@ -247,17 +249,23 @@ public class Browser {
 	 * @return Opera web driver
 	 * @throws MalformedURLException 
 	 */
-	public static WebDriver openWithOpera(URL hub_node_url) throws MalformedURLException, UnreachableBrowserException, GridException{
-	    DesiredCapabilities cap = DesiredCapabilities.opera();
-	    cap.setBrowserName("opera");
-		cap.setJavascriptEnabled(true);
+	/*
+	public static WebDriver openWithOpera(URL hub_node_url) 
+			throws MalformedURLException, UnreachableBrowserException {
+	    
+		//DesiredCapabilities cap = DesiredCapabilities.opera();
+	    //cap.setBrowserName("opera");
+		//cap.setJavascriptEnabled(true);
 
-	    RemoteWebDriver driver = new RemoteWebDriver(hub_node_url, cap);
+		ImmutableCapabilities capabilities = new ImmutableCapabilities("browserName", "opera");
+
+	    RemoteWebDriver driver = new RemoteWebDriver(hub_node_url, capabilities);
 	    // Puts an Implicit wait, Will wait for 10 seconds before throwing exception
 	    driver.manage().timeouts().implicitlyWait(300, TimeUnit.SECONDS);
 	    
 		return driver;
 	}
+	*/
 	
 	/**
 	 * open new Safari browser window
@@ -265,14 +273,19 @@ public class Browser {
 	 * @param url
 	 * @return safari web driver
 	 */
-	public static WebDriver openWithSafari(URL hub_node_url) throws MalformedURLException, UnreachableBrowserException, GridException{
-	    DesiredCapabilities cap = DesiredCapabilities.safari();
+	/*
+	public static WebDriver openWithSafari(URL hub_node_url) 
+			throws MalformedURLException, UnreachableBrowserException {
+	    //DesiredCapabilities cap = DesiredCapabilities.safari();
+		ImmutableCapabilities capabilities = new ImmutableCapabilities("browserName", "safari");
 
-		RemoteWebDriver driver = new RemoteWebDriver(hub_node_url, cap);
+
+		RemoteWebDriver driver = new RemoteWebDriver(hub_node_url, capabilities);
 	    driver.manage().timeouts().implicitlyWait(300, TimeUnit.SECONDS);
 
 		return driver;
 	}
+	*/
 	
 	/**
 	 * Opens internet explorer browser window
@@ -280,8 +293,10 @@ public class Browser {
 	 * @param url
 	 * @return internet explorer web driver
 	 */
-	public static WebDriver openWithInternetExplorer(URL hub_node_url) throws MalformedURLException, UnreachableBrowserException, GridException {
-	    DesiredCapabilities capabilities = DesiredCapabilities.internetExplorer();
+	public static WebDriver openWithInternetExplorer(URL hub_node_url) 
+			throws MalformedURLException, UnreachableBrowserException {
+	    //DesiredCapabilities capabilities = DesiredCapabilities.internetExplorer();
+		ImmutableCapabilities capabilities = new ImmutableCapabilities("browserName", "ie");
 
 		RemoteWebDriver driver = new RemoteWebDriver(hub_node_url, capabilities);
 		
@@ -296,11 +311,15 @@ public class Browser {
 	 * @throws MalformedURLException 
 	 */
 	public static WebDriver openWithChrome(URL hub_node_url) 
-			throws MalformedURLException, UnreachableBrowserException, WebDriverException, GridException {
+			throws MalformedURLException, UnreachableBrowserException, WebDriverException {
 		ChromeOptions chrome_options = new ChromeOptions();
 		chrome_options.addArguments("user-agent=LookseeBot");
 		chrome_options.addArguments("window-size=1920,1080");
+		chrome_options.addArguments("--remote-allow-origins=*");
 
+		//ImmutableCapabilities capabilities = new ImmutableCapabilities("browserName", "chrome");
+		RemoteWebDriver driver = new RemoteWebDriver(hub_node_url, chrome_options);
+		driver.manage().window().maximize();
 		//options.setHeadless(true);
 
 		//cap.setCapability("video", "True"); // NOTE: "True" is a case sensitive string, not boolean.
@@ -315,13 +334,13 @@ public class Browser {
 			cap.setCapability("video", "True"); // NOTE: "True" is a case sensitive string, not boolean.
 		} else {
 			cap.setCapability("video", "False"); // NOTE: "False" is a case sensitive string, not boolean.
-		}*/
 		log.debug("Requesting chrome remote driver from hub");
-		RemoteWebDriver driver = new RemoteWebDriver(hub_node_url, chrome_options);
+		RemoteWebDriver driver = new RemoteWebDriver(hub_node_url, capabilities);
 		driver.manage().window().maximize();
+		}*/
 
 		//driver.manage().window().setSize(new Dimension(1024, 768));
-	    //driver.manage().timeouts().implicitlyWait(30L, TimeUnit.SECONDS);
+	    //driver.manage().timeouts().implicitlyWait(Duration.ofSeconds(15L));
 	    //driver.manage().timeouts().pageLoadTimeout(30L, TimeUnit.SECONDS);
 		return driver;
 	}
@@ -358,7 +377,7 @@ public class Browser {
 	 * @return File png file of image
 	 * @throws IOException
 	 */
-	public BufferedImage getViewportScreenshot() throws IOException, GridException{
+	public BufferedImage getViewportScreenshot() throws IOException{
 		return ImageIO.read(((TakesScreenshot)driver).getScreenshotAs(OutputType.FILE));
 	}
 	
@@ -371,7 +390,7 @@ public class Browser {
 	 * NOTE: The out put of this method is a screenshot that doesn't make any effort at removing duplicated sections
 	 * caused by things like floating elements sticky navigation bars
 	 */
-	public BufferedImage getFullPageScreenshot() throws IOException, GridException{
+	public BufferedImage getFullPageScreenshot() throws IOException{
 		return Shutterbug.shootPage(driver, Capture.FULL_SCROLL).getImage();
 	}
 	
@@ -381,7 +400,7 @@ public class Browser {
 	 * @return File png file of image
 	 * @throws IOException
 	 */
-	public BufferedImage getFullPageScreenshotStitched() throws IOException, GridException{
+	public BufferedImage getFullPageScreenshotStitched() throws IOException {
 		double percentage = 0.10;
 		
 		//scroll to top of page
@@ -1026,7 +1045,7 @@ public class Browser {
 	 * Waits for the document ready state to be complete, then observes page transition if it exists
 	 */
 	public void waitForPageToLoad() {
-		new WebDriverWait(driver, 15).until(
+		new WebDriverWait(driver, 30L).until(
 				webDriver -> ((JavascriptExecutor) webDriver)
 					.executeScript("return document.readyState")
 					.equals("complete"));

@@ -6,14 +6,13 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
-import com.looksee.journeyExecutor.models.DomainMap;
-import com.looksee.journeyExecutor.models.SimpleStep;
+import com.looksee.journeyExecutor.models.journeys.DomainMap;
 import com.looksee.journeyExecutor.models.repository.DomainMapRepository;
 
 import io.github.resilience4j.retry.annotation.Retry;
 
 /**
- * Enables interacting with database for {@link SimpleStep Steps}
+ * Enables interacting with database for {@link InteractiveStep Steps}
  */
 @Service
 @Retry(name = "neoforj")
@@ -39,6 +38,9 @@ public class DomainMapService {
 
 	public void addJourneyToDomainMap(long journey_id, long domain_map_id) {
 		domain_map_repo.addJourneyToDomainMap(journey_id, domain_map_id);
-		
+	}
+
+	public DomainMap findByDomainAuditId(long domain_audit_id) {
+		return domain_map_repo.findByDomainAuditId(domain_audit_id);
 	}
 }

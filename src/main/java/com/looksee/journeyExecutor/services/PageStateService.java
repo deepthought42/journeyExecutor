@@ -16,7 +16,12 @@ import com.looksee.journeyExecutor.models.PageAuditRecord;
 import com.looksee.journeyExecutor.models.PageState;
 import com.looksee.journeyExecutor.models.Screenshot;
 import com.looksee.journeyExecutor.models.enums.AuditName;
+import com.looksee.journeyExecutor.models.enums.ElementClassification;
+import com.looksee.journeyExecutor.models.repository.AuditRecordRepository;
+import com.looksee.journeyExecutor.models.repository.AuditRepository;
+import com.looksee.journeyExecutor.models.repository.ElementStateRepository;
 import com.looksee.journeyExecutor.models.repository.PageStateRepository;
+import com.looksee.journeyExecutor.models.repository.ScreenshotRepository;
 
 import io.github.resilience4j.retry.annotation.Retry;
 
@@ -27,7 +32,6 @@ import io.github.resilience4j.retry.annotation.Retry;
  *
  */
 @Service
-@Retry(name = "neoforj")
 public class PageStateService {
 	@SuppressWarnings("unused")
 	private static Logger log = LoggerFactory.getLogger(PageStateService.class.getName());
@@ -35,6 +39,18 @@ public class PageStateService {
 	@Autowired
 	private PageStateRepository page_state_repo;
 
+	@Autowired
+	private ElementStateRepository element_state_repo;
+	
+	@Autowired
+	private ScreenshotRepository screenshot_repo;
+	
+	@Autowired
+	private AuditRepository audit_repo;
+	
+	@Autowired
+	private AuditRecordRepository audit_record_repo;
+	
 	/**
 	 * Save a {@link PageState} object and its associated objects
 	 * @param page_state
@@ -43,6 +59,7 @@ public class PageStateService {
 	 * 
 	 * @pre page_state != null
 	 */
+	@Retry(name = "neoforj")
 	public PageState save(PageState page_state) throws Exception {
 		assert page_state != null;
 		
@@ -50,7 +67,7 @@ public class PageStateService {
 		
 		if(page_state_record == null) {
 			log.warn("page state wasn't found in database. Saving new page state to neo4j");
-
+			
 			return page_state_repo.save(page_state);
 		}
 
@@ -81,19 +98,19 @@ public class PageStateService {
 		assert page_key != null;
 		assert !page_key.isEmpty();
 		
-		return page_state_repo.getElementStates(page_key);
+		return element_state_repo.getElementStates(page_key);
 	}
 	
 	public List<ElementState> getElementStates(long page_state_id){
-		return page_state_repo.getElementStates(page_state_id);
+		return element_state_repo.getElementStates(page_state_id);
 	}
 	
 	public List<ElementState> getLinkElementStates(long page_state_id){
-		return page_state_repo.getLinkElementStates(page_state_id);
+		return element_state_repo.getLinkElementStates(page_state_id);
 	}
 	
 	public List<Screenshot> getScreenshots(String user_id, String page_key){
-		List<Screenshot> screenshots = page_state_repo.getScreenshots(user_id, page_key);
+		List<Screenshot> screenshots = screenshot_repo.getScreenshots(user_id, page_key);
 		if(screenshots == null){
 			return new ArrayList<Screenshot>();
 		}
@@ -107,7 +124,7 @@ public class PageStateService {
 	public Collection<ElementState> getExpandableElements(List<ElementState> elements) {
 		List<ElementState> expandable_elements = new ArrayList<>();
 		for(ElementState elem : elements) {
-			if(elem.isLeaf()) {
+			if(ElementClassification.LEAF.equals(elem.getClassification())) {
 				expandable_elements.add(elem);
 			}
 		}
@@ -122,15 +139,15 @@ public class PageStateService {
 		assert page_state_key != null;
 		assert !page_state_key.isEmpty();
 		
-		return page_state_repo.getAudits(page_state_key);
+		return audit_repo.getAudits(page_state_key);
 	}
 
 	public Audit findAuditBySubCategory(AuditName subcategory, String page_state_key) {
-		return page_state_repo.findAuditBySubCategory(subcategory.getShortName(), page_state_key);
+		return audit_repo.findAuditBySubCategory(subcategory.getShortName(), page_state_key);
 	}
 
 	public List<ElementState> getVisibleLeafElements(String page_state_key) {
-		return page_state_repo.getVisibleLeafElements(page_state_key);
+		return element_state_repo.getVisibleLeafElements(page_state_key);
 	}
 
 	public PageState findByUrl(String url) {
@@ -146,11 +163,11 @@ public class PageStateService {
 		if(element_state.isPresent()) {
 			return true;
 		}
-		return page_state_repo.addElement(page_id, element_id) != null;
+		return element_state_repo.addElement(page_id, element_id) != null;
 	}
 
 	private Optional<ElementState> getElementState(long page_id, long element_id) {
-		return page_state_repo.getElementState(page_id, element_id);
+		return element_state_repo.getElementState(page_id, element_id);
 	}
 
 	/**
@@ -159,8 +176,7 @@ public class PageStateService {
 	 * @return
 	 */
 	public PageAuditRecord getAuditRecord(long id) {
-		
-		return page_state_repo.getAuditRecord(id);
+		return audit_record_repo.getAuditRecord(id);
 	}
 
 	public Optional<PageState> findById(long page_id) {
@@ -177,5 +193,13 @@ public class PageStateService {
 
 	public PageState findByDomainAudit(long domainAuditRecordId, long page_state_id) {
 		return page_state_repo.findByDomainAudit(domainAuditRecordId, page_state_id);
+	}
+
+	public PageState findByDomainAudit(long domainAuditRecordId, String current_url) {
+		return page_state_repo.findByDomainAudit(domainAuditRecordId, current_url);
+	}
+
+	public long getElementStateCount(long page_state_id) {
+		return element_state_repo.getElementStateCount(page_state_id);		
 	}
 }

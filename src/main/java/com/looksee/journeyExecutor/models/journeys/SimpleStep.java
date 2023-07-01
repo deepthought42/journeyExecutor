@@ -1,21 +1,33 @@
-package com.looksee.journeyExecutor.models;
+package com.looksee.journeyExecutor.models.journeys;
 
 
 import com.looksee.journeyExecutor.models.enums.Action;
+import com.looksee.journeyExecutor.models.enums.StepType;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.data.neo4j.core.schema.Node;
 import org.springframework.data.neo4j.core.schema.Relationship;
 import org.springframework.data.neo4j.core.schema.Relationship.Direction;
 
+import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import com.fasterxml.jackson.annotation.JsonProperty;
+import com.fasterxml.jackson.annotation.JsonTypeName;
+import com.looksee.journeyExecutor.models.ElementState;
+import com.looksee.journeyExecutor.models.PageState;
 
 /**
  * A Step is the increment of work that start with a {@link PageState} contians an {@link ElementState} 
  * 	 that has an {@link Action} performed on it and results in an end {@link PageState}
  */
 @JsonIgnoreProperties(ignoreUnknown = true)
+@JsonTypeName("SIMPLE")
 @Node
-public class SimpleStep extends Step {
+public class SimpleStep extends Step  {
+	@SuppressWarnings("unused")
+	private static Logger log = LoggerFactory.getLogger(SimpleStep.class);
+	
 	
 	@Relationship(type = "HAS", direction = Direction.OUTGOING)
 	private ElementState element;
@@ -29,11 +41,13 @@ public class SimpleStep extends Step {
 		setAction(Action.UNKNOWN);
 	}
 	
-	public SimpleStep(PageState start_page,
-				ElementState element,
-				Action action,
-				String action_input, 
-				PageState end_page) {
+    @JsonCreator
+	public SimpleStep(@JsonProperty("startPage") PageState start_page,
+						@JsonProperty("elementState") ElementState element,
+						@JsonProperty("action") Action action,
+						@JsonProperty("actionInput") String action_input, 
+						@JsonProperty("endPage") PageState end_page) 
+	{
 		setStartPage(start_page);
 		setElementState(element);
 		setAction(action);
@@ -42,8 +56,7 @@ public class SimpleStep extends Step {
 		setKey(generateKey());
 	}
 	
-	@Override
-	public SimpleStep clone() {
+	public Step clone() {
 		return new SimpleStep(getStartPage(), 
 							  getElementState(), 
 							  getAction(), 
@@ -66,21 +79,25 @@ public class SimpleStep extends Step {
 	public void setAction(Action action) {
 		this.action = action.getShortName();
 	}
-
+	
 	@Override
 	public String generateKey() {
 		String key = "";
 		if(getStartPage() != null) {
 			key += getStartPage().getId();
 		}
+		
 		if(element != null) {
 			key += element.getId();
 		}
+		
 		if(getEndPage() != null) {
 			key += getEndPage().getId();
 		}
+
 		return "simplestep"+key+action+actionInput;
 	}
+
 	
 	@Override
 	public String toString() {
@@ -93,5 +110,10 @@ public class SimpleStep extends Step {
 
 	public void setActionInput(String action_input) {
 		this.actionInput = action_input;
+	}
+
+	@Override
+	public StepType getStepType() {
+		return StepType.SIMPLE;
 	}
 }

@@ -1,9 +1,15 @@
-package com.looksee.journeyExecutor.models;
+package com.looksee.journeyExecutor.models.journeys;
 
 import java.net.MalformedURLException;
 import java.util.ArrayList;
 import java.util.List;
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import com.fasterxml.jackson.annotation.JsonTypeName;
+import com.looksee.journeyExecutor.models.enums.StepType;
+
+@JsonIgnoreProperties(ignoreUnknown = true)
+@JsonTypeName("REDIRECT")
 public class Redirect extends Step {
 	private String startUrl;
 	private List<String> urls;
@@ -15,7 +21,7 @@ public class Redirect extends Step {
 		setKey(generateKey());
 	}
 	
-	public Redirect(String start_url, List<String> urls) throws MalformedURLException{
+	public Redirect(String start_url, List<String> urls) {
 		assert urls != null;
 		assert !urls.isEmpty();
 		assert start_url != null;
@@ -39,7 +45,7 @@ public class Redirect extends Step {
 		return urls;
 	}
 
-	public void setUrls(List<String> urls) throws MalformedURLException {
+	public void setUrls(List<String> urls) {
 		List<String> clean_urls = new ArrayList<>();
 		for(String url : urls){
 			clean_urls.add(url);
@@ -85,6 +91,16 @@ public class Redirect extends Step {
 			new_url = start_url.substring(0, params_idx);
 		}
 		this.startUrl = new_url;
+	}
+
+	@Override
+	public Step clone() {
+		return new Redirect(getStartUrl(), getUrls());
+	}
+
+	@Override
+	StepType getStepType() {
+		return StepType.REDIRECT;
 	}
 
 }

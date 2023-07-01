@@ -15,6 +15,7 @@ import com.looksee.journeyExecutor.models.Domain;
 import com.looksee.journeyExecutor.models.Element;
 import com.looksee.journeyExecutor.models.ElementState;
 import com.looksee.journeyExecutor.models.repository.ElementStateRepository;
+import com.looksee.journeyExecutor.models.repository.RuleRepository;
 import com.looksee.models.rules.Rule;
 
 import io.github.resilience4j.retry.annotation.Retry;
@@ -29,6 +30,9 @@ public class ElementStateService {
 
 	@Autowired
 	private PageStateService page_state_service;
+	
+	@Autowired
+	private RuleRepository rule_repo;
 	
 	/**
 	 * saves element state to database
@@ -63,6 +67,7 @@ public class ElementStateService {
 		if(element_record == null){			
 			element_record = element_repo.save(element);
 		}
+		/*
 		else{
 			if(element.getScreenshotUrl() != null && !element.getScreenshotUrl().isEmpty()) {
 				element_record.setScreenshotUrl(element.getScreenshotUrl());
@@ -71,6 +76,7 @@ public class ElementStateService {
 				element_record = element_repo.save(element_record);
 			}
 		}
+		*/
 		return element_record;
 	}
 
@@ -91,15 +97,15 @@ public class ElementStateService {
 	}
 
 	public Set<Rule> getRules(String user_id, String element_key) {
-		return element_repo.getRules(user_id, element_key);
+		return rule_repo.getRules(user_id, element_key);
 	}
 
 	public Set<Rule> addRuleToFormElement(String username, String element_key, Rule rule) {
 		//Check that rule doesn't already exist
-		Rule rule_record = element_repo.getElementRule(username, element_key, rule.getKey());
+		Rule rule_record = rule_repo.getElementRule(username, element_key, rule.getKey());
 		if(rule_record == null) {
-			rule_record = element_repo.addRuleToFormElement(username, element_key, rule.getKey());
-			return element_repo.getRules(username, element_key);
+			rule_record = rule_repo.addRuleToFormElement(username, element_key, rule.getKey());
+			return rule_repo.getRules(username, element_key);
 		}
 		else {
 			throw new ExistingRuleException(rule.getType().toString());
@@ -188,9 +194,19 @@ public class ElementStateService {
 	}
 
 	public List<ElementState> saveAll(List<ElementState> element_states) {
-		return element_states.stream()
-						   .map(element -> save(element))
-						   .collect(Collectors.toList());
+		List<ElementState> existing_elements = element_states.stream()
+															 .map(element -> element_repo.findByKey(element.getKey()))
+															 .filter(element -> element != null)
+															 .collect(Collectors.toList());
+		
+		List<ElementState> saved_elements = element_states.stream()
+												  		   .filter(element -> !existing_elements.contains(element))
+														   .map(element -> save(element))
+														   .collect(Collectors.toList());
+		
+		saved_elements.addAll(existing_elements);
+		
+		return saved_elements;
 	}
 
 	/**

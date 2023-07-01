@@ -1,38 +1,42 @@
 package com.looksee.journeyExecutor.models.message;
 
-import java.util.ArrayList;
-import java.util.List;
 
 import com.looksee.journeyExecutor.models.enums.BrowserType;
-import com.looksee.journeyExecutor.models.journeys.Step;
+import com.looksee.journeyExecutor.models.journeys.Journey;
+import com.looksee.journeyExecutor.models.message.JourneyCandidateMessage;
 
 
 /**
  * 
  */
 public class JourneyCandidateMessage extends Message {
-	private List<Step> steps;
+
+	private long map_id;
+	private Journey journey;
 	private BrowserType browser;
 	
 	public JourneyCandidateMessage() {}
 	
-	public JourneyCandidateMessage(List<Step> steps, 
-						   BrowserType browser_type, 
-						   long domain_id, 
-						   long account_id, 
-						   long audit_record_id)
+	public JourneyCandidateMessage(Journey journey, 
+								   BrowserType browser_type, 
+								   long domain_id, 
+								   long account_id, 
+								   long audit_record_id,
+								   long map_id)
 	{
 		super(account_id, audit_record_id, domain_id);
-		setSteps(steps);
+		setJourney(journey);
 		setBrowser(browser_type);
+		setMapId(map_id);
 	}
 
 	public JourneyCandidateMessage clone(){
-		return new JourneyCandidateMessage(new ArrayList<Step>(steps), 
+		return new JourneyCandidateMessage(null, 
 								  getBrowser(), 
 								  getDomainId(),
 								  getAccountId(), 
-								  getDomainAuditRecordId());
+								  getDomainAuditRecordId(),
+								  getMapId());
 	}
 
 	public BrowserType getBrowser() {
@@ -43,12 +47,21 @@ public class JourneyCandidateMessage extends Message {
 		this.browser = browser;
 	}
 
-	public void setSteps(List<Step> steps) {
-		this.steps = steps;
+	public Journey getJourney() {
+		return journey;
 	}
-	
-	public List<Step> getSteps() {
-		return this.steps;
+
+	public void setJourney(Journey journey) {
+		this.journey = journey;
+	}
+
+	public long getMapId() {
+		return map_id;
+	}
+
+	public void setMapId(long map_id) {
+		this.map_id = map_id;
 	}
 	
 }
+

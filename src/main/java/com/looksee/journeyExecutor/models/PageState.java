@@ -25,6 +25,7 @@ import org.springframework.data.neo4j.core.schema.Relationship;
 import org.springframework.data.neo4j.core.schema.Relationship.Direction;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.looksee.journeyExecutor.models.enums.BrowserType;
 import com.looksee.journeyExecutor.services.BrowserService;
 
@@ -32,11 +33,13 @@ import com.looksee.journeyExecutor.services.BrowserService;
  * A reference to a web page
  *
  */
+@JsonIgnoreProperties(ignoreUnknown = true)
 @Node
 public class PageState extends LookseeObject {
 	@SuppressWarnings("unused")
 	private static Logger log = LoggerFactory.getLogger(PageState.class);
 
+	//@JsonIgnore
 	private String src;
 	private String url;
 	private String urlAfterLoading;
@@ -65,7 +68,7 @@ public class PageState extends LookseeObject {
 	private Set<String> keywords;
 	private int httpStatus;
 	
-	@Relationship(type = "HAS", direction = Direction.INCOMING)
+	@Relationship(type = "HAS", direction = Direction.OUTGOING)
 	private List<ElementState> elements;
 
 
@@ -124,6 +127,7 @@ public class PageState extends LookseeObject {
 		assert screenshot_url != null;
 		assert elements != null;
 		assert src != null;
+		assert !src.isEmpty();
 		assert browser_type != null;
 		assert full_page_screenshot_url_onload != null;
 		assert url != null;

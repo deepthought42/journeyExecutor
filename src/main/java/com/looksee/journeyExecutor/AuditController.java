@@ -289,6 +289,8 @@ public class AuditController {
 			Journey new_journey = new Journey(steps, JourneyStatus.VERIFIED);
 			new_journey = journey_service.save(new_journey);
 			
+			
+			//TODO: Determine if this biz logic is correct. Should data be expanded and validated?
 			//send candidate message with new landing step journey
 			VerifiedJourneyMessage journey_message = new VerifiedJourneyMessage(new_journey,
 																				PathStatus.EXAMINED, 

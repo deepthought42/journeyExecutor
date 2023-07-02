@@ -38,6 +38,7 @@ import com.looksee.journeyExecutor.models.message.DiscardedJourneyMessage;
 import com.looksee.journeyExecutor.models.message.JourneyCandidateMessage;
 import com.looksee.journeyExecutor.models.message.PageBuiltMessage;
 import com.looksee.journeyExecutor.models.message.VerifiedJourneyMessage;
+import com.looksee.journeyExecutor.services.AuditRecordService;
 import com.looksee.journeyExecutor.services.BrowserService;
 import com.looksee.journeyExecutor.services.JourneyService;
 import com.looksee.journeyExecutor.services.PageStateService;
@@ -92,6 +93,9 @@ public class AuditController {
 	private PubSubDiscardedJourneyPublisherImpl discarded_journey_topic;
 	
 	@Autowired
+	private AuditRecordService audit_record_service;
+	
+	@Autowired
 	private StepExecutor step_executor;
 	
 	@Autowired
@@ -113,7 +117,7 @@ public class AuditController {
 
 		Journey journey = journey_msg.getJourney();
 		List<Step> steps = new ArrayList<>(journey.getSteps());
-					
+		long domain_audit_id = journey_msg.getDomainAuditRecordId();
 		//if journey with same candidate key exists that also has a status of VERIFIED or DISCARDED then don't iterate
 		Journey journey_record = journey_service.findByCandidateKey(journey_msg.getMapId(), 
 																	journey_msg.getJourney().getCandidateKey());
@@ -139,7 +143,17 @@ public class AuditController {
 			log.warn("building page");
 			final_page = buildPage(browser);
 			log.warn("saving page");
-			final_page = page_state_service.save(final_page);
+			
+			//check if page state with key already exists for domain audit
+			PageState page_record = audit_record_service.findPageWithKey(domain_audit_id, final_page.getKey());
+			
+			if(page_record == null) {
+				final_page = page_state_service.save(final_page);
+			}
+			else { 
+				final_page = page_record;
+			}
+			
 			log.warn("loading element states for page = "+final_page.getId());
 			List<ElementState> elements = page_state_service.getElementStates(final_page.getId());
 			final_page.setElements(elements);					
@@ -201,12 +215,19 @@ public class AuditController {
 		Step final_step = steps.get(steps.size()-1);
 		
 		if(final_step.getId() == null) {
+			log.warn("Final step start page has id = "+final_step.getStartPage().getId());
+			PageState start_page = final_step.getStartPage();
+			start_page.setElements(page_state_service.getElementStates(start_page.getId()));
+			
+			final_step.setStartPage(final_page);
 			final_step.setEndPage(final_page);
 			final_step.setKey(final_step.generateKey());			
+			
 			log.warn("final step " + final_step.getId());
 			log.warn("final page = " + final_page.getId());
 			log.warn("saving final step");
-			final_step = step_service.save(final_step);
+			//Step final_step_record = step_service.save(final_step);
+			//final_step.setId(final_step_record.getId());
 			steps.set(steps.size()-1, final_step);
 		}
 		else {
@@ -219,10 +240,12 @@ public class AuditController {
 		journey.setKey(journey.generateKey());
 		JourneyStatus status = getVerifiedOrDiscarded(journey);
 		log.warn("journey "+journey.getId()+"   status =  "+status);
-		journey = journey_service.updateFields(journey.getId(), 
-											   status, 
-											   journey.getKey());
-		journey.setSteps(steps);
+		//journey = journey_service.updateFields(journey.getId(), 
+		//									   status, 
+		//									   journey.getKey());
+		
+		journey_service.save(journey);								   
+	    journey.setSteps(steps);
 		
 		//update journey with latest journey details
 		if(existsInJourney(steps.subList(0,  steps.size()-1), final_step)) {

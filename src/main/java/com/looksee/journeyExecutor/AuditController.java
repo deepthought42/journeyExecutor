@@ -219,18 +219,17 @@ public class AuditController {
 			PageState start_page = final_step.getStartPage();
 			start_page.setElements(page_state_service.getElementStates(start_page.getId()));
 			
-			final_step.setStartPage(final_page);
+			final_step.setStartPage(start_page);
 			final_step.setEndPage(final_page);
 			final_step.setKey(final_step.generateKey());			
 			
 			log.warn("final step " + final_step.getId());
 			log.warn("final page = " + final_page.getId());
 			log.warn("saving final step");
-			Step final_step_record = step_service.save(final_step);
-			final_step.setId(final_step_record.getId());
+			//Step final_step_record = step_service.save(final_step);
+			//final_step.setId(final_step_record.getId());
 			steps.set(steps.size()-1, final_step);
-			journey_service.addStep(domain_audit_id, final_step_record.getId());
-
+			//journey_service.addStep(domain_audit_id, final_step_record.getId());
 		}
 		else {
 			log.warn("adding final page to final step and updating key");
@@ -242,12 +241,12 @@ public class AuditController {
 		journey.setKey(journey.generateKey());
 		JourneyStatus status = getVerifiedOrDiscarded(journey);
 		log.warn("journey "+journey.getId()+"   status =  "+status);
+		/*
 		journey = journey_service.updateFields(journey.getId(), 
 											   status, 
 											   journey.getKey());
-		
-		//journey_service.save(journey);								   
-	    journey.setSteps(steps);
+		*/
+		journey_service.save(journey);								   
 		
 		//update journey with latest journey details
 		if(existsInJourney(steps.subList(0,  steps.size()-1), final_step)) {

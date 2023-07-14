@@ -78,22 +78,22 @@ public interface PageStateRepository extends Neo4jRepository<PageState, Long> {
 	public PageState getPageState(@Param("user_id") String user_id, @Param("url") String url, @Param("key") String key);
 
 	@Query("MATCH (s:Step) WITH s MATCH (p:PageState) WHERE id(s)=$step_id AND id(p)=$page_state_id MERGE (s)-[:STARTS_WITH]->(p) RETURN p")
-	public PageState addStartPage(@Param("step_id") long id, @Param("page_state_id") long page_state_id);	
+	public PageState addStartPageToStep(@Param("step_id") long id, @Param("page_state_id") long page_state_id);	
 
 	@Query("MATCH (s:LoginStep)-[:STARTS_WITH]->(page:PageState) WHERE id(s)=$step_id RETURN page")
-	public PageState getStartPage(@Param("step_id") long id);
+	public PageState getStartPageToLoginStep(@Param("step_id") long id);
 	
 	@Query("MATCH (s:Step) WITH s MATCH (p:PageState) WHERE id(s)=$step_id AND id(p)=$page_state_id MERGE (s)-[:ENDS_WITH]->(p) RETURN p")
-	public PageState addEndPage(@Param("step_id") long id, @Param("page_state_id") long page_state_id);
+	public PageState addEndPageToStep(@Param("step_id") long id, @Param("page_state_id") long page_state_id);
 
 	@Query("MATCH (s:Step)-[:ENDS_WITH]->(page:PageState) WHERE id(s)=$step_id RETURN page")
-	public PageState getEndPage(@Param("step_id") long id);
+	public PageState getEndPageForStep(@Param("step_id") long id);
 
-	@Query("MATCH (:SimpleStep{key:$step_key})-[:STARTS_WITH]->(p:PageState) RETURN p")
-	public PageState getEndPage(@Param("step_key") String key);
-	
 	@Query("MATCH (:SimpleStep{key:$step_key})-[:ENDS_WITH]->(p:PageState) RETURN p")
-	public PageState getStartPage(@Param("step_key") String key);
+	public PageState getEndPageForSimpleStep(@Param("step_key") String key);
+	
+	@Query("MATCH (:SimpleStep{key:$step_key})-[:STARTS_WITH]->(p:PageState) RETURN p")
+	public PageState getStartPageForSimpleStep(@Param("step_key") String key);
 	
 	@Query("MATCH (a:Account{user_id:$user_id})-[:HAS_DOMAIN]->(d:Domain{url:$url}) MATCH (d)-[:HAS_TEST]->(t:Test{key:$test_key}) MATCH (t)-[:HAS_RESULT]->(p:PageState) RETURN p")
 	public PageState getResult(@Param("test_key") String test_key, @Param("url") String url, @Param("user_id") String user_id);

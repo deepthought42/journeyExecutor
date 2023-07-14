@@ -158,13 +158,21 @@ public class StepService {
 	public ElementState getElementState(String step_key) {
 		return element_state_repo.getElementStateForStep(step_key);
 	}
+	
+	public void setElementState(long step_id, long element_id) {
+		step_repo.setElementState(step_id, element_id);
+	}
 
-	public Step addEndPage(long step_id, long page_id) {
-		return step_repo.addEndPage(step_id, page_id);
+	public void addEndPage(long step_id, long page_id) {
+		step_repo.addEndPage(step_id, page_id);
 	}
 
 	public Step updateKey(long step_id, String key) {
 		return step_repo.updateKey(step_id, key);
+	}
+
+	public void setStartPage(Long step_id, Long page_id) {
+		step_repo.setStartPage(step_id, page_id);		
 	}
 }
 

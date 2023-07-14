@@ -33,6 +33,7 @@ import com.looksee.journeyExecutor.models.enums.JourneyStatus;
 import com.looksee.journeyExecutor.models.enums.PathStatus;
 import com.looksee.journeyExecutor.models.journeys.Journey;
 import com.looksee.journeyExecutor.models.journeys.LandingStep;
+import com.looksee.journeyExecutor.models.journeys.SimpleStep;
 import com.looksee.journeyExecutor.models.journeys.Step;
 import com.looksee.journeyExecutor.models.message.DiscardedJourneyMessage;
 import com.looksee.journeyExecutor.models.message.JourneyCandidateMessage;
@@ -217,11 +218,19 @@ public class AuditController {
 		if(final_step.getId() == null) {
 			log.warn("Final step start page has id = "+final_step.getStartPage().getId());
 			PageState start_page = final_step.getStartPage();
-			start_page.setElements(page_state_service.getElementStates(start_page.getId()));
+			//dstart_page.setElements(page_state_service.getElementStates(start_page.getId()));
 			
 			final_step.setStartPage(start_page);
 			final_step.setEndPage(final_page);
 			final_step.setKey(final_step.generateKey());			
+			
+			Step last_step = new SimpleStep();
+			last_step.setKey(final_step.getKey());
+			last_step = step_service.save(last_step);
+			step_service.addEndPage(last_step.getId(), final_page.getId());
+			step_service.setStartPage(last_step.getId(), final_page.getId());
+			step_service.setElementState(last_step.getId(), ((SimpleStep)final_step).getElementState().getId());
+			final_step = last_step;
 			
 			log.warn("final step " + final_step.getId());
 			log.warn("final page = " + final_page.getId());
@@ -241,13 +250,19 @@ public class AuditController {
 		journey.setKey(journey.generateKey());
 		JourneyStatus status = getVerifiedOrDiscarded(journey);
 		log.warn("journey "+journey.getId()+"   status =  "+status);
-		/*
+		
 		journey = journey_service.updateFields(journey.getId(), 
 											   status, 
-											   journey.getKey());
-		*/
-		journey_service.save(journey);								   
+											   journey.getKey(),
+											   journey.getOrderedIds());
 		
+		Journey journey_tmp = new Journey();
+		for(Step step: steps) {
+			journey_service.addStep(journey_tmp.getId(), step.getId());
+		}
+		journey_tmp.setSteps(steps);
+		journey = journey_tmp;
+				
 		//update journey with latest journey details
 		if(existsInJourney(steps.subList(0,  steps.size()-1), final_step)) {
 			log.warn("step already exists in journey :: "+final_step);

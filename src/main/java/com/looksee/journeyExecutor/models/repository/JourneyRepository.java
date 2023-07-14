@@ -1,5 +1,7 @@
 package com.looksee.journeyExecutor.models.repository;
 
+import java.util.List;
+
 import org.springframework.data.neo4j.repository.Neo4jRepository;
 import org.springframework.data.neo4j.repository.query.Query;
 import org.springframework.data.repository.query.Param;
@@ -21,7 +23,10 @@ public interface JourneyRepository extends Neo4jRepository<Journey, Long>  {
 	public int findAllJourneysForDomainAudit(@Param("audit_id") long audit_id, @Param("status") JourneyStatus status);
 
 	@Query("MATCH (j:Journey) WHERE id(j)=$journey_id SET j.status=$status, j.key=$key RETURN j")
-	public Journey updateFields(@Param("journey_id") long journey_id, @Param("status") JourneyStatus status, @Param("key") String key);
+	public Journey updateFields(@Param("journey_id") long journey_id, 
+								@Param("status") JourneyStatus status, 
+								@Param("key") String key,
+								@Param("ordered_ids") List<Long> ordered_ids);
 
 	@Query("MATCH (map:DomainMap) WITH map WHERE id(map)=$map_id MATCH (map)-[:CONTAINS]->(j:Journey{candidateKey:$candidateKey}) RETURN j")
 	public Journey findByCandidateKey(@Param("map_id") long domain_map_id, @Param("candidateKey") String candidate_key);

@@ -18,4 +18,11 @@ public interface StepRepository extends Neo4jRepository<Step, Long>{
 	@Query("MATCH (step:Step) WHERE id(step)=$step_id SET step.key=$step_key RETURN step")
 	public Step updateKey(@Param("step_id") long step_id, @Param("step_key") String key);
 
+	@Query("MATCH (step:Step) WITH step WHERE id(step)=$step_id MATCH (page:PageState) WHERE id(page)=$page_id MERGE (step)-[:STARTS_WITH]->(page) RETURN step")
+	public Object setStartPage(@Param("step_id") Long step_id, @Param("page_id") Long page_id);
+
+	@Query("MATCH (step:Step) WITH step WHERE id(step)=$step_id MATCH (element:ElementState) WHERE id(element)=$element_id MERGE (step)-[:HAS]->(element) RETURN step")
+	public Object setElementState(@Param("step_id") Long step_id, @Param("element_id") Long element_id);
+
+
 }

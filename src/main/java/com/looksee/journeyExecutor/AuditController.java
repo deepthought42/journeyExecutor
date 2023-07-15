@@ -302,13 +302,26 @@ public class AuditController {
 			page_built_topic.publish(page_built_str);
 			
 			//create landing step and make it the first record in a new list of steps
-			LandingStep landing_step = new LandingStep(final_step.getEndPage());
+			Step landing_step = new LandingStep(final_page);
+			Step temp_step = new LandingStep();
+			temp_step.setKey(landing_step.getKey());
+			landing_step = step_service.save(temp_step);
+			step_service.setStartPage(landing_step.getId(), final_page.getId());
+			landing_step.setStartPage(final_page);
+
 			steps = new ArrayList<>();
 			steps.add(landing_step);
 			
 			Journey new_journey = new Journey(steps, JourneyStatus.VERIFIED);
-			new_journey = journey_service.save(new_journey);
+			Journey temp_journey = new Journey();
+			temp_journey.setCandidateKey(new_journey.getCandidateKey());
+			temp_journey.setKey(new_journey.getKey());
+			temp_journey.setOrderedIds(new_journey.getOrderedIds());
+			temp_journey.setStatus(new_journey.getStatus());
 			
+			new_journey = journey_service.save(temp_journey);
+			journey_service.addStep(new_journey.getId(), landing_step.getId());
+			new_journey.setSteps(steps);
 			
 			//TODO: Determine if this biz logic is correct. Should data be expanded and validated?
 			//send candidate message with new landing step journey

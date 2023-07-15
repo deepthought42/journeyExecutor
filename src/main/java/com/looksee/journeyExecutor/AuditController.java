@@ -31,6 +31,7 @@ import com.looksee.journeyExecutor.models.enums.BrowserEnvironment;
 import com.looksee.journeyExecutor.models.enums.BrowserType;
 import com.looksee.journeyExecutor.models.enums.JourneyStatus;
 import com.looksee.journeyExecutor.models.enums.PathStatus;
+import com.looksee.journeyExecutor.models.journeys.DomainMap;
 import com.looksee.journeyExecutor.models.journeys.Journey;
 import com.looksee.journeyExecutor.models.journeys.LandingStep;
 import com.looksee.journeyExecutor.models.journeys.SimpleStep;
@@ -41,6 +42,7 @@ import com.looksee.journeyExecutor.models.message.PageBuiltMessage;
 import com.looksee.journeyExecutor.models.message.VerifiedJourneyMessage;
 import com.looksee.journeyExecutor.services.AuditRecordService;
 import com.looksee.journeyExecutor.services.BrowserService;
+import com.looksee.journeyExecutor.services.DomainMapService;
 import com.looksee.journeyExecutor.services.JourneyService;
 import com.looksee.journeyExecutor.services.PageStateService;
 import com.looksee.journeyExecutor.services.StepService;
@@ -86,6 +88,9 @@ public class AuditController {
 	
 	@Autowired
 	private JourneyService journey_service;
+	
+	@Autowired
+	private DomainMapService domain_map_service;
 	
 	@Autowired
 	private PubSubJourneyVerifiedPublisherImpl journey_verified_topic;
@@ -218,7 +223,6 @@ public class AuditController {
 		if(final_step.getId() == null) {
 			log.warn("Final step start page has id = "+final_step.getStartPage().getId());
 			PageState start_page = final_step.getStartPage();
-			//dstart_page.setElements(page_state_service.getElementStates(start_page.getId()));
 			
 			final_step.setStartPage(start_page);
 			final_step.setEndPage(final_page);
@@ -228,13 +232,12 @@ public class AuditController {
 			last_step.setKey(final_step.getKey());
 			last_step = step_service.save(last_step);
 			step_service.addEndPage(last_step.getId(), final_page.getId());
-			step_service.setStartPage(last_step.getId(), final_page.getId());
+			step_service.setStartPage(last_step.getId(),  final_step.getStartPage().getId());
 			step_service.setElementState(last_step.getId(), ((SimpleStep)final_step).getElementState().getId());
-			final_step = last_step;
-			
-			log.warn("final step " + final_step.getId());
+			final_step.setId(last_step.getId());
+						
 			log.warn("final page = " + final_page.getId());
-			log.warn("saving final step");
+			log.warn("final step id = "+final_step.getId());
 			//Step final_step_record = step_service.save(final_step);
 			//final_step.setId(final_step_record.getId());
 			steps.set(steps.size()-1, final_step);
@@ -256,18 +259,21 @@ public class AuditController {
 											   journey.getKey(),
 											   journey.getOrderedIds());
 		
-		Journey journey_tmp = new Journey();
 		for(Step step: steps) {
-			journey_service.addStep(journey_tmp.getId(), step.getId());
+			journey_service.addStep(journey.getId(), step.getId());
 		}
-		journey_tmp.setSteps(steps);
-		journey = journey_tmp;
+		journey.setSteps(steps);
 				
 		//update journey with latest journey details
 		if(existsInJourney(steps.subList(0,  steps.size()-1), final_step)) {
 			log.warn("step already exists in journey :: "+final_step);
 			return new ResponseEntity<String>("Step already exists in Journey", HttpStatus.OK);
 		}
+		
+		//add Journey to domain map
+		DomainMap domain_map = domain_map_service.findByDomainAuditId(domain_audit_id);
+		domain_map_service.addJourneyToDomainMap(domain_map.getId(), domain_audit_id);
+		
 		
 		if(JourneyStatus.DISCARDED.equals(journey.getStatus())) {
 			DiscardedJourneyMessage journey_message = new DiscardedJourneyMessage(	journey, 

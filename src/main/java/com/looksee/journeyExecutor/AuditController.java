@@ -139,20 +139,23 @@ public class AuditController {
 			performJourneyStepsInBrowser(steps, browser);
 			
 			//if current url is different than second to last page then try to lookup page in database before building page
+			/*
 			String current_url = BrowserUtils.getPageUrl(
 									BrowserUtils.sanitizeUserUrl(
 											browser.getDriver().getCurrentUrl()));
-			//log.warn("looking up url = "+current_url);
-			//final_page = page_state_service.findByDomainAudit(journey_msg.getDomainAuditRecordId(), current_url);
-			//log.warn("final page found = "+final_page);
+			log.warn("looking up url = "+current_url);
+			final_page = page_state_service.findByDomainAudit(journey_msg.getDomainAuditRecordId(), current_url);
+			log.warn("final page found = "+final_page);
+			*/
 			
 			log.warn("building page");
 			final_page = buildPage(browser);
 			log.warn("saving page");
 			
 			//check if page state with key already exists for domain audit
-			PageState page_record = audit_record_service.findPageWithKey(domain_audit_id, final_page.getKey());
-			
+			//PageState page_record = audit_record_service.findPageWithKey(domain_audit_id, final_page.getKey());
+			PageState page_record = audit_record_service.findPageWithUrl(domain_audit_id, final_page.getUrl());
+
 			if(page_record == null) {
 				final_page = page_state_service.save(final_page);
 			}
@@ -164,37 +167,6 @@ public class AuditController {
 			List<ElementState> elements = page_state_service.getElementStates(final_page.getId());
 			final_page.setElements(elements);					
 			log.warn("total elements for final page = "+final_page.getElements().size());
-/*
-		}
-			else {
-				long element_count = page_state_service.getElementStateCount(final_page.getId());
-				log.warn("total elements found = "+element_count + "   for page state = "+final_page.getId());
-				if(element_count == 0) {
-					log.warn("NO ELEMENTS WERE FOUND!!!   SAVING ELEMENTS NOW....");
-					List<String> xpaths = browser_service.extractAllUniqueElementXpaths(final_page.getSrc());
-					log.warn("XPATH extracted = "+xpaths.size());
-					List<ElementState> element_states = browser_service.buildPageElementsWithoutNavigation( final_page, 
-																											xpaths,
-																											final_page.getFullPageHeight(),
-																											browser);
-					
-					element_states = ElementStateUtils.enrichBackgroundColor(element_states).collect(Collectors.toList());
-					log.warn("total elements built = "+final_page.getElements().size());
-					List<ElementState> elements = element_state_service.saveAll(element_states);
-					final_page.setElements(elements);
-					
-					List<Long> element_ids = elements.parallelStream().map(e -> e.getId()).collect(Collectors.toList());
-					page_state_service.addAllElements(final_page.getId(), element_ids);
-					//final_page = page_state_service.save(final_page);
-					log.warn("final page element count after save = "+final_page.getElements().size());
-				}
-				else {
-					log.warn("ELEMENTS ALREADY EXIST FOR PAGE = "+final_page.getUrl());
-					List<ElementState> elements = page_state_service.getElementStates(final_page.getId());
-					final_page.setElements(elements);
-				}
-			}
-			*/
 		}
 		catch(JavascriptException e) {
 			log.warn("Javascript Exception for steps = " + steps);
@@ -208,7 +180,10 @@ public class AuditController {
 		}
 		catch(Exception e) {
 			log.warn("Exception occurred! Returning FAILURE;  message = "+e.getMessage());
-			//e.printStackTrace();
+			
+			if(e.getMessage().contains("move target out of bounds")){
+				e.printStackTrace();
+			}
 			return new ResponseEntity<String>("Error occured while validating journey with id = "+journey.getId(), HttpStatus.INTERNAL_SERVER_ERROR);
 		}
 		finally {			

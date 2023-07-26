@@ -648,7 +648,9 @@ public class BrowserService {
 		
 		Document html_doc = Jsoup.parse(body_src);
 		String host = url.getHost();
-				
+			
+		long screenshot_extract_start = System.currentTimeMillis();
+
 		for(String xpath : xpaths) {
 			try {
 				WebElement web_element = browser.findElement(xpath);
@@ -671,7 +673,7 @@ public class BrowserService {
 				long scroll_start = System.currentTimeMillis();
 
 				browser.scrollToElement(xpath, web_element);
-				log.warn("DONE scrolling to element = "+(System.currentTimeMillis()-scroll_start));
+				//log.warn("DONE scrolling to element = "+(System.currentTimeMillis()-scroll_start));
 
 				String css_selector = generateCssSelectorFromXpath(xpath);
 				String element_screenshot_url = "";
@@ -679,32 +681,20 @@ public class BrowserService {
 				BufferedImage element_screenshot = null;
 				
 				try {
-						
 					//extract element screenshot from full page screenshot
-					long screenshot_extract_start = System.currentTimeMillis();
+					//long screenshot_extract_start = System.currentTimeMillis();
 
 					//element_screenshot = browser.getElementScreenshot(web_element);
 					TakesScreenshot scrShot = ((TakesScreenshot)web_element);
 					File img_file = scrShot.getScreenshotAs(OutputType.FILE);
 					element_screenshot = ImageIO.read( img_file ); 
 					String screenshot_checksum = ImageUtils.getChecksum(element_screenshot);
-
 					
-					log.warn("DONE extracting element screenshot = "+(System.currentTimeMillis()-screenshot_extract_start));
-
+					//log.warn("DONE extracting element screenshot = "+(System.currentTimeMillis()-screenshot_extract_start));
 					element_screenshot_url = GoogleCloudStorage.saveImage(element_screenshot, host, screenshot_checksum, BrowserType.create(browser.getBrowserName()));
 					element_screenshot.flush();
-
-					//element_screenshot.getGraphics().dispose();
 				}
 				catch( Exception e) {
-					//do nothing
-					/*
-					log.warn("element height :: "+element_size.getHeight());
-					log.warn("Element Y location ::  "+ element_location.getY());
-					log.warn("element width :: "+element_size.getWidth());
-					log.warn("Element X location ::  "+ element_location.getX());
-					*/
 					log.warn("Excepton occurred while extracting screenshot .... "+e.getLocalizedMessage());
 					try {
 						long child_start = System.currentTimeMillis();
@@ -858,6 +848,9 @@ public class BrowserService {
 				//e.printStackTrace();
 			}
 		}
+		
+		log.warn("DONE extracting elements for page = "+page_state.getUrl()+" ; "+(System.currentTimeMillis()-screenshot_extract_start));
+
 		return filtered_elements;
 	}
 

@@ -47,12 +47,9 @@ import com.looksee.journeyExecutor.services.JourneyService;
 import com.looksee.journeyExecutor.services.PageStateService;
 import com.looksee.journeyExecutor.services.StepService;
 import com.looksee.journeyExecutor.services.StepExecutor;
-import com.looksee.utils.BrowserUtils;
 import com.looksee.utils.ElementStateUtils;
 import com.looksee.utils.JourneyUtils;
 import com.looksee.utils.PathUtils;
-
-import io.github.resilience4j.retry.annotation.Retry;
 
 
 /*
@@ -153,11 +150,12 @@ public class AuditController {
 			log.warn("saving page");
 			
 			//check if page state with key already exists for domain audit
-			//PageState page_record = audit_record_service.findPageWithKey(domain_audit_id, final_page.getKey());
-			PageState page_record = audit_record_service.findPageWithUrl(domain_audit_id, final_page.getUrl());
+			PageState page_record = audit_record_service.findPageWithKey(domain_audit_id, final_page.getKey());
+			//PageState page_record = audit_record_service.findPageWithUrl(domain_audit_id, final_page.getUrl());
 
 			if(page_record == null) {
 				final_page = page_state_service.save(final_page);
+				audit_record_service.addPageToAuditRecord(journey_msg.getDomainAuditRecordId(), final_page.getId());
 			}
 			else { 
 				final_page = page_record;
@@ -202,21 +200,17 @@ public class AuditController {
 			final_step.setStartPage(start_page);
 			final_step.setEndPage(final_page);
 			final_step.setKey(final_step.generateKey());			
+			log.warn("final step action = "+((SimpleStep)final_step).getAction());
+			Step last_step = new SimpleStep(((SimpleStep)final_step).getAction(), "");
 			
-			Step last_step = new SimpleStep();
 			last_step.setKey(final_step.getKey());
 			last_step = step_service.save(last_step);
 			step_service.addEndPage(last_step.getId(), final_page.getId());
 			step_service.setStartPage(last_step.getId(),  final_step.getStartPage().getId());
 			step_service.setElementState(last_step.getId(), ((SimpleStep)final_step).getElementState().getId());
 			final_step.setId(last_step.getId());
-						
-			log.warn("final page = " + final_page.getId());
-			log.warn("final step id = "+final_step.getId());
-			//Step final_step_record = step_service.save(final_step);
-			//final_step.setId(final_step_record.getId());
-			steps.set(steps.size()-1, final_step);
-			//journey_service.addStep(domain_audit_id, final_step_record.getId());
+				
+			//steps.set(steps.size()-1, final_step);
 		}
 		else {
 			log.warn("adding final page to final step and updating key");
@@ -234,15 +228,9 @@ public class AuditController {
 											   journey.getKey(),
 											   journey.getOrderedIds());
 		
+		//Save all steps to be attached to journey record
 		for(Step step: steps) {
 			journey_service.addStep(journey.getId(), step.getId());
-		}
-		journey.setSteps(steps);
-				
-		//update journey with latest journey details
-		if(existsInJourney(steps.subList(0,  steps.size()-1), final_step)) {
-			log.warn("step already exists in journey :: "+final_step);
-			return new ResponseEntity<String>("Step already exists in Journey", HttpStatus.OK);
 		}
 		
 		//add Journey to domain map
@@ -250,7 +238,7 @@ public class AuditController {
 		domain_map_service.addJourneyToDomainMap(domain_map.getId(), domain_audit_id);
 		
 		
-		if(JourneyStatus.DISCARDED.equals(journey.getStatus())) {
+		if(JourneyStatus.DISCARDED.equals(journey.getStatus()) || existsInJourney(steps.subList(0,  steps.size()-1), final_step)) {
 			DiscardedJourneyMessage journey_message = new DiscardedJourneyMessage(	journey, 
 																					BrowserType.CHROME, 
 																					journey_msg.getDomainId(),

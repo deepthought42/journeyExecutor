@@ -339,8 +339,10 @@ public class Browser {
 		driver.manage().window().maximize();
 		}*/
 
-		//driver.manage().window().setSize(new Dimension(1024, 768));
-	    //driver.manage().timeouts().implicitlyWait(Duration.ofSeconds(15L));
+		driver.manage().window().setSize(new Dimension(1024, 768));
+	    driver.manage().timeouts().implicitlyWait(Duration.ofSeconds(5L));
+	    driver.manage().timeouts().scriptTimeout(Duration.ofSeconds(2L));
+
 	    //driver.manage().timeouts().pageLoadTimeout(30L, TimeUnit.SECONDS);
 		return driver;
 	}

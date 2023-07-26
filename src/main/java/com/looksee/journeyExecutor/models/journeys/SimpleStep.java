@@ -41,6 +41,12 @@ public class SimpleStep extends Step  {
 		setAction(Action.UNKNOWN);
 	}
 	
+	public SimpleStep(Action action, String input_string) {
+		super();
+		setActionInput(input_string);
+		setAction(action);
+	}
+	
     @JsonCreator
 	public SimpleStep(@JsonProperty("startPage") PageState start_page,
 						@JsonProperty("elementState") ElementState element,

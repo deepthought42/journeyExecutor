@@ -16,6 +16,7 @@ import com.looksee.journeyExecutor.models.journeys.LoginStep;
 import com.looksee.journeyExecutor.models.journeys.SimpleStep;
 import com.looksee.journeyExecutor.models.journeys.Step;
 import com.looksee.utils.BrowserUtils;
+import com.looksee.utils.TimingUtils;
 
 @Service
 public class StepExecutor {
@@ -34,6 +35,7 @@ public class StepExecutor {
 			ElementState element = simple_step.getElementState();
 			WebElement web_element = browser.getDriver().findElement(By.xpath(element.getXpath()));
 			action_factory.execAction(web_element, "", simple_step.getAction());
+			TimingUtils.pauseThread(5L);
 		}
 		else if(step instanceof LoginStep) {
 			LoginStep login_step = (LoginStep)step;
@@ -45,6 +47,7 @@ public class StepExecutor {
 
 			WebElement submit_element = browser.getDriver().findElement(By.xpath(login_step.getSubmitElement().getXpath()));
 			action_factory.execAction(submit_element, "", Action.CLICK);
+			TimingUtils.pauseThread(5L);
 		}
 		else if(step instanceof LandingStep) {
 			log.warn("performing landing step for page = "+step.getStartPage().getUrl());

@@ -33,6 +33,7 @@ public class ActionFactory {
 	 */
 	public void execAction(WebElement elem, String input, Action action) throws WebDriverException{
 		if(Action.CLICK.equals(action)){
+			builder.scrollToElement(elem);
 			builder.click(elem);
 		}
 		else if(Action.CLICK_AND_HOLD.equals(action)){
@@ -63,6 +64,7 @@ public class ActionFactory {
 			builder.sendKeys(elem, input);
 		}
 		else if(Action.MOUSE_OVER.equals(action)){
+			builder.scrollToElement(elem);
 			builder.moveToElement(elem);
 		}
 

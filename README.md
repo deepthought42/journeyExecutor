@@ -101,3 +101,18 @@ Migration notes:
 		MATCH (n:PageState) SET n.secured=n.isSecure RETURN n
 		MATCH (n:PageState) SET n.isSecure=NULL RETURN n
 		
+		
+# Selenium standalone server deployment
+
+1. Pull Selenium docker image
+2. Push Docker image to GCP artifact repository
+3. Tag docker image
+	
+		sudo docker image tag selenium/standalone-chrome:114.0 us-central1-docker.pkg.dev/cosmic-envoy-280619/selenium-chrome/114.0
+		
+4. Create Cloud Run service
+		
+- Environment variable config
+			
+			
+		

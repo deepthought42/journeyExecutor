@@ -176,6 +176,10 @@ public class AuditController {
 			//e.printStackTrace();
 			return new ResponseEntity<String>("Failed to acquire browser connection", HttpStatus.INTERNAL_SERVER_ERROR);
 		}
+		catch(org.openqa.selenium.interactions.MoveTargetOutOfBoundsException e) {
+			log.warn("MOVE TO TARGET EXCEPTION FOR ELEMENT = "+e.getMessage());
+			e.printStackTrace();
+		}
 		catch(Exception e) {
 			log.warn("Exception occurred! Returning FAILURE;  message = "+e.getMessage());
 			

@@ -554,8 +554,6 @@ public class BrowserService {
 		assert page_state != null;
    				
 		List<ElementState> elements = new ArrayList<>();
-		//Map<String, ElementState> elements_mapped = new HashMap<>();
-		//boolean rendering_incomplete = true;
 		URL sanitized_url = new URL(BrowserUtils.sanitizeUserUrl( page_state.getUrl() ));
 		
 		elements = getDomElementStates(page_state, 
@@ -568,7 +566,7 @@ public class BrowserService {
 	}
 	
 	
-	//@Retry(name="webdriver")
+	@Deprecated
 	private boolean openBrowserAndBuildElementStates(List<ElementState> elements,
 												  Map<String, ElementState> elements_mapped, 
 												  PageState page_state,
@@ -670,7 +668,7 @@ public class BrowserService {
 					continue;
 				}
 				
-				long scroll_start = System.currentTimeMillis();
+				//long scroll_start = System.currentTimeMillis();
 
 				browser.scrollToElement(xpath, web_element);
 				//log.warn("DONE scrolling to element = "+(System.currentTimeMillis()-scroll_start));
@@ -683,11 +681,13 @@ public class BrowserService {
 				try {
 					//extract element screenshot from full page screenshot
 					//long screenshot_extract_start = System.currentTimeMillis();
-
-					//element_screenshot = browser.getElementScreenshot(web_element);
+					element_screenshot = browser.getElementScreenshot(web_element);
+					
+					/*
 					TakesScreenshot scrShot = ((TakesScreenshot)web_element);
 					File img_file = scrShot.getScreenshotAs(OutputType.FILE);
 					element_screenshot = ImageIO.read( img_file ); 
+					*/
 					String screenshot_checksum = ImageUtils.getChecksum(element_screenshot);
 					
 					//log.warn("DONE extracting element screenshot = "+(System.currentTimeMillis()-screenshot_extract_start));
@@ -748,19 +748,19 @@ public class BrowserService {
 
 					//retrieve image landmark properties from google cloud vision
 					//Set<ImageLandmarkInfo> landmark_info_set = CloudVisionUtils.extractImageLandmarks(element_screenshot);
-					Set<ImageLandmarkInfo> landmark_info_set = null;
+					
 					//retrieve image faces properties from google cloud vision
 					//Set<ImageFaceAnnotation> faces = CloudVisionUtils.extractImageFaces(element_screenshot);
-					Set<ImageFaceAnnotation> faces = null;
+
 					//retrieve image reverse image search properties from google cloud vision
-					ImageSearchAnnotation image_search_set = CloudVisionUtils.searchWebForImageUsage(element_screenshot);
-					ImageSafeSearchAnnotation img_safe_search_annotation = CloudVisionUtils.detectSafeSearch(element_screenshot);
+					//ImageSearchAnnotation image_search_set = CloudVisionUtils.searchWebForImageUsage(element_screenshot);
+					//ImageSafeSearchAnnotation img_safe_search_annotation = CloudVisionUtils.detectSafeSearch(element_screenshot);
 					
 					//retrieve image logos from google cloud vision
-					Set<Logo> logos = new HashSet<>();//CloudVisionUtils.extractImageLogos(element_screenshot);
+					//Set<Logo> logos = CloudVisionUtils.extractImageLogos(element_screenshot);
 
 					//retrieve image labels
-					Set<Label> labels = CloudVisionUtils.extractImageLabels(element_screenshot);
+					//Set<Label> labels = CloudVisionUtils.extractImageLabels(element_screenshot);
 					log.warn("FINISHED extracting IMAGE ELEMENT features = "+(System.currentTimeMillis()-image_feature_start));
 
 					ElementState element_state = buildImageElementState(xpath, 
@@ -771,12 +771,12 @@ public class BrowserService {
 																	   rendered_css_props, 
 																	   element_screenshot_url,
 																	   css_selector,
-																	   landmark_info_set,
-																	   faces,
-																	   image_search_set,
-																	   logos,
-																	   labels,
-																	   img_safe_search_annotation);
+																	   null,
+																	   null,
+																	   null,
+																	   new HashSet<>(),
+																	   new HashSet<>(),
+																	   null);
 					
 					visited_elements.add(element_state);
 				}

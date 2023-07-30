@@ -55,6 +55,7 @@ public class StepExecutor {
 			String sanitized_url = BrowserUtils.sanitizeUrl(initial_page.getUrl(), initial_page.isSecured());
 			browser.navigateTo(sanitized_url);
 			log.warn("page source size = "+browser.getDriver().getPageSource().length());
+			TimingUtils.pauseThread(5L);
 		}
 		else {
 			log.warn("Unknown step type during execution = " + step.getKey());

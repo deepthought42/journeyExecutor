@@ -422,7 +422,7 @@ public class BrowserService {
 		String title = browser.getDriver().getTitle();
 
 		log.warn("Capturing Viewport screenshot");
-		BufferedImage viewport_screenshot = browser.getViewportScreenshot();
+		BufferedImage viewport_screenshot = browser.getFullPageScreenshotShutterbug();
 		String screenshot_checksum = ImageUtils.getChecksum(viewport_screenshot);
 		String viewport_screenshot_url = GoogleCloudStorage.saveImage(viewport_screenshot, 
 																	  current_url.getHost(), 
@@ -431,7 +431,7 @@ public class BrowserService {
 		viewport_screenshot.flush();
 		
 		log.warn("Capturing Full Page screenshot");
-		BufferedImage full_page_screenshot = browser.getFullPageScreenshotStitched();		
+		BufferedImage full_page_screenshot = browser.getFullPageScreenshotShutterbug();		
 
 		String full_page_screenshot_checksum = ImageUtils.getChecksum(full_page_screenshot);
 		log.warn("SAVING Full Page screenshot");
@@ -668,10 +668,9 @@ public class BrowserService {
 					continue;
 				}
 				
-				//long scroll_start = System.currentTimeMillis();
-
+				long scroll_start = System.currentTimeMillis();
 				browser.scrollToElement(xpath, web_element);
-				//log.warn("DONE scrolling to element = "+(System.currentTimeMillis()-scroll_start));
+				log.warn("DONE scrolling to element = "+(System.currentTimeMillis()-scroll_start));
 
 				String css_selector = generateCssSelectorFromXpath(xpath);
 				String element_screenshot_url = "";
@@ -696,6 +695,14 @@ public class BrowserService {
 				}
 				catch( Exception e) {
 					log.warn("Excepton occurred while extracting screenshot .... "+e.getLocalizedMessage());
+					if(e.getLocalizedMessage().contains("Requested element is outside the viewport")) {
+						log.warn("+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++");
+						log.warn("element location = "+element_location.getX()+" , "+element_location.getY());
+						log.warn("element size = "+element_size.getWidth()+" , "+element_size.getHeight());
+						log.warn("viewport size = "+browser.getViewportSize().getWidth()+" , "+browser.getViewportSize().getHeight());
+						log.warn("viewport offsets = "+browser.getXScrollOffset()+" , "+browser.getYScrollOffset());
+						e.printStackTrace();
+					}
 					try {
 						long child_start = System.currentTimeMillis();
 						BufferedImage full_page_screenshot = ImageIO.read(new URL(page_state.getFullPageScreenshotUrlComposite()));

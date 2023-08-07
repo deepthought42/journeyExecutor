@@ -196,13 +196,13 @@ public class AuditController {
 		
 		//STEP AND JOURNEY SETUP	
 		Step final_step = steps.get(steps.size()-1);
-		
+		final_step.setEndPage(final_page);
+
 		if(final_step.getId() == null) {
 			log.warn("Final step start page has id = "+final_step.getStartPage().getId());
-			PageState start_page = final_step.getStartPage();
+			//PageState start_page = final_step.getStartPage();
 			
-			final_step.setStartPage(start_page);
-			final_step.setEndPage(final_page);
+			//final_step.setStartPage(start_page);
 			final_step.setKey(final_step.generateKey());			
 			log.warn("final step action = "+((SimpleStep)final_step).getAction());
 			Step last_step = new SimpleStep(((SimpleStep)final_step).getAction(), "");
@@ -217,11 +217,14 @@ public class AuditController {
 			//steps.set(steps.size()-1, final_step);
 		}
 		else {
-			log.warn("adding final page to final step and updating key");
+			log.warn("adding final page to final step and updating key =  "+final_page.getId());
+			log.warn("final step id = " +final_step.getId());
 			step_service.addEndPage(final_step.getId(), final_page.getId());
 			step_service.updateKey(final_step.getId(), final_step.getKey());
 		}
 		
+		
+		//UPDATE JOURNEY
 		journey.setSteps(steps);
 		journey.setKey(journey.generateKey());
 		JourneyStatus status = getVerifiedOrDiscarded(journey);
@@ -279,16 +282,12 @@ public class AuditController {
 			steps = new ArrayList<>();
 			steps.add(landing_step);
 			
+			//CREATE JOURNEY
 			Journey new_journey = new Journey(steps, JourneyStatus.VERIFIED);
-			Journey temp_journey = new Journey();
-			temp_journey.setCandidateKey(new_journey.getCandidateKey());
-			temp_journey.setKey(new_journey.getKey());
-			temp_journey.setOrderedIds(new_journey.getOrderedIds());
-			temp_journey.setStatus(new_journey.getStatus());
 			
-			new_journey = journey_service.save(temp_journey);
-			journey_service.addStep(new_journey.getId(), landing_step.getId());
-			new_journey.setSteps(steps);
+			new_journey = journey_service.save(new_journey);
+			//journey_service.addStep(new_journey.getId(), landing_step.getId());
+			//new_journey.setSteps(steps);
 			
 			//TODO: Determine if this biz logic is correct. Should data be expanded and validated?
 			//send candidate message with new landing step journey
@@ -333,6 +332,8 @@ public class AuditController {
 		
 		PageState second_to_last_page = PathUtils.getSecondToLastPageState(journey.getSteps());
 		PageState final_page = PathUtils.getLastPageState(journey.getSteps());
+		log.warn("final page = "+final_page);
+		log.warn("second to last page "+second_to_last_page);
 		if(((journey.getSteps().size() > 1 && !(last_step instanceof LandingStep)) 
 				&& final_page.equals(second_to_last_page))) 
 		{

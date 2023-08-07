@@ -3,6 +3,8 @@ package com.looksee.journeyExecutor.models;
 import java.awt.Graphics2D;
 import java.awt.image.BufferedImage;
 import java.io.BufferedReader;
+import java.io.ByteArrayOutputStream;
+import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
@@ -70,6 +72,8 @@ import cz.vutbr.web.csskit.RuleFontFaceImpl;
 import cz.vutbr.web.csskit.RuleKeyframesImpl;
 import cz.vutbr.web.csskit.RuleMediaImpl;
 import cz.vutbr.web.domassign.StyleMap;
+import ru.yandex.qatools.ashot.AShot;
+import ru.yandex.qatools.ashot.shooting.ShootingStrategies;
 
 /**
  * Handles the management of selenium browser instances and provides various methods for interacting with the browser 
@@ -312,6 +316,7 @@ public class Browser {
 	 */
 	public static WebDriver openWithChrome(URL hub_node_url) 
 			throws MalformedURLException, UnreachableBrowserException, WebDriverException {
+		
 		ChromeOptions chrome_options = new ChromeOptions();
 		chrome_options.addArguments("user-agent=LookseeBot");
 		chrome_options.addArguments("window-size=1920,1080");
@@ -339,9 +344,9 @@ public class Browser {
 		driver.manage().window().maximize();
 		}*/
 
-		driver.manage().window().setSize(new Dimension(1024, 768));
-	    driver.manage().timeouts().implicitlyWait(Duration.ofSeconds(5L));
-	    driver.manage().timeouts().scriptTimeout(Duration.ofSeconds(2L));
+		//driver.manage().window().setSize(new Dimension(1920, 1080));
+	    //driver.manage().timeouts().implicitlyWait(Duration.ofSeconds(5L));
+	    //driver.manage().timeouts().scriptTimeout(Duration.ofSeconds(2L));
 
 	    //driver.manage().timeouts().pageLoadTimeout(30L, TimeUnit.SECONDS);
 		return driver;
@@ -394,6 +399,16 @@ public class Browser {
 	 */
 	public BufferedImage getFullPageScreenshot() throws IOException{
 		return Shutterbug.shootPage(driver, Capture.FULL_SCROLL).getImage();
+	}
+	
+	public BufferedImage getFullPageScreenshotAshot() throws IOException {
+		ru.yandex.qatools.ashot.Screenshot screenshot = new AShot().shootingStrategy(ShootingStrategies.viewportPasting(1000)).takeScreenshot(driver);
+        return screenshot.getImage();
+	}
+	
+	public BufferedImage getFullPageScreenshotShutterbug() throws IOException {
+		//NOTE: best for CHROME
+	    return Shutterbug.shootPage(driver, Capture.FULL, true).getImage();
 	}
 	
 	/**

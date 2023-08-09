@@ -20,7 +20,9 @@ public class BrowserConnectionHelper {
 	//private static final String[] FIREFOX_DISCOVERY_HUB_IP_ADDRESS = {"35.239.245.6:4444", "173.255.118.118:4444"};
 
 	//private static final String[] RESOURCE_HEAVY_REQUEST_HUB_IP_ADDRESS = {"34.121.191.15:4444"};
-	private static final String[] RESOURCE_HEAVY_REQUEST_HUB_IP_ADDRESS = {"selenium-chrome-uydih6tjpa-uc.a.run.app", "selenium-standalone-2-uydih6tjpa-uc.a.run.app", "https://selenium-standalone-3-uydih6tjpa-uc.a.run.app"};
+	private static final String[] RESOURCE_HEAVY_REQUEST_HUB_IP_ADDRESS = {"selenium-chrome-uydih6tjpa-uc.a.run.app", 
+																			"selenium-standalone-2-uydih6tjpa-uc.a.run.app", 
+																			"selenium-standalone-3-uydih6tjpa-uc.a.run.app"};
 
 	/*
 	private static final String[] RESOURCE_HEAVY_REQUEST_HUB_IP_ADDRESS = {"35.224.152.230:4444",

@@ -34,6 +34,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
 import org.w3c.dom.Node;
+import org.apache.commons.lang3.ThreadUtils;
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
 import org.jsoup.nodes.Element;
@@ -61,6 +62,7 @@ import org.openqa.selenium.support.ui.WebDriverWait;
 import com.assertthat.selenium_shutterbug.core.Capture;
 import com.assertthat.selenium_shutterbug.core.Shutterbug;
 import com.looksee.utils.ImageUtils;
+import com.looksee.utils.TimingUtils;
 
 import cz.vutbr.web.css.CSSFactory;
 import cz.vutbr.web.css.CombinedSelector;
@@ -408,7 +410,7 @@ public class Browser {
 	
 	public BufferedImage getFullPageScreenshotShutterbug() throws IOException {
 		//NOTE: best for CHROME
-	    return Shutterbug.shootPage(driver, Capture.FULL, true).getImage();
+	    return Shutterbug.shootPage(driver, Capture.FULL, 2, true).getImage();
 	}
 	
 	/**
@@ -912,6 +914,7 @@ public class Browser {
 		this.xScrollOffset = x_scroll_offset;
 	}
 	
+	@Deprecated
 	public void scrollToElement(String xpath, WebElement elem) 
     {
 		Point offsets = elem.getLocation();
@@ -919,25 +922,54 @@ public class Browser {
 		
 		if(xpath.contains("nav") || xpath.startsWith("//body/header")) {
 			scrollToTopOfPage();
+			this.setXScrollOffset(0);
+			this.setYScrollOffset(0);
 			return;
 		}
+		
 		while(offsets_y != offsets.getY()) {
 			offsets_y = offsets.getY();
 			scrollDownFull();
-
+			log.warn("scrolling down");
 			offsets = elem.getLocation();
 		}
+		TimingUtils.pauseThread(500L);
+
+		offsets = getViewportScrollOffset();
+		this.setXScrollOffset(offsets.getX());
+		this.setYScrollOffset(offsets.getY());
     }
-	
+		
+	/**
+	 * 
+	 * @param element
+	 */
 	public void scrollToElement(com.looksee.journeyExecutor.models.Element element) 
     { 
 		WebElement elem = driver.findElement(By.xpath(element.getXpath()));
-		((JavascriptExecutor)driver).executeScript("arguments[0].scrollIntoView({block: \"center\"});", elem);
+		((JavascriptExecutor)driver).executeScript("arguments[0].scrollIntoView({block: \"center\", behavior: \"auto\"});", elem);
 		Point offsets = getViewportScrollOffset();
 		this.setXScrollOffset(offsets.getX());
 		this.setYScrollOffset(offsets.getY());
     }
 	
+	/**
+	 * 
+	 * @param element
+	 */
+	public void scrollToElement(WebElement element) 
+	{ 
+		((JavascriptExecutor)driver).executeScript("arguments[0].scrollIntoView({block: \"center\"});", element);
+		TimingUtils.pauseThread(500L);
+		Point offsets = getViewportScrollOffset();
+		this.setXScrollOffset(offsets.getX());
+		this.setYScrollOffset(offsets.getY());
+	}
+	
+	/**
+	 * 
+	 * @param class_name
+	 */
 	public void removeElement(String class_name) {
 		JavascriptExecutor js;
 		if (this.getDriver() instanceof JavascriptExecutor) {

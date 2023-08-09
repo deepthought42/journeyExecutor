@@ -422,7 +422,7 @@ public class BrowserService {
 		String title = browser.getDriver().getTitle();
 
 		log.warn("Capturing Viewport screenshot");
-		BufferedImage viewport_screenshot = browser.getFullPageScreenshotShutterbug();
+		BufferedImage viewport_screenshot = browser.getViewportScreenshot();
 		String screenshot_checksum = ImageUtils.getChecksum(viewport_screenshot);
 		String viewport_screenshot_url = GoogleCloudStorage.saveImage(viewport_screenshot, 
 																	  current_url.getHost(), 
@@ -669,7 +669,7 @@ public class BrowserService {
 				}
 				
 				long scroll_start = System.currentTimeMillis();
-				browser.scrollToElement(xpath, web_element);
+				browser.scrollToElement(web_element);
 				log.warn("DONE scrolling to element = "+(System.currentTimeMillis()-scroll_start));
 
 				String css_selector = generateCssSelectorFromXpath(xpath);

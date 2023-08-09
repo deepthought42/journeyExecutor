@@ -217,7 +217,8 @@ public class AuditController {
 			//steps.set(steps.size()-1, final_step);
 		}
 		else {
-			log.warn("adding final page to final step and updating key =  "+final_page.getId());
+			log.warn("adding final page to final step and updating key =  "+final_page);
+			log.warn("final page id = "+final_page.getId());
 			log.warn("final step id = " +final_step.getId());
 			step_service.addEndPage(final_step.getId(), final_page.getId());
 			step_service.updateKey(final_step.getId(), final_step.getKey());

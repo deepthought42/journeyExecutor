@@ -33,8 +33,12 @@ public class ActionFactory {
 	 */
 	public void execAction(WebElement elem, String input, Action action) throws WebDriverException{
 		if(Action.CLICK.equals(action)){
-			builder.scrollToElement(elem);
-			builder.click(elem);
+			log.warn("=======================================================");
+			log.warn("element location = "+elem.getLocation());
+			log.warn("element size = "+elem.getSize());
+			
+			log.warn("scrolling to element and clicking = "+elem.getTagName());
+			builder.scrollToElement(elem).click(elem);
 		}
 		else if(Action.CLICK_AND_HOLD.equals(action)){
 			builder.clickAndHold(elem);
@@ -68,7 +72,7 @@ public class ActionFactory {
 			builder.moveToElement(elem);
 		}
 
-		builder.build().perform();
+		builder.perform();
 	}
 	
 	/**

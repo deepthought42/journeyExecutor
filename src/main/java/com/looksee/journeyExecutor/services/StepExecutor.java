@@ -1,6 +1,7 @@
 package com.looksee.journeyExecutor.services;
 
 import org.openqa.selenium.By;
+import org.openqa.selenium.Point;
 import org.openqa.selenium.WebElement;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -34,13 +35,18 @@ public class StepExecutor {
 			log.warn(simple_step.getAction() + "  on element = "+simple_step.getElementState());
 			ElementState element = simple_step.getElementState();
 			WebElement web_element = browser.getDriver().findElement(By.xpath(element.getXpath()));
+			Point offset = browser.getViewportScrollOffset();
+			log.warn("ACTION offset before scrolling = "+offset);
 			browser.scrollToElement(web_element);
+			offset = browser.getViewportScrollOffset();
+			log.warn("ACTION offset after scrolling = "+offset);
 			log.warn("============================================================");;
 			log.warn("browser dimension = "+browser.getViewportSize());
 			log.warn("browser offset = "+browser.getXScrollOffset()+" , "+browser.getYScrollOffset());
 			log.warn("element xpath = "+element.getXpath());
 			log.warn("element location = "+element.getXLocation()+" , "+element.getYLocation());
 			log.warn("element dimension = "+element.getWidth()+" , "+element.getHeight());
+			
 			action_factory.execAction(web_element, "", simple_step.getAction());
 			TimingUtils.pauseThread(5000L);
 		}

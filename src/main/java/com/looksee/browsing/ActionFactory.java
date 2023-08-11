@@ -33,11 +33,6 @@ public class ActionFactory {
 	 */
 	public void execAction(WebElement elem, String input, Action action) throws WebDriverException{
 		if(Action.CLICK.equals(action)){
-			log.warn("=======================================================");
-			log.warn("element location = "+elem.getLocation());
-			log.warn("element size = "+elem.getSize());
-			
-			log.warn("scrolling to element and clicking = "+elem.getTagName());
 			builder.scrollToElement(elem).click(elem);
 		}
 		else if(Action.CLICK_AND_HOLD.equals(action)){
@@ -69,50 +64,6 @@ public class ActionFactory {
 		}
 		else if(Action.MOUSE_OVER.equals(action)){
 			builder.scrollToElement(elem);
-			builder.moveToElement(elem);
-		}
-
-		builder.perform();
-	}
-	
-	/**
-	 * 
-	 * @param driver
-	 * @param elem
-	 * @param action
-	 */
-	public void execAction(WebElement elem, String input, String action, Point point) throws WebDriverException{
-		if("click".equals(action)){
-			builder.moveToElement(elem, point.getX(), point.getY()).click();
-		}
-		else if("clickAndHold".equals(action)){
-			builder.moveToElement(elem, point.getX(), point.getY()).clickAndHold();
-		}
-		//Context click clicks select/options box
-		else if("contextClick".equals(action)){
-			builder.moveToElement(elem, point.getX(), point.getY()).contextClick(elem);
-		}
-		else if("doubleClick".equals(action)){
-			builder.moveToElement(elem, point.getX(), point.getY()).doubleClick(elem);
-		}
-		/*else if("dragAndDrop".equals(action)){
-			//builder.dragAndDrop(source, target);
-		}
-		else if("keyDown".equals(action)){
-			//builder.keyDown();
-		}
-		else if("keyUp".equals(action)){
-			//builder.keyUp(theKey);
-		}
-		*/
-		else if("release".equals(action)){
-			builder.release(elem);
-		}
-		else if("sendKeys".equals(action)){
-			//builder.sendKeys(elem, Keys.chord(Keys.CONTROL, Keys.ALT, Keys.DELETE));
-			builder.sendKeys(elem, input);
-		}
-		else if("mouseover".equals(action)){
 			builder.moveToElement(elem);
 		}
 

@@ -675,22 +675,14 @@ public class BrowserService {
 				BufferedImage element_screenshot = null;
 				
 				try {
-					//extract element screenshot from full page screenshot
-					//long screenshot_extract_start = System.currentTimeMillis();
+					//extract screenshot from browser using Shutterbug
 					element_screenshot = browser.getElementScreenshot(web_element);
-					
-					/*
-					TakesScreenshot scrShot = ((TakesScreenshot)web_element);
-					File img_file = scrShot.getScreenshotAs(OutputType.FILE);
-					element_screenshot = ImageIO.read( img_file ); 
-					*/
 					String screenshot_checksum = ImageUtils.getChecksum(element_screenshot);
-					
-					//log.warn("DONE extracting element screenshot = "+(System.currentTimeMillis()-screenshot_extract_start));
 					element_screenshot_url = GoogleCloudStorage.saveImage(element_screenshot, host, screenshot_checksum, BrowserType.create(browser.getBrowserName()));
 					element_screenshot.flush();
 				}
 				catch( Exception e) {
+					//extract element screenshot from full page screenshot
 					log.warn("Excepton occurred while extracting screenshot .... "+e.getLocalizedMessage());
 					if(e.getLocalizedMessage().contains("Requested element is outside the viewport")) {
 						log.warn("+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++");

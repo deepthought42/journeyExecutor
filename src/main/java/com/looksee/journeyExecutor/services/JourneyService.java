@@ -9,7 +9,6 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import com.looksee.journeyExecutor.models.enums.JourneyStatus;
-import com.looksee.journeyExecutor.models.journeys.DomainMap;
 import com.looksee.journeyExecutor.models.journeys.Journey;
 import com.looksee.journeyExecutor.models.repository.JourneyRepository;
 

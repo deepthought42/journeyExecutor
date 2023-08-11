@@ -1,5 +1,6 @@
 package com.looksee.journeyExecutor.services;
 
+import java.util.List;
 import java.util.Optional;
 
 import org.slf4j.Logger;
@@ -8,7 +9,6 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import com.looksee.journeyExecutor.models.enums.JourneyStatus;
-import com.looksee.journeyExecutor.models.journeys.DomainMap;
 import com.looksee.journeyExecutor.models.journeys.Journey;
 import com.looksee.journeyExecutor.models.repository.JourneyRepository;
 
@@ -56,8 +56,8 @@ public class JourneyService {
 		return journey_repo.findByCandidateKey(candidateKey);
 	}
 
-	public Journey updateFields(long journey_id, JourneyStatus status, String key) {
-		return journey_repo.updateFields(journey_id, status, key);
+	public Journey updateFields(long journey_id, JourneyStatus status, String key, List<Long> ordered_ids) {
+		return journey_repo.updateFields(journey_id, status, key, ordered_ids);
 	}
 
 	public Journey addStep(long journey_id, long step_id) {

@@ -20,14 +20,15 @@ public class BrowserConnectionHelper {
 	//private static final String[] FIREFOX_DISCOVERY_HUB_IP_ADDRESS = {"35.239.245.6:4444", "173.255.118.118:4444"};
 
 	//private static final String[] RESOURCE_HEAVY_REQUEST_HUB_IP_ADDRESS = {"34.121.191.15:4444"};
-	private static final String[] RESOURCE_HEAVY_REQUEST_HUB_IP_ADDRESS = {"selenium-chrome-uydih6tjpa-uc.a.run.app"};
+	private static final String[] RESOURCE_HEAVY_REQUEST_HUB_IP_ADDRESS = {"selenium-chrome-uydih6tjpa-uc.a.run.app", 
+																			"selenium-standalone-2-uydih6tjpa-uc.a.run.app", 
+																			"selenium-standalone-3-uydih6tjpa-uc.a.run.app"};
 
 	/*
 	private static final String[] RESOURCE_HEAVY_REQUEST_HUB_IP_ADDRESS = {"35.224.152.230:4444",
     																	   "34.121.191.15:4444",
     																	   "34.70.80.131:4444"};
     */
-    private static final String RAPID_REQUEST_HUB_IP_ADDRESS = "34.121.191.15:4444";
 
 	// PRODUCTION HUB ADDRESS
 	//private static final String HUB_IP_ADDRESS= "142.93.192.184:4444";
@@ -54,10 +55,7 @@ public class BrowserConnectionHelper {
 		assert environment != null;
 		
 		URL hub_url = null;
-		if(environment.equals(BrowserEnvironment.TEST)){
-			hub_url = new URL( "http://"+RAPID_REQUEST_HUB_IP_ADDRESS+"/wd/hub" );
-		}
-		else if(environment.equals(BrowserEnvironment.DISCOVERY) && "chrome".equalsIgnoreCase(browser.toString())){
+		if(environment.equals(BrowserEnvironment.DISCOVERY) && "chrome".equalsIgnoreCase(browser.toString())){
 			Random randomGenerator = new Random();
 			int randomInt = randomGenerator.nextInt(RESOURCE_HEAVY_REQUEST_HUB_IP_ADDRESS.length);
 			hub_url = new URL( "https://"+RESOURCE_HEAVY_REQUEST_HUB_IP_ADDRESS[randomInt]+"/wd/hub");

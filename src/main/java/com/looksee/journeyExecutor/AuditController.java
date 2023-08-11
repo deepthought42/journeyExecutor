@@ -31,24 +31,25 @@ import com.looksee.journeyExecutor.models.enums.BrowserEnvironment;
 import com.looksee.journeyExecutor.models.enums.BrowserType;
 import com.looksee.journeyExecutor.models.enums.JourneyStatus;
 import com.looksee.journeyExecutor.models.enums.PathStatus;
+import com.looksee.journeyExecutor.models.journeys.DomainMap;
 import com.looksee.journeyExecutor.models.journeys.Journey;
 import com.looksee.journeyExecutor.models.journeys.LandingStep;
+import com.looksee.journeyExecutor.models.journeys.SimpleStep;
 import com.looksee.journeyExecutor.models.journeys.Step;
 import com.looksee.journeyExecutor.models.message.DiscardedJourneyMessage;
 import com.looksee.journeyExecutor.models.message.JourneyCandidateMessage;
 import com.looksee.journeyExecutor.models.message.PageBuiltMessage;
 import com.looksee.journeyExecutor.models.message.VerifiedJourneyMessage;
+import com.looksee.journeyExecutor.services.AuditRecordService;
 import com.looksee.journeyExecutor.services.BrowserService;
+import com.looksee.journeyExecutor.services.DomainMapService;
 import com.looksee.journeyExecutor.services.JourneyService;
 import com.looksee.journeyExecutor.services.PageStateService;
 import com.looksee.journeyExecutor.services.StepService;
 import com.looksee.journeyExecutor.services.StepExecutor;
-import com.looksee.utils.BrowserUtils;
 import com.looksee.utils.ElementStateUtils;
 import com.looksee.utils.JourneyUtils;
 import com.looksee.utils.PathUtils;
-
-import io.github.resilience4j.retry.annotation.Retry;
 
 
 /*
@@ -86,10 +87,16 @@ public class AuditController {
 	private JourneyService journey_service;
 	
 	@Autowired
+	private DomainMapService domain_map_service;
+	
+	@Autowired
 	private PubSubJourneyVerifiedPublisherImpl journey_verified_topic;
 	
 	@Autowired
 	private PubSubDiscardedJourneyPublisherImpl discarded_journey_topic;
+	
+	@Autowired
+	private AuditRecordService audit_record_service;
 	
 	@Autowired
 	private StepExecutor step_executor;
@@ -113,7 +120,7 @@ public class AuditController {
 
 		Journey journey = journey_msg.getJourney();
 		List<Step> steps = new ArrayList<>(journey.getSteps());
-					
+		long domain_audit_id = journey_msg.getDomainAuditRecordId();
 		//if journey with same candidate key exists that also has a status of VERIFIED or DISCARDED then don't iterate
 		Journey journey_record = journey_service.findByCandidateKey(journey_msg.getMapId(), 
 																	journey_msg.getJourney().getCandidateKey());
@@ -129,52 +136,34 @@ public class AuditController {
 			performJourneyStepsInBrowser(steps, browser);
 			
 			//if current url is different than second to last page then try to lookup page in database before building page
+			/*
 			String current_url = BrowserUtils.getPageUrl(
 									BrowserUtils.sanitizeUserUrl(
 											browser.getDriver().getCurrentUrl()));
-			//log.warn("looking up url = "+current_url);
-			//final_page = page_state_service.findByDomainAudit(journey_msg.getDomainAuditRecordId(), current_url);
-			//log.warn("final page found = "+final_page);
+			log.warn("looking up url = "+current_url);
+			final_page = page_state_service.findByDomainAudit(journey_msg.getDomainAuditRecordId(), current_url);
+			log.warn("final page found = "+final_page);
+			*/
 			
 			log.warn("building page");
 			final_page = buildPage(browser);
 			log.warn("saving page");
-			final_page = page_state_service.save(final_page);
+			
+			//check if page state with key already exists for domain audit
+			PageState page_record = audit_record_service.findPageWithKey(domain_audit_id, final_page.getKey());
+
+			if(page_record == null) {
+				final_page = page_state_service.save(final_page);
+				audit_record_service.addPageToAuditRecord(journey_msg.getDomainAuditRecordId(), final_page.getId());
+			}
+			else { 
+				final_page = page_record;
+			}
+			
 			log.warn("loading element states for page = "+final_page.getId());
 			List<ElementState> elements = page_state_service.getElementStates(final_page.getId());
 			final_page.setElements(elements);					
 			log.warn("total elements for final page = "+final_page.getElements().size());
-/*
-		}
-			else {
-				long element_count = page_state_service.getElementStateCount(final_page.getId());
-				log.warn("total elements found = "+element_count + "   for page state = "+final_page.getId());
-				if(element_count == 0) {
-					log.warn("NO ELEMENTS WERE FOUND!!!   SAVING ELEMENTS NOW....");
-					List<String> xpaths = browser_service.extractAllUniqueElementXpaths(final_page.getSrc());
-					log.warn("XPATH extracted = "+xpaths.size());
-					List<ElementState> element_states = browser_service.buildPageElementsWithoutNavigation( final_page, 
-																											xpaths,
-																											final_page.getFullPageHeight(),
-																											browser);
-					
-					element_states = ElementStateUtils.enrichBackgroundColor(element_states).collect(Collectors.toList());
-					log.warn("total elements built = "+final_page.getElements().size());
-					List<ElementState> elements = element_state_service.saveAll(element_states);
-					final_page.setElements(elements);
-					
-					List<Long> element_ids = elements.parallelStream().map(e -> e.getId()).collect(Collectors.toList());
-					page_state_service.addAllElements(final_page.getId(), element_ids);
-					//final_page = page_state_service.save(final_page);
-					log.warn("final page element count after save = "+final_page.getElements().size());
-				}
-				else {
-					log.warn("ELEMENTS ALREADY EXIST FOR PAGE = "+final_page.getUrl());
-					List<ElementState> elements = page_state_service.getElementStates(final_page.getId());
-					final_page.setElements(elements);
-				}
-			}
-			*/
 		}
 		catch(JavascriptException e) {
 			log.warn("Javascript Exception for steps = " + steps);
@@ -186,9 +175,16 @@ public class AuditController {
 			//e.printStackTrace();
 			return new ResponseEntity<String>("Failed to acquire browser connection", HttpStatus.INTERNAL_SERVER_ERROR);
 		}
+		catch(org.openqa.selenium.interactions.MoveTargetOutOfBoundsException e) {
+			log.warn("MOVE TO TARGET EXCEPTION FOR ELEMENT = "+e.getMessage());
+			e.printStackTrace();
+		}
 		catch(Exception e) {
 			log.warn("Exception occurred! Returning FAILURE;  message = "+e.getMessage());
-			//e.printStackTrace();
+			
+			if(e.getMessage().contains("move target out of bounds")){
+				e.printStackTrace();
+			}
 			return new ResponseEntity<String>("Error occured while validating journey with id = "+journey.getId(), HttpStatus.INTERNAL_SERVER_ERROR);
 		}
 		finally {			
@@ -199,38 +195,57 @@ public class AuditController {
 		
 		//STEP AND JOURNEY SETUP	
 		Step final_step = steps.get(steps.size()-1);
-		
+		final_step.setEndPage(final_page);
+
 		if(final_step.getId() == null) {
-			final_step.setEndPage(final_page);
+			log.warn("Final step start page has id = "+final_step.getStartPage().getId());
+			//PageState start_page = final_step.getStartPage();
+			
+			//final_step.setStartPage(start_page);
 			final_step.setKey(final_step.generateKey());			
-			log.warn("final step " + final_step.getId());
-			log.warn("final page = " + final_page.getId());
-			log.warn("saving final step");
-			final_step = step_service.save(final_step);
-			steps.set(steps.size()-1, final_step);
+			log.warn("final step action = "+((SimpleStep)final_step).getAction());
+			Step last_step = new SimpleStep(((SimpleStep)final_step).getAction(), "");
+			
+			last_step.setKey(final_step.getKey());
+			last_step = step_service.save(last_step);
+			step_service.addEndPage(last_step.getId(), final_page.getId());
+			step_service.setStartPage(last_step.getId(),  final_step.getStartPage().getId());
+			step_service.setElementState(last_step.getId(), ((SimpleStep)final_step).getElementState().getId());
+			final_step.setId(last_step.getId());
+				
+			//steps.set(steps.size()-1, final_step);
 		}
 		else {
-			log.warn("adding final page to final step and updating key");
+			log.warn("adding final page to final step and updating key =  "+final_page);
+			log.warn("final page id = "+final_page.getId());
+			log.warn("final step id = " +final_step.getId());
 			step_service.addEndPage(final_step.getId(), final_page.getId());
 			step_service.updateKey(final_step.getId(), final_step.getKey());
 		}
 		
+		
+		//UPDATE JOURNEY
 		journey.setSteps(steps);
 		journey.setKey(journey.generateKey());
 		JourneyStatus status = getVerifiedOrDiscarded(journey);
 		log.warn("journey "+journey.getId()+"   status =  "+status);
+		
 		journey = journey_service.updateFields(journey.getId(), 
 											   status, 
-											   journey.getKey());
-		journey.setSteps(steps);
+											   journey.getKey(),
+											   journey.getOrderedIds());
 		
-		//update journey with latest journey details
-		if(existsInJourney(steps.subList(0,  steps.size()-1), final_step)) {
-			log.warn("step already exists in journey :: "+final_step);
-			return new ResponseEntity<String>("Step already exists in Journey", HttpStatus.OK);
+		//Save all steps to be attached to journey record
+		for(Step step: steps) {
+			journey_service.addStep(journey.getId(), step.getId());
 		}
 		
-		if(JourneyStatus.DISCARDED.equals(journey.getStatus())) {
+		//add Journey to domain map
+		DomainMap domain_map = domain_map_service.findByDomainAuditId(domain_audit_id);
+		domain_map_service.addJourneyToDomainMap(domain_map.getId(), domain_audit_id);
+		
+		
+		if(JourneyStatus.DISCARDED.equals(journey.getStatus()) || existsInJourney(steps.subList(0,  steps.size()-1), final_step)) {
 			DiscardedJourneyMessage journey_message = new DiscardedJourneyMessage(	journey, 
 																					BrowserType.CHROME, 
 																					journey_msg.getDomainId(),
@@ -257,13 +272,24 @@ public class AuditController {
 			page_built_topic.publish(page_built_str);
 			
 			//create landing step and make it the first record in a new list of steps
-			LandingStep landing_step = new LandingStep(final_step.getEndPage());
+			Step landing_step = new LandingStep(final_page);
+			Step temp_step = new LandingStep();
+			temp_step.setKey(landing_step.getKey());
+			landing_step = step_service.save(temp_step);
+			step_service.setStartPage(landing_step.getId(), final_page.getId());
+			landing_step.setStartPage(final_page);
+
 			steps = new ArrayList<>();
 			steps.add(landing_step);
 			
+			//CREATE JOURNEY
 			Journey new_journey = new Journey(steps, JourneyStatus.VERIFIED);
-			new_journey = journey_service.save(new_journey);
 			
+			new_journey = journey_service.save(new_journey);
+			//journey_service.addStep(new_journey.getId(), landing_step.getId());
+			//new_journey.setSteps(steps);
+			
+			//TODO: Determine if this biz logic is correct. Should data be expanded and validated?
 			//send candidate message with new landing step journey
 			VerifiedJourneyMessage journey_message = new VerifiedJourneyMessage(new_journey,
 																				PathStatus.EXAMINED, 
@@ -306,6 +332,8 @@ public class AuditController {
 		
 		PageState second_to_last_page = PathUtils.getSecondToLastPageState(journey.getSteps());
 		PageState final_page = PathUtils.getLastPageState(journey.getSteps());
+		log.warn("final page = "+final_page);
+		log.warn("second to last page "+second_to_last_page);
 		if(((journey.getSteps().size() > 1 && !(last_step instanceof LandingStep)) 
 				&& final_page.equals(second_to_last_page))) 
 		{
@@ -384,34 +412,6 @@ public class AuditController {
 		}
 		return false;
 	}
-	
-
-	/**
-	 * 
-	 * @param journey
-	 * @param browser
-	 */
-	private void executeJourney(Journey journey, Browser browser) {
-		assert journey != null;
-		assert browser != null;
-		
-		List<Step> ordered_steps = new ArrayList<>();
-		//execute journey steps
-		for(long step_id : journey.getOrderedIds()) {
-			
-			for(Step step: journey.getSteps()) {
-				if(step.getId() == step_id) {
-					ordered_steps.add(step);
-					break;
-				}
-			}
-		}
-
-		for(Step step : ordered_steps) {
-			//execute step
-			step_executor.execute(browser, step);
-		}
-	}	
 }
 // [END run_pubsub_handler]
 // [END cloudrun_pubsub_handler]

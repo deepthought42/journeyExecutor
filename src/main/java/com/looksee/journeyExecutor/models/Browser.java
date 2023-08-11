@@ -3,6 +3,8 @@ package com.looksee.journeyExecutor.models;
 import java.awt.Graphics2D;
 import java.awt.image.BufferedImage;
 import java.io.BufferedReader;
+import java.io.ByteArrayOutputStream;
+import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
@@ -32,6 +34,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
 import org.w3c.dom.Node;
+import org.apache.commons.lang3.ThreadUtils;
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
 import org.jsoup.nodes.Element;
@@ -59,6 +62,7 @@ import org.openqa.selenium.support.ui.WebDriverWait;
 import com.assertthat.selenium_shutterbug.core.Capture;
 import com.assertthat.selenium_shutterbug.core.Shutterbug;
 import com.looksee.utils.ImageUtils;
+import com.looksee.utils.TimingUtils;
 
 import cz.vutbr.web.css.CSSFactory;
 import cz.vutbr.web.css.CombinedSelector;
@@ -70,6 +74,8 @@ import cz.vutbr.web.csskit.RuleFontFaceImpl;
 import cz.vutbr.web.csskit.RuleKeyframesImpl;
 import cz.vutbr.web.csskit.RuleMediaImpl;
 import cz.vutbr.web.domassign.StyleMap;
+import ru.yandex.qatools.ashot.AShot;
+import ru.yandex.qatools.ashot.shooting.ShootingStrategies;
 
 /**
  * Handles the management of selenium browser instances and provides various methods for interacting with the browser 
@@ -312,6 +318,7 @@ public class Browser {
 	 */
 	public static WebDriver openWithChrome(URL hub_node_url) 
 			throws MalformedURLException, UnreachableBrowserException, WebDriverException {
+		
 		ChromeOptions chrome_options = new ChromeOptions();
 		chrome_options.addArguments("user-agent=LookseeBot");
 		chrome_options.addArguments("window-size=1920,1080");
@@ -339,8 +346,10 @@ public class Browser {
 		driver.manage().window().maximize();
 		}*/
 
-		//driver.manage().window().setSize(new Dimension(1024, 768));
-	    //driver.manage().timeouts().implicitlyWait(Duration.ofSeconds(15L));
+		//driver.manage().window().setSize(new Dimension(1920, 1080));
+	    //driver.manage().timeouts().implicitlyWait(Duration.ofSeconds(5L));
+	    //driver.manage().timeouts().scriptTimeout(Duration.ofSeconds(2L));
+
 	    //driver.manage().timeouts().pageLoadTimeout(30L, TimeUnit.SECONDS);
 		return driver;
 	}
@@ -392,6 +401,16 @@ public class Browser {
 	 */
 	public BufferedImage getFullPageScreenshot() throws IOException{
 		return Shutterbug.shootPage(driver, Capture.FULL_SCROLL).getImage();
+	}
+	
+	public BufferedImage getFullPageScreenshotAshot() throws IOException {
+		ru.yandex.qatools.ashot.Screenshot screenshot = new AShot().shootingStrategy(ShootingStrategies.viewportPasting(1000)).takeScreenshot(driver);
+        return screenshot.getImage();
+	}
+	
+	public BufferedImage getFullPageScreenshotShutterbug() throws IOException {
+		//NOTE: best for CHROME
+	    return Shutterbug.shootPage(driver, Capture.FULL, 500, true).getImage();
 	}
 	
 	/**
@@ -895,32 +914,62 @@ public class Browser {
 		this.xScrollOffset = x_scroll_offset;
 	}
 	
+	@Deprecated
 	public void scrollToElement(String xpath, WebElement elem) 
     {
 		Point offsets = elem.getLocation();
+		log.warn("offsets before scrolling = "+offsets);
+
 		int offsets_y = -9999999;
 		
 		if(xpath.contains("nav") || xpath.startsWith("//body/header")) {
 			scrollToTopOfPage();
+			this.setXScrollOffset(0);
+			this.setYScrollOffset(0);
 			return;
 		}
+		
 		while(offsets_y != offsets.getY()) {
 			offsets_y = offsets.getY();
 			scrollDownFull();
-
 			offsets = elem.getLocation();
 		}
+		log.warn("offsets after scrolling = "+offsets);
+
+		offsets = getViewportScrollOffset();
+		this.setXScrollOffset(offsets.getX());
+		this.setYScrollOffset(offsets.getY());
     }
-	
+		
+	/**
+	 * 
+	 * @param element
+	 */
 	public void scrollToElement(com.looksee.journeyExecutor.models.Element element) 
     { 
 		WebElement elem = driver.findElement(By.xpath(element.getXpath()));
-		((JavascriptExecutor)driver).executeScript("arguments[0].scrollIntoView({block: \"center\"});", elem);
+		((JavascriptExecutor)driver).executeScript("arguments[0].scrollIntoView({block: \"center\", behavior: \"instant\"});", elem);
 		Point offsets = getViewportScrollOffset();
 		this.setXScrollOffset(offsets.getX());
 		this.setYScrollOffset(offsets.getY());
     }
 	
+	/**
+	 * 
+	 * @param element
+	 */
+	public void scrollToElement(WebElement element) 
+	{ 
+		((JavascriptExecutor)driver).executeScript("arguments[0].scrollIntoView({block: \"center\", behavior: \"instant\"});", element);
+		Point offsets = getViewportScrollOffset();
+		this.setXScrollOffset(offsets.getX());
+		this.setYScrollOffset(offsets.getY());
+	}
+	
+	/**
+	 * 
+	 * @param class_name
+	 */
 	public void removeElement(String class_name) {
 		JavascriptExecutor js;
 		if (this.getDriver() instanceof JavascriptExecutor) {

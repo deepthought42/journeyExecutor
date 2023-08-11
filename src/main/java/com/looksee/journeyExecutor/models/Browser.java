@@ -1286,11 +1286,17 @@ public class Browser {
         return sb.toString();
     }
 
+	/**
+	 * Scroll to th bottom of the body element
+	 */
 	public void scrollToBottomOfPage() {
 		((JavascriptExecutor) driver)
 	     	.executeScript("window.scrollTo(0, document.body.scrollHeight)");
 	}
 	
+	/**
+	 * Scroll to position (0,0)
+	 */
 	public void scrollToTopOfPage() {
 		((JavascriptExecutor) driver)
 	     	.executeScript("window.scrollTo(0, 0)");

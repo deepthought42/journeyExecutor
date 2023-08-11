@@ -23,6 +23,7 @@ import com.looksee.journeyExecutor.models.enums.Action;
  */
 @Component
 public class Crawler {
+	@SuppressWarnings("unused")
 	private static Logger log = LoggerFactory.getLogger(Crawler.class);
 	
 	/**

@@ -48,7 +48,6 @@ public class StepExecutor {
 			log.warn("element dimension = "+element.getWidth()+" , "+element.getHeight());
 			
 			action_factory.execAction(web_element, "", simple_step.getAction());
-			TimingUtils.pauseThread(5000L);
 		}
 		else if(step instanceof LoginStep) {
 			LoginStep login_step = (LoginStep)step;
@@ -60,13 +59,12 @@ public class StepExecutor {
 
 			WebElement submit_element = browser.getDriver().findElement(By.xpath(login_step.getSubmitElement().getXpath()));
 			action_factory.execAction(submit_element, "", Action.CLICK);
-			TimingUtils.pauseThread(5000L);
 		}
 		else if(step instanceof LandingStep) {
 			PageState initial_page = step.getStartPage();
 			String sanitized_url = BrowserUtils.sanitizeUrl(initial_page.getUrl(), initial_page.isSecured());
 			browser.navigateTo(sanitized_url);
-			browser.scrollToBottomOfPage();
+			//browser.scrollToBottomOfPage(); // NOTE: REMOVE IF FULL PAGE SCREENSHOT WORKS CORRECTLY WITH IT COMMENTED OUT 8/11/23
 		}
 		else {
 			log.warn("Unknown step type during execution = " + step.getKey());

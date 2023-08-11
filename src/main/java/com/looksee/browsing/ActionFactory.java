@@ -5,7 +5,6 @@ import org.slf4j.LoggerFactory;
 
 import com.looksee.journeyExecutor.models.enums.Action;
 
-import org.openqa.selenium.Point;
 import org.openqa.selenium.WebDriver;
 import org.openqa.selenium.WebDriverException;
 import org.openqa.selenium.WebElement;
@@ -33,7 +32,7 @@ public class ActionFactory {
 	 */
 	public void execAction(WebElement elem, String input, Action action) throws WebDriverException{
 		if(Action.CLICK.equals(action)){
-			builder.scrollToElement(elem).click(elem);
+			builder.click(elem);
 		}
 		else if(Action.CLICK_AND_HOLD.equals(action)){
 			builder.clickAndHold(elem);

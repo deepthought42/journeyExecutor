@@ -433,15 +433,13 @@ public class BrowserService {
 		
 		log.warn("Capturing Full Page screenshot");
 		BufferedImage full_page_screenshot = browser.getFullPageScreenshotShutterbug();		
-
 		String full_page_screenshot_checksum = ImageUtils.getChecksum(full_page_screenshot);
-		log.warn("SAVING Full Page screenshot");
 		String full_page_screenshot_url = GoogleCloudStorage.saveImage(full_page_screenshot, 
 																		current_url.getHost(), 
 																		full_page_screenshot_checksum, 
 																		BrowserType.create(browser.getBrowserName()));
 		full_page_screenshot.flush();
-		log.warn("Retrieving window size!!");
+		
 		String composite_url = full_page_screenshot_url;
 		long x_offset = browser.getXScrollOffset();
 		long y_offset = browser.getYScrollOffset();
@@ -449,24 +447,24 @@ public class BrowserService {
 		
 		log.warn("CREATING page state");
 		return new PageState(
-										viewport_screenshot_url,
-										new ArrayList<>(),
-										source,
-										false,
-										x_offset,
-										y_offset,
-										size.getWidth(),
-										size.getHeight(),
-										BrowserType.CHROME,
-										full_page_screenshot_url,
-										full_page_screenshot.getWidth(), 
-										full_page_screenshot.getHeight(), 
-										url_without_protocol,
-										title,
-										is_secure,
-										status_code, 
-										composite_url,
-										current_url.toString());
+							viewport_screenshot_url,
+							new ArrayList<>(),
+							source,
+							false,
+							x_offset,
+							y_offset,
+							size.getWidth(),
+							size.getHeight(),
+							BrowserType.CHROME,
+							full_page_screenshot_url,
+							full_page_screenshot.getWidth(), 
+							full_page_screenshot.getHeight(), 
+							url_without_protocol,
+							title,
+							is_secure,
+							status_code, 
+							composite_url,
+							current_url.toString());
 	}
 	
 	/**
@@ -648,8 +646,8 @@ public class BrowserService {
 		String host = url.getHost();
 			
 		long screenshot_extract_start = System.currentTimeMillis();
-		browser.scrollToBottomOfPage();
-		TimingUtils.pauseThread(1000L);
+		//browser.scrollToBottomOfPage();
+		//TimingUtils.pauseThread(1000L);
 		for(String xpath : xpaths) {
 			try {
 				WebElement web_element = browser.findElement(xpath);

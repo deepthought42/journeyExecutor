@@ -357,7 +357,6 @@ public class AuditController {
 		assert browser != null;
 		
 		PageState page_state = browser_service.performBuildPageProcess(browser);
-		log.warn("Extracting XPATHS");
 		List<String> xpaths = browser_service.extractAllUniqueElementXpaths(page_state.getSrc());
 		log.warn("Building page elements");
 		List<ElementState> element_states = browser_service.buildPageElementsWithoutNavigation( page_state, 
@@ -366,7 +365,7 @@ public class AuditController {
 																								browser);
 
 		log.warn("enriching background colors");
-		element_states = ElementStateUtils.enrichBackgroundColor(element_states).collect(Collectors.toList());
+		element_states = ElementStateUtils.enrichBackgroundColor(element_states);
 		page_state.setElements(element_states);
 
 		return page_state;

@@ -3,6 +3,7 @@ package com.looksee.utils;
 import java.net.URL;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import org.jsoup.Jsoup;
@@ -134,7 +135,7 @@ public class ElementStateUtils {
 	 * @param element_states
 	 * @return
 	 */
-	public static Stream<ElementState> enrichBackgroundColor(List<ElementState> element_states) {
+	public static List<ElementState> enrichBackgroundColor(List<ElementState> element_states) {
 		//ENRICHMENT : BACKGROUND COLORS
 		return element_states.parallelStream()
 								.filter(element -> element != null)
@@ -173,6 +174,7 @@ public class ElementStateUtils {
 					e.printStackTrace();
 				}
 			return element;
-		});
+		})
+		.collect(Collectors.toList());
 	}
 }

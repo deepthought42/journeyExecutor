@@ -410,7 +410,7 @@ public class Browser {
 	
 	public BufferedImage getFullPageScreenshotShutterbug() throws IOException {
 		//NOTE: best for CHROME
-	    return Shutterbug.shootPage(driver, Capture.FULL, 2, true).getImage();
+	    return Shutterbug.shootPage(driver, Capture.FULL, 500, true).getImage();
 	}
 	
 	/**
@@ -918,6 +918,8 @@ public class Browser {
 	public void scrollToElement(String xpath, WebElement elem) 
     {
 		Point offsets = elem.getLocation();
+		log.warn("offsets before scrolling = "+offsets);
+
 		int offsets_y = -9999999;
 		
 		if(xpath.contains("nav") || xpath.startsWith("//body/header")) {
@@ -930,10 +932,9 @@ public class Browser {
 		while(offsets_y != offsets.getY()) {
 			offsets_y = offsets.getY();
 			scrollDownFull();
-			log.warn("scrolling down");
 			offsets = elem.getLocation();
 		}
-		TimingUtils.pauseThread(500L);
+		log.warn("offsets after scrolling = "+offsets);
 
 		offsets = getViewportScrollOffset();
 		this.setXScrollOffset(offsets.getX());
@@ -959,8 +960,7 @@ public class Browser {
 	 */
 	public void scrollToElement(WebElement element) 
 	{ 
-		((JavascriptExecutor)driver).executeScript("arguments[0].scrollIntoView({block: \"center\"});", element);
-		TimingUtils.pauseThread(500L);
+		((JavascriptExecutor)driver).executeScript("arguments[0].scrollIntoView(true);", element);
 		Point offsets = getViewportScrollOffset();
 		this.setXScrollOffset(offsets.getX());
 		this.setYScrollOffset(offsets.getY());

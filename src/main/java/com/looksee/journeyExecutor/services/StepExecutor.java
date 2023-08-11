@@ -34,9 +34,13 @@ public class StepExecutor {
 			log.warn(simple_step.getAction() + "  on element = "+simple_step.getElementState());
 			ElementState element = simple_step.getElementState();
 			WebElement web_element = browser.getDriver().findElement(By.xpath(element.getXpath()));
+			browser.scrollToElement(web_element);
 			log.warn("============================================================");;
 			log.warn("browser dimension = "+browser.getViewportSize());
 			log.warn("browser offset = "+browser.getXScrollOffset()+" , "+browser.getYScrollOffset());
+			log.warn("element xpath = "+element.getXpath());
+			log.warn("element location = "+element.getXLocation()+" , "+element.getYLocation());
+			log.warn("element dimension = "+element.getWidth()+" , "+element.getHeight());
 			action_factory.execAction(web_element, "", simple_step.getAction());
 			TimingUtils.pauseThread(5000L);
 		}
@@ -56,7 +60,7 @@ public class StepExecutor {
 			PageState initial_page = step.getStartPage();
 			String sanitized_url = BrowserUtils.sanitizeUrl(initial_page.getUrl(), initial_page.isSecured());
 			browser.navigateTo(sanitized_url);
-			TimingUtils.pauseThread(5000L);
+			browser.scrollToBottomOfPage();
 		}
 		else {
 			log.warn("Unknown step type during execution = " + step.getKey());

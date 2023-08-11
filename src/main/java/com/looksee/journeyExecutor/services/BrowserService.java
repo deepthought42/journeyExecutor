@@ -67,6 +67,7 @@ import com.looksee.journeyExecutor.models.enums.ElementClassification;
 import com.looksee.journeyExecutor.models.enums.TemplateType;
 import com.looksee.utils.BrowserUtils;
 import com.looksee.utils.ImageUtils;
+import com.looksee.utils.TimingUtils;
 
 import io.github.resilience4j.retry.annotation.Retry;
 import us.codecraft.xsoup.Xsoup;
@@ -643,12 +644,12 @@ public class BrowserService {
 		Map<String, Boolean> overlapped_elements = new HashMap<>();
 
 		String body_src = extractBody(page_state.getSrc());
-		
 		Document html_doc = Jsoup.parse(body_src);
 		String host = url.getHost();
 			
 		long screenshot_extract_start = System.currentTimeMillis();
-
+		browser.scrollToBottomOfPage();
+		TimingUtils.pauseThread(1000L);
 		for(String xpath : xpaths) {
 			try {
 				WebElement web_element = browser.findElement(xpath);
@@ -657,14 +658,12 @@ public class BrowserService {
 				}
 				Dimension element_size = web_element.getSize();
 				Point element_location = web_element.getLocation();
-				if(element_location.getY() >= page_height || element_size.getHeight() >= page_height) {
-					continue;
-				}
-				
+
 				//check if element is visible in pane and if not then continue to next element xpath
 				if( !web_element.isDisplayed()
 						|| !hasWidthAndHeight(element_size)
-						|| doesElementHaveNegativePosition(element_location)) {
+						|| doesElementHaveNegativePosition(element_location)
+						|| (element_location.getY() >= page_height || element_size.getHeight() >= page_height)) {
 					continue;
 				}
 				

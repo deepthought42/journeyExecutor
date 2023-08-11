@@ -151,7 +151,6 @@ public class AuditController {
 			
 			//check if page state with key already exists for domain audit
 			PageState page_record = audit_record_service.findPageWithKey(domain_audit_id, final_page.getKey());
-			//PageState page_record = audit_record_service.findPageWithUrl(domain_audit_id, final_page.getUrl());
 
 			if(page_record == null) {
 				final_page = page_state_service.save(final_page);
@@ -413,34 +412,6 @@ public class AuditController {
 		}
 		return false;
 	}
-	
-
-	/**
-	 * 
-	 * @param journey
-	 * @param browser
-	 */
-	private void executeJourney(Journey journey, Browser browser) {
-		assert journey != null;
-		assert browser != null;
-		
-		List<Step> ordered_steps = new ArrayList<>();
-		//execute journey steps
-		for(long step_id : journey.getOrderedIds()) {
-			
-			for(Step step: journey.getSteps()) {
-				if(step.getId() == step_id) {
-					ordered_steps.add(step);
-					break;
-				}
-			}
-		}
-
-		for(Step step : ordered_steps) {
-			//execute step
-			step_executor.execute(browser, step);
-		}
-	}	
 }
 // [END run_pubsub_handler]
 // [END cloudrun_pubsub_handler]

@@ -948,7 +948,7 @@ public class Browser {
 	public void scrollToElement(com.looksee.journeyExecutor.models.Element element) 
     { 
 		WebElement elem = driver.findElement(By.xpath(element.getXpath()));
-		((JavascriptExecutor)driver).executeScript("arguments[0].scrollIntoView({block: \"center\", behavior: \"auto\"});", elem);
+		((JavascriptExecutor)driver).executeScript("arguments[0].scrollIntoView({block: \"center\", behavior: \"instant\"});", elem);
 		Point offsets = getViewportScrollOffset();
 		this.setXScrollOffset(offsets.getX());
 		this.setYScrollOffset(offsets.getY());
@@ -960,7 +960,7 @@ public class Browser {
 	 */
 	public void scrollToElement(WebElement element) 
 	{ 
-		((JavascriptExecutor)driver).executeScript("arguments[0].scrollIntoView(true);", element);
+		((JavascriptExecutor)driver).executeScript("arguments[0].scrollIntoView({block: \"center\", behavior: \"instant\"});", element);
 		Point offsets = getViewportScrollOffset();
 		this.setXScrollOffset(offsets.getX());
 		this.setYScrollOffset(offsets.getY());

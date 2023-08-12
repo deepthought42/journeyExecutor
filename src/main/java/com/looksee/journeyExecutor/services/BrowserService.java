@@ -666,6 +666,13 @@ public class BrowserService {
 				}
 				
 				long scroll_start = System.currentTimeMillis();
+				Point offset = browser.getViewportScrollOffset();
+				log.warn("viewport offset BEFORE scroll = "+offset);
+				log.warn("browser offset BEFORE scroll = "+browser.getXScrollOffset()+ " , "+browser.getYScrollOffset());				
+
+				offset = browser.getViewportScrollOffset();
+				log.warn("viewport offset AFTER scroll = "+browser.getXScrollOffset()+ " , "+browser.getYScrollOffset());				
+				
 				browser.scrollToElement(web_element);
 				log.warn("DONE scrolling to element = "+(System.currentTimeMillis()-scroll_start));
 

@@ -945,22 +945,9 @@ public class Browser {
 	 * 
 	 * @param element
 	 */
-	public void scrollToElement(com.looksee.journeyExecutor.models.Element element) 
-    { 
-		WebElement elem = driver.findElement(By.xpath(element.getXpath()));
-		((JavascriptExecutor)driver).executeScript("arguments[0].scrollIntoView({block: \"center\", behavior: \"instant\"});", elem);
-		Point offsets = getViewportScrollOffset();
-		this.setXScrollOffset(offsets.getX());
-		this.setYScrollOffset(offsets.getY());
-    }
-	
-	/**
-	 * 
-	 * @param element
-	 */
 	public void scrollToElement(WebElement element) 
 	{ 
-		((JavascriptExecutor)driver).executeScript("arguments[0].scrollIntoView({block: \"center\", behavior: \"instant\"});", element);
+		((JavascriptExecutor)driver).executeScript("arguments[0].scrollIntoView({block: 'center'});", element);
 		Point offsets = getViewportScrollOffset();
 		this.setXScrollOffset(offsets.getX());
 		this.setYScrollOffset(offsets.getY());

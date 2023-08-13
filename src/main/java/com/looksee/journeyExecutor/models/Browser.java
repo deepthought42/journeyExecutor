@@ -3,8 +3,6 @@ package com.looksee.journeyExecutor.models;
 import java.awt.Graphics2D;
 import java.awt.image.BufferedImage;
 import java.io.BufferedReader;
-import java.io.ByteArrayOutputStream;
-import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
@@ -12,7 +10,6 @@ import java.net.MalformedURLException;
 import java.net.URL;
 import java.security.KeyManagementException;
 import java.security.NoSuchAlgorithmException;
-import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
@@ -34,7 +31,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
 import org.w3c.dom.Node;
-import org.apache.commons.lang3.ThreadUtils;
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
 import org.jsoup.nodes.Element;
@@ -419,6 +415,7 @@ public class Browser {
 	 * @return File png file of image
 	 * @throws IOException
 	 */
+	@Deprecated
 	public BufferedImage getFullPageScreenshotStitched() throws IOException {
 		double percentage = 0.10;
 		
@@ -565,6 +562,29 @@ public class Browser {
 		return page_screenshot.getSubimage(point_x, point_y, width, height);
 	}
 
+	/**
+	 * 
+	 * @param screenshot
+	 * @param elem
+	 * @return
+	 * @throws IOException
+	 */
+	public static BufferedImage getElementScreenshot(Point element_location,
+													 Dimension element_size,
+													 BufferedImage page_screenshot) throws IOException{
+		int width = element_size.getWidth();
+		int height = element_size.getHeight();
+		
+		if( (element_location.getX() + element_size.getWidth()) > page_screenshot.getWidth() ) {
+			width = page_screenshot.getWidth() - element_location.getX()-1;
+		}
+		
+		if( (element_location.getY() + element_size.getHeight()) > page_screenshot.getHeight() ) {
+			height = page_screenshot.getHeight() - element_location.getY()-1;
+		}
+		
+		return page_screenshot.getSubimage(element_location.getX(), element_location.getY(), width, height);
+	}
 	
 	public static ElementState findLabelFor(Set<ElementState> elements, String for_id){
 		for(ElementState elem : elements){
@@ -914,31 +934,28 @@ public class Browser {
 		this.xScrollOffset = x_scroll_offset;
 	}
 	
-	@Deprecated
+	/**
+	 * Scroll to element by scrolling down 1 screen length at a time until the element is visible
+	 *  within the viewport\
+	 *  
+	 * @param xpath
+	 * @param elem
+	 */
 	public void scrollToElement(String xpath, WebElement elem) 
     {
-		Point offsets = elem.getLocation();
-		log.warn("offsets before scrolling = "+offsets);
-
-		int offsets_y = -9999999;
-		
 		if(xpath.contains("nav") || xpath.startsWith("//body/header")) {
 			scrollToTopOfPage();
-			this.setXScrollOffset(0);
-			this.setYScrollOffset(0);
 			return;
 		}
 		
-		while(offsets_y != offsets.getY()) {
-			offsets_y = offsets.getY();
+		Point element_offset = elem.getLocation();
+		while(this.getYScrollOffset() != element_offset.getY()) {
 			scrollDownFull();
-			offsets = elem.getLocation();
 		}
-		log.warn("offsets after scrolling = "+offsets);
 
-		offsets = getViewportScrollOffset();
-		this.setXScrollOffset(offsets.getX());
-		this.setYScrollOffset(offsets.getY());
+		element_offset = getViewportScrollOffset();
+		this.setXScrollOffset(element_offset.getX());
+		this.setYScrollOffset(element_offset.getY());
     }
 		
 	/**
@@ -948,6 +965,7 @@ public class Browser {
 	public void scrollToElement(WebElement element) 
 	{ 
 		((JavascriptExecutor)driver).executeScript("arguments[0].scrollIntoView({block: 'center'});", element);
+		TimingUtils.pauseThread(1000L);
 		Point offsets = getViewportScrollOffset();
 		this.setXScrollOffset(offsets.getX());
 		this.setYScrollOffset(offsets.getY());
@@ -1047,6 +1065,8 @@ public class Browser {
 			x_offset = Integer.parseInt(objx.toString());
 		}
 		
+		this.setXScrollOffset(x_offset);
+		this.setYScrollOffset(y_offset);
 		return new Point(x_offset, y_offset);
 	}
 	
@@ -1287,16 +1307,25 @@ public class Browser {
 	public void scrollToTopOfPage() {
 		((JavascriptExecutor) driver)
 	     	.executeScript("window.scrollTo(0, 0)");
+		Point offsets = getViewportScrollOffset();
+		this.setXScrollOffset(offsets.getX());
+		this.setYScrollOffset(offsets.getY());
 	}
 	
 	public void scrollDownPercent(double percent) {
 		((JavascriptExecutor) driver)
 	     	.executeScript("window.scrollBy(0, (window.innerHeight*"+percent+"))");
+		Point offsets = getViewportScrollOffset();
+		this.setXScrollOffset(offsets.getX());
+		this.setYScrollOffset(offsets.getY());
 	}
 	
 	public void scrollDownFull() {
 		((JavascriptExecutor) driver)
 	     	.executeScript("window.scrollBy(0, window.innerHeight)");
+		Point offsets = getViewportScrollOffset();
+		this.setXScrollOffset(offsets.getX());
+		this.setYScrollOffset(offsets.getY());
 	}
 
 	/**

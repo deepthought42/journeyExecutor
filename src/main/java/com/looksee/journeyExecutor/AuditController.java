@@ -3,7 +3,6 @@ package com.looksee.journeyExecutor;
 import java.util.ArrayList;
 import java.util.Base64;
 import java.util.List;
-import java.util.stream.Collectors;
 
 import org.openqa.selenium.JavascriptException;
 import org.openqa.selenium.NoSuchSessionException;
@@ -177,7 +176,7 @@ public class AuditController {
 		}
 		catch(org.openqa.selenium.interactions.MoveTargetOutOfBoundsException e) {
 			log.warn("MOVE TO TARGET EXCEPTION FOR ELEMENT = "+e.getMessage());
-			e.printStackTrace();
+			//e.printStackTrace();
 		}
 		catch(Exception e) {
 			log.warn("Exception occurred! Returning FAILURE;  message = "+e.getMessage());

@@ -629,16 +629,8 @@ public class BrowserService {
 					continue;
 				}
 				
-				long scroll_start = System.currentTimeMillis();
-				Point offset = browser.getViewportScrollOffset();
-				log.warn("viewport offset BEFORE scroll = "+offset);
-				log.warn("browser offset BEFORE scroll = "+browser.getXScrollOffset()+ " , "+browser.getYScrollOffset());				
-
-				offset = browser.getViewportScrollOffset();
-				log.warn("viewport offset AFTER scroll = "+browser.getXScrollOffset()+ " , "+browser.getYScrollOffset());				
-				
+				//scroll element into view before attempting to take a screenshot
 				browser.scrollToElement(web_element);
-				log.warn("DONE scrolling to element = "+(System.currentTimeMillis()-scroll_start));
 
 				String css_selector = generateCssSelectorFromXpath(xpath);
 				String element_screenshot_url = "";
@@ -664,15 +656,8 @@ public class BrowserService {
 				else {
 					try {
 						//extract element screenshot from full page screenshot
-						long screenshot_extract_start1 = System.currentTimeMillis();
-
 						element_screenshot = browser.getElementScreenshot(web_element);
-						//TakesScreenshot scrShot = ((TakesScreenshot)web_element);
-						//File img_file = scrShot.getScreenshotAs(OutputType.FILE);
-						//element_screenshot = ImageIO.read( img_file ); 
 						String screenshot_checksum = ImageUtils.getChecksum(element_screenshot);
-						
-						log.warn("DONE extracting element screenshot = "+(System.currentTimeMillis()-screenshot_extract_start1));
 
 						element_screenshot_url = GoogleCloudStorage.saveImage(element_screenshot, host, screenshot_checksum, BrowserType.create(browser.getBrowserName()));
 						element_screenshot.flush();
@@ -680,6 +665,8 @@ public class BrowserService {
 					catch(Exception e1){
 						log.warn("execption occurred capturing element screenshot at "+web_element);
 						log.warn("+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++");
+						log.warn("URL = "+page_state.getUrl());
+						log.warn("element xpath = "+xpath);
 						log.warn("element location = "+element_location.getX()+" , "+element_location.getY());
 						log.warn("element size = "+element_size.getWidth()+" , "+element_size.getHeight());
 						log.warn("viewport size = "+browser.getViewportSize().getWidth()+" , "+browser.getViewportSize().getHeight());

@@ -173,7 +173,6 @@ public class Browser {
 			}
 			 */
 		}
-		//TimingUtils.pauseThread(15);
 	}
 
 	/**
@@ -954,8 +953,6 @@ public class Browser {
 		}
 
 		element_offset = getViewportScrollOffset();
-		this.setXScrollOffset(element_offset.getX());
-		this.setYScrollOffset(element_offset.getY());
     }
 		
 	/**
@@ -964,11 +961,32 @@ public class Browser {
 	 */
 	public void scrollToElement(WebElement element) 
 	{ 
-		((JavascriptExecutor)driver).executeScript("arguments[0].scrollIntoView({block: 'center'});", element);
-		TimingUtils.pauseThread(1000L);
-		Point offsets = getViewportScrollOffset();
-		this.setXScrollOffset(offsets.getX());
-		this.setYScrollOffset(offsets.getY());
+		((JavascriptExecutor)driver).executeScript("arguments[0].scrollIntoView({block: 'center', behavior: 'instant'});", element);
+		Point offset = null;
+		Point last_offset = null;
+		
+		do {
+			last_offset = offset;
+			TimingUtils.pauseThread(100L);
+			offset = getViewportScrollOffset();
+		}while(last_offset != null && last_offset.getY() != offset.getY());
+	}
+	
+	/**
+	 * Scroll to coordinate
+	 * 
+	 * @param element
+	 */
+	public void scrollTo(int x, int y) 
+	{ 
+		((JavascriptExecutor)driver).executeScript("window.scrollTo("+x+","+y+");");
+		Point offset = null;
+		Point last_offset = null;
+		do {
+			last_offset = offset;
+			TimingUtils.pauseThread(100L);
+			offset = getViewportScrollOffset();
+		}while(last_offset != null && last_offset.getY() != offset.getY());
 	}
 	
 	/**

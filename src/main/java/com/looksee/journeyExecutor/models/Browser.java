@@ -1,5 +1,7 @@
 package com.looksee.journeyExecutor.models;
 
+import static org.assertj.core.api.Assertions.assertThatIllegalStateException;
+
 import java.awt.Graphics2D;
 import java.awt.image.BufferedImage;
 import java.io.BufferedReader;
@@ -952,24 +954,31 @@ public class Browser {
 			scrollDownFull();
 		}
 
-		element_offset = getViewportScrollOffset();
+		getViewportScrollOffset();
     }
 		
 	/**
 	 * 
 	 * @param element
 	 */
-	public void scrollToElement(WebElement element) 
+	public void scrollToElementCentered(WebElement element) 
 	{ 
 		((JavascriptExecutor)driver).executeScript("arguments[0].scrollIntoView({block: 'center', behavior: 'instant'});", element);
-		Point offset = null;
-		Point last_offset = null;
-		
-		do {
-			last_offset = offset;
-			TimingUtils.pauseThread(100L);
-			offset = getViewportScrollOffset();
-		}while(last_offset != null && last_offset.getY() != offset.getY());
+		//generate time to pause based on distance from current browser offset. constant of 8 denotes the pixels per ms that the browser scrolls
+		long pause_time = Math.abs(this.getYScrollOffset() - element.getLocation().getY())/8;
+		TimingUtils.pauseThread(pause_time);
+		getViewportScrollOffset();
+	}
+	
+	/**
+	 * 
+	 * @param element
+	 */
+	public void scrollToElement(boolean scroll_down, WebElement element) 
+	{ 
+		((JavascriptExecutor)driver).executeScript("arguments[0].scrollIntoView("+scroll_down+");", element);
+		TimingUtils.pauseThread(1000L);
+		getViewportScrollOffset();
 	}
 	
 	/**
@@ -980,13 +989,8 @@ public class Browser {
 	public void scrollTo(int x, int y) 
 	{ 
 		((JavascriptExecutor)driver).executeScript("window.scrollTo("+x+","+y+");");
-		Point offset = null;
-		Point last_offset = null;
-		do {
-			last_offset = offset;
-			TimingUtils.pauseThread(100L);
-			offset = getViewportScrollOffset();
-		}while(last_offset != null && last_offset.getY() != offset.getY());
+		TimingUtils.pauseThread(1000L);
+		getViewportScrollOffset();
 	}
 	
 	/**
@@ -1317,6 +1321,8 @@ public class Browser {
 	public void scrollToBottomOfPage() {
 		((JavascriptExecutor) driver)
 	     	.executeScript("window.scrollTo(0, document.body.scrollHeight)");
+		TimingUtils.pauseThread(500L);
+		getViewportScrollOffset();
 	}
 	
 	/**
@@ -1325,25 +1331,20 @@ public class Browser {
 	public void scrollToTopOfPage() {
 		((JavascriptExecutor) driver)
 	     	.executeScript("window.scrollTo(0, 0)");
-		Point offsets = getViewportScrollOffset();
-		this.setXScrollOffset(offsets.getX());
-		this.setYScrollOffset(offsets.getY());
+		TimingUtils.pauseThread(1000L);
+		getViewportScrollOffset();
 	}
 	
 	public void scrollDownPercent(double percent) {
 		((JavascriptExecutor) driver)
 	     	.executeScript("window.scrollBy(0, (window.innerHeight*"+percent+"))");
-		Point offsets = getViewportScrollOffset();
-		this.setXScrollOffset(offsets.getX());
-		this.setYScrollOffset(offsets.getY());
+		getViewportScrollOffset();
 	}
 	
 	public void scrollDownFull() {
 		((JavascriptExecutor) driver)
 	     	.executeScript("window.scrollBy(0, window.innerHeight)");
-		Point offsets = getViewportScrollOffset();
-		this.setXScrollOffset(offsets.getX());
-		this.setYScrollOffset(offsets.getY());
+		getViewportScrollOffset();
 	}
 
 	/**

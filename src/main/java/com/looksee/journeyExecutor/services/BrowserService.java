@@ -470,7 +470,6 @@ public class BrowserService {
 	public List<ElementState> buildPageElements(PageState page_state, 
 												List<String> xpaths, 
 												URL url, 
-												int page_height, 
 												Browser browser
 	) throws IOException {
 		assert browser != null;
@@ -486,8 +485,7 @@ public class BrowserService {
 			elements = getDomElementStates(page_state, 
 										   xpaths, 
 										   browser, 
-										   sanitized_url, 
-										   page_height);
+										   sanitized_url);
 		}
 		catch (NullPointerException e) {
 			log.warn("NPE thrown during element state extraction");
@@ -509,7 +507,6 @@ public class BrowserService {
 	 */
 	public List<ElementState> buildPageElementsWithoutNavigation(PageState page_state, 
 																 List<String> xpaths, 
-															 	 int page_height, 
 															 	 Browser browser
 	) throws IOException {
 		assert page_state != null;
@@ -520,8 +517,7 @@ public class BrowserService {
 		elements = getDomElementStates(page_state, 
 									   xpaths, 
 									   browser, 
-									   sanitized_url, 
-									   page_height);
+									   sanitized_url);
 
 		return elements;
 	}
@@ -532,8 +528,7 @@ public class BrowserService {
 												  Map<String, ElementState> elements_mapped, 
 												  PageState page_state,
 												  List<String> xpaths,
-												  long audit_id,
-												  int page_height
+												  long audit_id
     ) throws IOException {
 		URL sanitized_url = new URL(BrowserUtils.sanitizeUserUrl( page_state.getUrl() ));
 		String page_url = sanitized_url.toString();
@@ -549,7 +544,7 @@ public class BrowserService {
 			
 			//get ElementState List by asking multiple bots to build xpaths in parallel
 			//for each xpath then extract element state
-			elements = getDomElementStates(page_state, xpaths, browser, sanitized_url, page_height);
+			elements = getDomElementStates(page_state, xpaths, browser, sanitized_url);
 			return false;
 		}
 		catch (NullPointerException e) {
@@ -575,7 +570,6 @@ public class BrowserService {
 	 * identify and collect data for elements within the Document Object Model 
 	 * @param url TODO
 	 * @param url
-	 * @param page_height TODO
 	 * @param page_source
 	 * @param rule_sets TODO
 	 * @param reviewed_xpaths
@@ -593,8 +587,7 @@ public class BrowserService {
 			PageState page_state, 
 			List<String> xpaths, 
 			Browser browser, 
-			URL url, 
-			int page_height
+			URL url
 	) throws MalformedURLException, IOException {
 		assert xpaths != null;
 		assert browser != null;
@@ -625,19 +618,26 @@ public class BrowserService {
 				//check if element is visible in pane and if not then continue to next element xpath
 				if( !web_element.isDisplayed()
 						|| !hasWidthAndHeight(element_size)
-						|| doesElementHaveNegativePosition(element_location)) {
+						|| doesElementHaveNegativePosition(element_location)
+						|| isStructureTag(web_element.getTagName())){
 					continue;
 				}
 				
-				//scroll element into view before attempting to take a screenshot
-				browser.scrollToElement(web_element);
+				if(web_element.getLocation().getY() < browser.getYScrollOffset()) {
+					browser.scrollToTopOfPage();
+				}
+				
+				if(!BrowserService.isElementVisibleInPane(browser, web_element.getLocation(), web_element.getSize())) {
+					//scroll element into view before attempting to take a screenshot
+					browser.scrollToElementCentered(web_element);
+				}
 
 				String css_selector = generateCssSelectorFromXpath(xpath);
 				String element_screenshot_url = "";
 
 				BufferedImage element_screenshot = null;
 				
-				if(element_location.getY() >= page_height || element_size.getHeight() >= page_height) {
+				if(BrowserUtils.isLargerThanViewport(element_size, browser.getViewportSize().getWidth(), browser.getViewportSize().getHeight())) {
 					try {
 						long manual_extraction_start = System.currentTimeMillis();
 						element_screenshot = Browser.getElementScreenshot(element_location, element_size, full_page_screenshot);						
@@ -795,9 +795,11 @@ public class BrowserService {
 					}
 				}
 			}
+			/*
 			catch(NoSuchElementException e) {
 				log.warn("No such element found :: "+xpath+"       ;;    on page : "+page_state.getUrl());
 			}
+			*/
 			catch (StaleElementReferenceException e) {
 				log.warn("Stale element exception thrown while retrieving element with xpath :: "+xpath +"; On page with url ::  "+page_state.getUrl());
 			}
@@ -1025,7 +1027,8 @@ public class BrowserService {
 				|| "use".contentEquals(tag_name) || "template".contentEquals(tag_name) 
 				|| "audio".contentEquals(tag_name)  || "iframe".contentEquals(tag_name)
 				|| "noscript".contentEquals(tag_name) || "meta".contentEquals(tag_name) 
-				|| "base".contentEquals(tag_name) || "em".contentEquals(tag_name);
+				|| "base".contentEquals(tag_name) || "em".contentEquals(tag_name)
+				|| "body".contentEquals(tag_name);
 	}
 
 	public static List<WebElement> filterNoWidthOrHeight(List<WebElement> web_elements) {
@@ -1064,10 +1067,6 @@ public class BrowserService {
 		assert browser != null;
 		assert location != null;
 		assert size != null;
-
-		Point offsets = browser.getViewportScrollOffset();
-		browser.setXScrollOffset(offsets.getX());
-		browser.setYScrollOffset(offsets.getY());
 		
 		long y_offset = browser.getYScrollOffset();
 		long x_offset = browser.getXScrollOffset();
@@ -1080,8 +1079,8 @@ public class BrowserService {
 
 		return x >= x_offset 
 				&& y >= y_offset 
-				&& ((x-x_offset)+width) <= (browser.getViewportSize().getWidth())
-				&& ((y-y_offset)+height) <= (browser.getViewportSize().getHeight());
+				&& ((x-x_offset)+width) < (browser.getViewportSize().getWidth())
+				&& ((y-y_offset)+height) < (browser.getViewportSize().getHeight());
 	}
 
 	/**

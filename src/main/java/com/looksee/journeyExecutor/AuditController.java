@@ -49,6 +49,7 @@ import com.looksee.journeyExecutor.services.StepExecutor;
 import com.looksee.utils.ElementStateUtils;
 import com.looksee.utils.JourneyUtils;
 import com.looksee.utils.PathUtils;
+import com.looksee.utils.TimingUtils;
 
 
 /*
@@ -125,6 +126,7 @@ public class AuditController {
 																	journey_msg.getJourney().getCandidateKey());
 		
 		if(journey_record != null && !JourneyStatus.CANDIDATE.equals(journey_record.getStatus())) {
+			log.warn("Not a CANDIDATE journey. Returning");
 			return new ResponseEntity<String>("Journey has already been expanded", HttpStatus.OK);
 		}
 			
@@ -360,7 +362,6 @@ public class AuditController {
 		log.warn("Building page elements");
 		List<ElementState> element_states = browser_service.buildPageElementsWithoutNavigation( page_state, 
 																								xpaths,
-																								page_state.getFullPageHeight(),
 																								browser);
 
 		log.warn("enriching background colors");
@@ -390,7 +391,6 @@ public class AuditController {
 		//execute all steps sequentially in the journey
 		for(Step step: steps) {
 			step_executor.execute(browser, step);
-			browser.waitForPageToLoad();
 		}
 	}
 

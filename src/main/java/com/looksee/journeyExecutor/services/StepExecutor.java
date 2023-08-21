@@ -1,7 +1,6 @@
 package com.looksee.journeyExecutor.services;
 
 import org.openqa.selenium.By;
-import org.openqa.selenium.Point;
 import org.openqa.selenium.WebElement;
 import org.openqa.selenium.interactions.MoveTargetOutOfBoundsException;
 import org.slf4j.Logger;
@@ -18,7 +17,6 @@ import com.looksee.journeyExecutor.models.journeys.LoginStep;
 import com.looksee.journeyExecutor.models.journeys.SimpleStep;
 import com.looksee.journeyExecutor.models.journeys.Step;
 import com.looksee.utils.BrowserUtils;
-import com.looksee.utils.TimingUtils;
 
 @Service
 public class StepExecutor {
@@ -36,20 +34,26 @@ public class StepExecutor {
 				log.warn(simple_step.getAction() + "  on element = "+simple_step.getElementState());
 				ElementState element = simple_step.getElementState();
 				current_element=element;
+				
 				WebElement web_element = browser.getDriver().findElement(By.xpath(element.getXpath()));
 				
-				log.warn("ACTION offset BEFORE scrolling = "+browser.getYScrollOffset());
+				if(!BrowserService.isElementVisibleInPane(browser, web_element.getLocation(), web_element.getSize())) {			
+					log.warn("Element location = ("+element.getXLocation()+" , "+element.getYLocation()+")");
+					log.warn("ACTION offset BEFORE scrolling = "+browser.getYScrollOffset());
+					log.warn("scrolling to element location = "+element.getYLocation());
+					//browser.scrollTo(0, element.getYLocation());
+					//log.warn("ACTION offset BEFORE2 scrolling = "+browser.getYScrollOffset());
+					browser.scrollToElementCentered(web_element);
+				}
 				
-				log.warn("Element location = ("+web_element.getLocation().getX()+" , "+web_element.getLocation().getY()+")");
-				//browser.scrollToElement(web_element);
-				browser.scrollTo(element.getXLocation(), element.getYLocation());
 				ActionFactory action_factory = new ActionFactory(browser.getDriver());
 				//action_factory.execAction(web_element, "", Action.MOUSE_OVER);
 				//TimingUtils.pauseThread(1000L);
-				log.warn("performing mouse over action");
-				Point offsets = browser.getViewportScrollOffset();
+				browser.getViewportScrollOffset();
 				log.warn("ACTION offset AFTER scrolling = "+browser.getYScrollOffset());
+				log.warn("Web Element location = ("+web_element.getLocation().getX()+" , "+web_element.getLocation().getY()+")");
 				action_factory.execAction(web_element, "", simple_step.getAction());
+				//web_element.click();
 			}
 			else if(step instanceof LoginStep) {
 				LoginStep login_step = (LoginStep)step;
@@ -67,7 +71,6 @@ public class StepExecutor {
 				PageState initial_page = step.getStartPage();
 				String sanitized_url = BrowserUtils.sanitizeUrl(initial_page.getUrl(), initial_page.isSecured());
 				browser.navigateTo(sanitized_url);
-				TimingUtils.pauseThread(5000);
 			}
 			else {
 				log.warn("Unknown step type during execution = " + step.getKey());

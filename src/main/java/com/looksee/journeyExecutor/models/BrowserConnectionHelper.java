@@ -25,7 +25,8 @@ public class BrowserConnectionHelper {
 																			"selenium-standalone-3-uydih6tjpa-uc.a.run.app",
 																			"selenium-standalone-4-uydih6tjpa-uc.a.run.app",
 																			"selenium-standalone-5-uydih6tjpa-uc.a.run.app",
-																			"selenium-standalone-6-uydih6tjpa-uc.a.run.app"};
+																			"selenium-standalone-6-uydih6tjpa-uc.a.run.app",
+																			"selenium-standalone-7-uydih6tjpa-uc.a.run.app"};
 
 	/*
 	private static final String[] RESOURCE_HEAVY_REQUEST_HUB_IP_ADDRESS = {"35.224.152.230:4444",

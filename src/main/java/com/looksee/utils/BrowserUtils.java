@@ -1168,4 +1168,15 @@ public class BrowserUtils {
 
 		return null;
 	}
+
+	/**
+	 * 
+	 * @param element
+	 * @param viewportWidth
+	 * @param viewportHeight
+	 * @return
+	 */
+	public static boolean isLargerThanViewport(ElementState element, int viewportWidth, int viewportHeight) {
+		return element.getWidth() > viewportWidth || element.getHeight() > viewportHeight;
+	}
 }

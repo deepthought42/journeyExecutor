@@ -59,6 +59,7 @@ import org.openqa.selenium.support.ui.WebDriverWait;
 
 import com.assertthat.selenium_shutterbug.core.Capture;
 import com.assertthat.selenium_shutterbug.core.Shutterbug;
+import com.looksee.journeyExecutor.models.ElementState;
 import com.looksee.utils.ImageUtils;
 import com.looksee.utils.TimingUtils;
 
@@ -535,22 +536,22 @@ public class Browser {
 	 * @return
 	 * @throws IOException
 	 */
-	public BufferedImage getElementScreenshot(WebElement element) throws Exception{
-		//log.warn("Fullpage width and height :: " + this.getFullPageScreenshot().getWidth() + " , " + this.getFullPageScreenshot().getHeight());
-
-		//calculate element position within screen
-		return Shutterbug.shootElementVerticallyCentered(driver, element).getImage(); 
-		//return Shutterbug.shootElement(driver, element).getImage();
-	}
-	
-	/**
-	 * 
-	 * @param screenshot
-	 * @param elem
-	 * @return
-	 * @throws IOException
-	 */
-	public static BufferedImage getElementScreenshot(ElementState element_state, BufferedImage page_screenshot, Browser browser) throws IOException{
+	public static BufferedImage getElementScreenshot(ElementState element_state, 
+													BufferedImage page_screenshot) throws IOException{
+		int width = element_state.getWidth();
+		int height = element_state.getHeight();
+		
+		if( (element_state.getXLocation() + element_state.getWidth()) > page_screenshot.getWidth() ) {
+			width = page_screenshot.getWidth() - element_state.getXLocation()-1;
+		}
+		
+		if( (element_state.getYLocation() + element_state.getHeight()) > page_screenshot.getHeight() ) {
+			height = page_screenshot.getHeight() - element_state.getYLocation()-1;
+		}
+		
+		return page_screenshot.getSubimage(element_state.getXLocation(), element_state.getYLocation(), width, height);
+		
+/*ORIGINAL CODE		
 		//calculate element position within screen
 		int point_x = element_state.getXLocation()+5;
 		int point_y = element_state.getYLocation();
@@ -561,6 +562,22 @@ public class Browser {
 		}
 		
 		return page_screenshot.getSubimage(point_x, point_y, width, height);
+		*/
+	}
+	
+	/**
+	 * 
+	 * @param screenshot
+	 * @param elem
+	 * @return
+	 * @throws IOException
+	 */
+	public BufferedImage getElementScreenshot(WebElement element) throws Exception{
+		//log.warn("Fullpage width and height :: " + this.getFullPageScreenshot().getWidth() + " , " + this.getFullPageScreenshot().getHeight());
+
+		//calculate element position within screen
+		return Shutterbug.shootElementVerticallyCentered(driver, element).getImage(); 
+		//return Shutterbug.shootElement(driver, element).getImage();
 	}
 
 	/**
@@ -956,7 +973,19 @@ public class Browser {
 
 		getViewportScrollOffset();
     }
-		
+	
+	/**
+	 * 
+	 * @param element
+	 */
+	public void scrollToElement(WebElement element) 
+    { 
+		((JavascriptExecutor)driver).executeScript("arguments[0].scrollIntoView({block: 'center'});", element);
+		long pause_time = Math.abs(this.getYScrollOffset() - element.getLocation().getY())/8;
+		TimingUtils.pauseThread(pause_time);
+		getViewportScrollOffset();
+    }
+	
 	/**
 	 * 
 	 * @param element
@@ -1363,4 +1392,6 @@ public class Browser {
 	public WebElement findElement(String xpath) throws WebDriverException{
 		return getDriver().findElement(By.xpath(xpath));
 	}
+
+	
 }

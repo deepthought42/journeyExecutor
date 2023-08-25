@@ -43,30 +43,31 @@ public class PageState extends LookseeObject {
 	private String src;
 	private String url;
 	private String urlAfterLoading;
-
-	private boolean loginRequired;
-	private boolean secured;
-
 	private String viewportScreenshotUrl;
 	private String fullPageScreenshotUrlOnload;
 	private String fullPageScreenshotUrlComposite;
+	private String pageName;
 	private String browser;
+	private String title;
+
+	private boolean loginRequired;
+	private boolean secured;
 	private boolean landable;
+	
 	private long scrollXOffset;
 	private long scrollYOffset;
+	
 	private int viewportWidth;
 	private int viewportHeight;
 	private int fullPageWidth;
 	private int fullPageHeight;
-	private String pageName;
+	private int httpStatus;
 
-	private String title;
 	private Set<String> scriptUrls;
 	private Set<String> stylesheetUrls;
 	private Set<String> metadata;
 	private Set<String> faviconUrl;
 	private Set<String> keywords;
-	private int httpStatus;
 	
 	@Relationship(type = "HAS", direction = Direction.OUTGOING)
 	private List<ElementState> elements;

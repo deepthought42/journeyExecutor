@@ -1,8 +1,11 @@
 package com.looksee.journeyExecutor;
 
+import java.net.MalformedURLException;
+import java.net.URL;
 import java.util.ArrayList;
 import java.util.Base64;
 import java.util.List;
+import java.util.stream.Collectors;
 
 import org.openqa.selenium.JavascriptException;
 import org.openqa.selenium.NoSuchSessionException;
@@ -24,6 +27,7 @@ import com.looksee.journeyExecutor.gcp.PubSubJourneyVerifiedPublisherImpl;
 import com.looksee.journeyExecutor.gcp.PubSubPageBuiltPublisherImpl;
 import com.looksee.journeyExecutor.mapper.Body;
 import com.looksee.journeyExecutor.models.Browser;
+import com.looksee.journeyExecutor.models.Domain;
 import com.looksee.journeyExecutor.models.ElementState;
 import com.looksee.journeyExecutor.models.PageState;
 import com.looksee.journeyExecutor.models.enums.BrowserEnvironment;
@@ -42,10 +46,13 @@ import com.looksee.journeyExecutor.models.message.VerifiedJourneyMessage;
 import com.looksee.journeyExecutor.services.AuditRecordService;
 import com.looksee.journeyExecutor.services.BrowserService;
 import com.looksee.journeyExecutor.services.DomainMapService;
+import com.looksee.journeyExecutor.services.DomainService;
+import com.looksee.journeyExecutor.services.ElementStateService;
 import com.looksee.journeyExecutor.services.JourneyService;
 import com.looksee.journeyExecutor.services.PageStateService;
 import com.looksee.journeyExecutor.services.StepService;
 import com.looksee.journeyExecutor.services.StepExecutor;
+import com.looksee.utils.BrowserUtils;
 import com.looksee.utils.ElementStateUtils;
 import com.looksee.utils.JourneyUtils;
 import com.looksee.utils.PathUtils;
@@ -87,7 +94,13 @@ public class AuditController {
 	private JourneyService journey_service;
 	
 	@Autowired
+	private DomainService domain_service;
+	
+	@Autowired
 	private DomainMapService domain_map_service;
+	
+	@Autowired
+	private ElementStateService element_state_service;
 	
 	@Autowired
 	private PubSubJourneyVerifiedPublisherImpl journey_verified_topic;
@@ -133,38 +146,46 @@ public class AuditController {
 		PageState final_page = null;
 		Browser browser = null;
 		try {
+			Domain domain = domain_service.findById(journey_msg.getDomainId()).get();
+			URL domain_url = new URL(BrowserUtils.sanitizeUserUrl(domain.getUrl()));
 			browser = browser_service.getConnection(BrowserType.CHROME, BrowserEnvironment.DISCOVERY);
 			performJourneyStepsInBrowser(steps, browser);
 			
-			//if current url is different than second to last page then try to lookup page in database before building page
-			/*
 			String current_url = BrowserUtils.getPageUrl(
 									BrowserUtils.sanitizeUserUrl(
 											browser.getDriver().getCurrentUrl()));
-			log.warn("looking up url = "+current_url);
-			final_page = page_state_service.findByDomainAudit(journey_msg.getDomainAuditRecordId(), current_url);
-			log.warn("final page found = "+final_page);
-			*/
-			
-			log.warn("building page");
-			final_page = buildPage(browser);
-			log.warn("saving page");
-			
-			//check if page state with key already exists for domain audit
-			PageState page_record = audit_record_service.findPageWithKey(domain_audit_id, final_page.getKey());
-
-			if(page_record == null) {
-				final_page = page_state_service.save(final_page);
-				audit_record_service.addPageToAuditRecord(journey_msg.getDomainAuditRecordId(), final_page.getId());
+			//if current url is external URL then create ExternalPageState
+			if(BrowserUtils.isExternalLink(domain_url.getHost(), current_url)) {
+				final_page = new PageState();
+				final_page.setUrl(current_url);	
 			}
-			else { 
-				final_page = page_record;
+			else {
+				//if current url is different than second to last page then try to lookup page in database before building page
+				log.warn("looking up url = "+current_url);
+				final_page = page_state_service.findByDomainAudit(journey_msg.getDomainAuditRecordId(), current_url);
+				log.warn("final page found = "+final_page);
+				
+				log.warn("building page");
+				final_page = buildPage(browser, journey_msg.getDomainAuditRecordId());
+				log.warn("saving page");
+				
+				//check if page state with key already exists for domain audit
+				/* MOVED INTO buildPage() function
+				PageState page_record = audit_record_service.findPageWithKey(domain_audit_id, final_page.getKey());
+	
+				if(page_record == null) {
+					final_page = page_state_service.save(final_page);
+					audit_record_service.addPageToAuditRecord(journey_msg.getDomainAuditRecordId(), final_page.getId());
+				}
+				else { 
+					final_page = page_record;
+				}
+				*/
+				log.warn("loading element states for page = "+final_page.getId());
+				List<ElementState> elements = page_state_service.getElementStates(final_page.getId());
+				final_page.setElements(elements);					
+				log.warn("total elements for final page = "+final_page.getElements().size());
 			}
-			
-			log.warn("loading element states for page = "+final_page.getId());
-			List<ElementState> elements = page_state_service.getElementStates(final_page.getId());
-			final_page.setElements(elements);					
-			log.warn("total elements for final page = "+final_page.getElements().size());
 		}
 		catch(JavascriptException e) {
 			log.warn("Javascript Exception for steps = " + steps);
@@ -326,8 +347,9 @@ public class AuditController {
 	 * 
 	 * @param journey
 	 * @return
+	 * @throws MalformedURLException 
 	 */
-	private JourneyStatus getVerifiedOrDiscarded(Journey journey) {
+	private JourneyStatus getVerifiedOrDiscarded(Journey journey) throws MalformedURLException {
 		//get last step
 		Step last_step = journey.getSteps().get(journey.getSteps().size()-1);
 		
@@ -335,8 +357,10 @@ public class AuditController {
 		PageState final_page = PathUtils.getLastPageState(journey.getSteps());
 		log.warn("final page = "+final_page);
 		log.warn("second to last page "+second_to_last_page);
-		if(((journey.getSteps().size() > 1 && !(last_step instanceof LandingStep)) 
-				&& final_page.equals(second_to_last_page))) 
+		
+		if((journey.getSteps().size() > 1 && !(last_step instanceof LandingStep)) 
+				&& (final_page.equals(second_to_last_page)
+						|| BrowserUtils.isExternalLink(new URL(BrowserUtils.sanitizeUrl(second_to_last_page.getUrlAfterLoading(), false)).getHost(), final_page.getUrl()))) 
 		{
 			return JourneyStatus.DISCARDED;
 		}
@@ -348,25 +372,40 @@ public class AuditController {
 	/**
 	 * Constructs a {@link PageState page} including all {@link ElementState elements} on the page as a {@linkplain List}
 	 * @param browser
+	 * @param domain_audit_id TODO
 	 * 
 	 * @return
 	 * @throws Exception
 	 * 
 	 * @pre browser != null
 	 */
-	private PageState buildPage(Browser browser) throws Exception {
+	private PageState buildPage(Browser browser, long domain_audit_id) throws Exception {
 		assert browser != null;
 		
 		PageState page_state = browser_service.performBuildPageProcess(browser);
-		List<String> xpaths = browser_service.extractAllUniqueElementXpaths(page_state.getSrc());
-		log.warn("Building page elements");
-		List<ElementState> element_states = browser_service.buildPageElementsWithoutNavigation( page_state, 
-																								xpaths,
-																								browser);
+		PageState page_state_record = audit_record_service.findPageWithKey(domain_audit_id, page_state.getKey());
 
-		log.warn("enriching background colors");
-		element_states = ElementStateUtils.enrichBackgroundColor(element_states);
-		page_state.setElements(element_states);
+		if(page_state_record == null 
+				|| element_state_service.getAllExistingKeys(page_state_record.getId()).isEmpty()) 
+		{				
+			log.warn("Extracting element states...");
+			
+			List<String> xpaths = browser_service.extractAllUniqueElementXpaths(page_state.getSrc());
+			List<ElementState> element_states = browser_service.getDomElementStates(page_state, 
+																					xpaths,
+																					browser);
+			String host = (new URL(browser.getDriver().getCurrentUrl())).getHost();
+			
+			element_states = browser_service.enrichElementStates(element_states, page_state, browser, host);
+			element_states = ElementStateUtils.enrichBackgroundColor(element_states);
+			page_state.setElements(element_states);
+			page_state = page_state_service.save(page_state);
+			audit_record_service.addPageToAuditRecord(domain_audit_id, page_state.getId());
+		}
+		else {
+			log.warn("page state already exists for domain audit");
+			page_state = page_state_record;
+		}
 
 		return page_state;
 

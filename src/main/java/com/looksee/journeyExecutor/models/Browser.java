@@ -1006,7 +1006,6 @@ public class Browser {
 	public void scrollToElement(boolean scroll_down, WebElement element) 
 	{ 
 		((JavascriptExecutor)driver).executeScript("arguments[0].scrollIntoView("+scroll_down+");", element);
-		TimingUtils.pauseThread(1000L);
 		getViewportScrollOffset();
 	}
 	
@@ -1018,7 +1017,6 @@ public class Browser {
 	public void scrollTo(int x, int y) 
 	{ 
 		((JavascriptExecutor)driver).executeScript("window.scrollTo("+x+","+y+");");
-		TimingUtils.pauseThread(1000L);
 		getViewportScrollOffset();
 	}
 	
@@ -1350,7 +1348,6 @@ public class Browser {
 	public void scrollToBottomOfPage() {
 		((JavascriptExecutor) driver)
 	     	.executeScript("window.scrollTo(0, document.body.scrollHeight)");
-		TimingUtils.pauseThread(500L);
 		getViewportScrollOffset();
 	}
 	
@@ -1360,7 +1357,6 @@ public class Browser {
 	public void scrollToTopOfPage() {
 		((JavascriptExecutor) driver)
 	     	.executeScript("window.scrollTo(0, 0)");
-		TimingUtils.pauseThread(1000L);
 		getViewportScrollOffset();
 	}
 	

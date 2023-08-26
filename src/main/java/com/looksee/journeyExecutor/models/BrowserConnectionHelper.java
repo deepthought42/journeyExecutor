@@ -10,6 +10,8 @@ import org.slf4j.LoggerFactory;
 import com.looksee.journeyExecutor.models.enums.BrowserEnvironment;
 import com.looksee.journeyExecutor.models.enums.BrowserType;
 
+import io.github.resilience4j.retry.annotation.Retry;
+
 //@Retry(name="webdriver")
 public class BrowserConnectionHelper {
 	@SuppressWarnings("unused")
@@ -26,7 +28,9 @@ public class BrowserConnectionHelper {
 																			"selenium-standalone-4-uydih6tjpa-uc.a.run.app",
 																			"selenium-standalone-5-uydih6tjpa-uc.a.run.app",
 																			"selenium-standalone-6-uydih6tjpa-uc.a.run.app",
-																			"selenium-standalone-7-uydih6tjpa-uc.a.run.app"};
+																			"selenium-standalone-7-uydih6tjpa-uc.a.run.app",
+																			"selenium-standalone-8-uydih6tjpa-uc.a.run.app",
+																			"selenium-standalone-9-uydih6tjpa-uc.a.run.app"};
 
 	/*
 	private static final String[] RESOURCE_HEAVY_REQUEST_HUB_IP_ADDRESS = {"35.224.152.230:4444",
@@ -53,7 +57,7 @@ public class BrowserConnectionHelper {
 	 * 
 	 * @throws MalformedURLException
 	 */
-    //@Retry(name="webdriver")
+    @Retry(name="webdriver")
 	public static Browser getConnection(BrowserType browser, BrowserEnvironment environment) throws MalformedURLException{
 		assert browser != null;
 		assert environment != null;

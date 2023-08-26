@@ -16,7 +16,7 @@ public interface JourneyRepository extends Neo4jRepository<Journey, Long>  {
 	@Query("MATCH (j:Journey) WITH j WHERE id(j)=$journey_id MATCH (s:Step) WHERE id(s)=$step_id MERGE (j)-[:HAS]->(s) RETURN j")
 	public Journey addStep(@Param("journey_id") long journey_id, @Param("step_id") long id);
 
-	@Query("MATCH (j:Journey{candidateKey:$candidateKey}) RETURN j")
+	@Query("MATCH (j:Journey{candidateKey:$candidateKey}) RETURN j LIMIT 1")
 	public Journey findByCandidateKey(@Param("candidateKey") String candidateKey);
 	
 	@Query("MATCH (audit:DomainAuditRecord) WHERE id(audit)=$audit_id MATCH (audit)-[*2]->(j:Journey) WHERE j.status=$status RETURN COUNT(j)")

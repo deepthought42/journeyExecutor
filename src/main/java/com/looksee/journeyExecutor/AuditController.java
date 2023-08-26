@@ -158,16 +158,16 @@ public class AuditController {
 			if(BrowserUtils.isExternalLink(domain_url.getHost(), current_url)) {
 				final_page = new PageState();
 				final_page.setUrl(current_url);	
+				final_page.setSrc(Browser.cleanSrc(browser.getSource()));
+				final_page.setKey(final_page.generateKey());
+				final_page = page_state_service.save(final_page);
 			}
 			else {
 				//if current url is different than second to last page then try to lookup page in database before building page
 				log.warn("looking up url = "+current_url);
-				final_page = page_state_service.findByDomainAudit(journey_msg.getDomainAuditRecordId(), current_url);
-				log.warn("final page found = "+final_page);
 				
 				log.warn("building page");
 				final_page = buildPage(browser, journey_msg.getDomainAuditRecordId());
-				log.warn("saving page");
 				
 				//check if page state with key already exists for domain audit
 				/* MOVED INTO buildPage() function
@@ -305,11 +305,21 @@ public class AuditController {
 			steps.add(landing_step);
 			
 			//CREATE JOURNEY
-			Journey new_journey = new Journey(steps, JourneyStatus.VERIFIED);
-			
+			//Journey new_journey = new Journey(steps, JourneyStatus.VERIFIED);
+			Journey new_journey = new Journey();
+			List<Long> ordered_ids = steps.stream()
+					  .map(step -> step.getId())
+					  .collect(Collectors.toList());
+			new_journey.setStatus(JourneyStatus.VERIFIED);
+			new_journey.setOrderedIds(ordered_ids);
+			new_journey.setCandidateKey(new_journey.generateCandidateKey());
+			new_journey.setKey(new_journey.generateKey());
 			new_journey = journey_service.save(new_journey);
-			//journey_service.addStep(new_journey.getId(), landing_step.getId());
-			//new_journey.setSteps(steps);
+			
+			for(Step step: steps) {
+				journey_service.addStep(new_journey.getId(), step.getId());
+			}
+			new_journey.setSteps(steps);
 			
 			//TODO: Determine if this biz logic is correct. Should data be expanded and validated?
 			//send candidate message with new landing step journey
@@ -383,6 +393,7 @@ public class AuditController {
 		assert browser != null;
 		
 		PageState page_state = browser_service.performBuildPageProcess(browser);
+
 		PageState page_state_record = audit_record_service.findPageWithKey(domain_audit_id, page_state.getKey());
 
 		if(page_state_record == null 
@@ -394,19 +405,21 @@ public class AuditController {
 			List<ElementState> element_states = browser_service.getDomElementStates(page_state, 
 																					xpaths,
 																					browser);
+			/*
 			String host = (new URL(browser.getDriver().getCurrentUrl())).getHost();
 			
 			element_states = browser_service.enrichElementStates(element_states, page_state, browser, host);
 			element_states = ElementStateUtils.enrichBackgroundColor(element_states);
+			 */
 			page_state.setElements(element_states);
 			page_state = page_state_service.save(page_state);
 			audit_record_service.addPageToAuditRecord(domain_audit_id, page_state.getId());
 		}
 		else {
-			log.warn("page state already exists for domain audit");
+			log.warn("page state already exists for domain audit!!!!!!");
 			page_state = page_state_record;
 		}
-
+		
 		return page_state;
 
 	}

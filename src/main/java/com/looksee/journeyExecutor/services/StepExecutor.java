@@ -38,22 +38,15 @@ public class StepExecutor {
 				WebElement web_element = browser.getDriver().findElement(By.xpath(element.getXpath()));
 				
 				if(!BrowserService.isElementVisibleInPane(browser, web_element.getLocation(), web_element.getSize())) {			
-					log.warn("Element location = ("+element.getXLocation()+" , "+element.getYLocation()+")");
 					log.warn("ACTION offset BEFORE scrolling = "+browser.getYScrollOffset());
 					log.warn("scrolling to element location = "+element.getYLocation());
-					//browser.scrollTo(0, element.getYLocation());
-					//log.warn("ACTION offset BEFORE2 scrolling = "+browser.getYScrollOffset());
 					browser.scrollToElementCentered(web_element);
 				}
 				
 				ActionFactory action_factory = new ActionFactory(browser.getDriver());
-				//action_factory.execAction(web_element, "", Action.MOUSE_OVER);
-				//TimingUtils.pauseThread(1000L);
 				browser.getViewportScrollOffset();
 				log.warn("ACTION offset AFTER scrolling = "+browser.getYScrollOffset());
-				log.warn("Web Element location = ("+web_element.getLocation().getX()+" , "+web_element.getLocation().getY()+")");
 				action_factory.execAction(web_element, "", simple_step.getAction());
-				//web_element.click();
 			}
 			else if(step instanceof LoginStep) {
 				LoginStep login_step = (LoginStep)step;

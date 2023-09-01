@@ -608,8 +608,8 @@ public class BrowserService {
 				}
 				
 				String css_selector = generateCssSelectorFromXpath(xpath);
-				Map<String, String> rendered_css_props = Browser.loadCssProperties(web_element, browser.getDriver());
-				Map<String, String> attributes = browser.extractAttributes(web_element);
+				//Map<String, String> rendered_css_props = Browser.loadCssProperties(web_element, browser.getDriver());
+				//Map<String, String> attributes = browser.extractAttributes(web_element);
 
 				ElementClassification classification = null;
 				
@@ -633,11 +633,11 @@ public class BrowserService {
 
 				if(isImageElement(web_element)) {
 					ElementState element_state = buildImageElementState(xpath, 
-																	   attributes, 
+																	   new HashMap<>(), 
 																	   element, 
 																	   web_element, 
 																	   classification, 
-																	   rendered_css_props, 
+																	   new HashMap<>(), 
 																	   null,
 																	   css_selector,
 																	   null,
@@ -651,11 +651,11 @@ public class BrowserService {
 				}
 				else {
 					ElementState element_state = buildElementState(xpath, 
-																   attributes, 
+																   new HashMap<>(), 
 																   element, 
 																   web_element, 
 																   classification, 
-																   rendered_css_props, 
+																   new HashMap<>(), 
 																   null,
 																   css_selector);
 					visited_elements.add(element_state);
@@ -1748,7 +1748,9 @@ public class BrowserService {
 			
 			String element_screenshot_url = "";
 			BufferedImage element_screenshot = null;
-
+			Map<String, String> rendered_css_props = Browser.loadCssProperties(web_element, browser.getDriver());
+			Map<String, String> attributes = browser.extractAttributes(web_element);
+			
 			if(BrowserUtils.isLargerThanViewport(element, browser.getViewportSize().getWidth(), browser.getViewportSize().getHeight())) {
 				try {
 					long manual_extraction_start = System.currentTimeMillis();
@@ -1795,7 +1797,8 @@ public class BrowserService {
 				}
 			}
 			element.setScreenshotUrl(element_screenshot_url);
-
+			element.setAttributes(attributes);
+			element.setRenderedCssValues(rendered_css_props);
 			
 			if(element instanceof ImageElementState && !element.getScreenshotUrl().isEmpty()) {
 				long image_feature_start = System.currentTimeMillis();

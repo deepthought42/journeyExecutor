@@ -30,7 +30,13 @@ public class BrowserConnectionHelper {
 																			"selenium-standalone-6-uydih6tjpa-uc.a.run.app",
 																			"selenium-standalone-7-uydih6tjpa-uc.a.run.app",
 																			"selenium-standalone-8-uydih6tjpa-uc.a.run.app",
-																			"selenium-standalone-9-uydih6tjpa-uc.a.run.app"};
+																			"selenium-standalone-9-uydih6tjpa-uc.a.run.app",
+																			"selenium-standalone-10-uydih6tjpa-uc.a.run.app",
+																			"selenium-standalone-11-uydih6tjpa-uc.a.run.app",
+																			"selenium-standalone-12-uydih6tjpa-uc.a.run.app",
+																			"selenium-standalone-13-uydih6tjpa-uc.a.run.app",
+																			"selenium-standalone-14-uydih6tjpa-uc.a.run.app",
+																			"selenium-standalone-15-uydih6tjpa-uc.a.run.app"};
 
 	/*
 	private static final String[] RESOURCE_HEAVY_REQUEST_HUB_IP_ADDRESS = {"35.224.152.230:4444",
@@ -58,7 +64,7 @@ public class BrowserConnectionHelper {
 	 * @throws MalformedURLException
 	 */
     @Retry(name="webdriver")
-	public static Browser getConnection(BrowserType browser, BrowserEnvironment environment) throws MalformedURLException{
+	public static Browser getConnection(BrowserType browser, BrowserEnvironment environment) throws MalformedURLException {
 		assert browser != null;
 		assert environment != null;
 		

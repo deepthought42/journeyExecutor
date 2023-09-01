@@ -132,6 +132,13 @@ public class AuditController {
 	    JsonMapper mapper = JsonMapper.builder().addModule(new JavaTimeModule()).build();
 
 		Journey journey = journey_msg.getJourney();
+		
+	    //CHECK IF JOURNEY WITH CANDIDATE KEY HAS ALREADY BEEN EVALUATED
+	    if(JourneyStatus.DISCARDED.equals(journey.getStatus()) || JourneyStatus.VERIFIED.equals(journey.getStatus())) {
+	    	log.warn("Journey has already been verified or discarded with status = "+journey.getStatus());
+	    	return new ResponseEntity<String>("Successfully generated journey expansions", HttpStatus.OK);
+	    }
+		
 		List<Step> steps = new ArrayList<>(journey.getSteps());
 		long domain_audit_id = journey_msg.getDomainAuditRecordId();
 		//if journey with same candidate key exists that also has a status of VERIFIED or DISCARDED then don't iterate
@@ -158,9 +165,8 @@ public class AuditController {
 			if(BrowserUtils.isExternalLink(domain_url.getHost(), current_url)) {
 				final_page = new PageState();
 				final_page.setUrl(current_url);	
-				final_page.setSrc(Browser.cleanSrc(browser.getSource()));
 				final_page.setKey(final_page.generateKey());
-				final_page = page_state_service.save(final_page);
+				final_page = page_state_service.save(domain_audit_id, final_page);
 			}
 			else {
 				//if current url is different than second to last page then try to lookup page in database before building page
@@ -169,18 +175,6 @@ public class AuditController {
 				log.warn("building page");
 				final_page = buildPage(browser, journey_msg.getDomainAuditRecordId());
 				
-				//check if page state with key already exists for domain audit
-				/* MOVED INTO buildPage() function
-				PageState page_record = audit_record_service.findPageWithKey(domain_audit_id, final_page.getKey());
-	
-				if(page_record == null) {
-					final_page = page_state_service.save(final_page);
-					audit_record_service.addPageToAuditRecord(journey_msg.getDomainAuditRecordId(), final_page.getId());
-				}
-				else { 
-					final_page = page_record;
-				}
-				*/
 				log.warn("loading element states for page = "+final_page.getId());
 				List<ElementState> elements = page_state_service.getElementStates(final_page.getId());
 				final_page.setElements(elements);					
@@ -250,13 +244,12 @@ public class AuditController {
 		journey.setSteps(steps);
 		journey.setKey(journey.generateKey());
 		JourneyStatus status = getVerifiedOrDiscarded(journey);
-		log.warn("journey "+journey.getId()+"   status =  "+status);
 		
 		journey = journey_service.updateFields(journey.getId(), 
 											   status, 
 											   journey.getKey(),
 											   journey.getOrderedIds());
-		
+		journey.setSteps(steps);
 		//Save all steps to be attached to journey record
 		for(Step step: steps) {
 			journey_service.addStep(journey.getId(), step.getId());
@@ -268,6 +261,7 @@ public class AuditController {
 		
 		
 		if(JourneyStatus.DISCARDED.equals(journey.getStatus()) || existsInJourney(steps.subList(0,  steps.size()-1), final_step)) {
+			log.warn("Journey Discarded! "+journey.getId());
 			DiscardedJourneyMessage journey_message = new DiscardedJourneyMessage(	journey, 
 																					BrowserType.CHROME, 
 																					journey_msg.getDomainId(),
@@ -305,7 +299,6 @@ public class AuditController {
 			steps.add(landing_step);
 			
 			//CREATE JOURNEY
-			//Journey new_journey = new Journey(steps, JourneyStatus.VERIFIED);
 			Journey new_journey = new Journey();
 			List<Long> ordered_ids = steps.stream()
 					  .map(step -> step.getId())
@@ -405,14 +398,14 @@ public class AuditController {
 			List<ElementState> element_states = browser_service.getDomElementStates(page_state, 
 																					xpaths,
 																					browser);
-			/*
+			
 			String host = (new URL(browser.getDriver().getCurrentUrl())).getHost();
 			
 			element_states = browser_service.enrichElementStates(element_states, page_state, browser, host);
 			element_states = ElementStateUtils.enrichBackgroundColor(element_states);
-			 */
+			
 			page_state.setElements(element_states);
-			page_state = page_state_service.save(page_state);
+			page_state = page_state_service.save(domain_audit_id, page_state);
 			audit_record_service.addPageToAuditRecord(domain_audit_id, page_state.getId());
 		}
 		else {

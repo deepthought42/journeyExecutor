@@ -107,23 +107,23 @@ public class PageState extends LookseeObject {
 	 * @throws MalformedURLException 
 	 */
 	public PageState(String screenshot_url, 
-			List<ElementState> elements, 
-			String src, 
-			boolean isLandable, 
-			long scroll_x_offset, 
-			long scroll_y_offset,
-			int viewport_width, 
-			int viewport_height, 
-			BrowserType browser_type, 
-			String full_page_screenshot_url_onload,
-			int full_page_width, 
-			int full_page_height, 
-			String url, 
-			String title, 
-			boolean is_secure, 
-			int http_status_code, 
-			String full_page_screenshot_url_composite, 
-			String url_after_page_load
+					List<ElementState> elements, 
+					String src, 
+					boolean isLandable, 
+					long scroll_x_offset, 
+					long scroll_y_offset,
+					int viewport_width, 
+					int viewport_height, 
+					BrowserType browser_type, 
+					String full_page_screenshot_url_onload,
+					int full_page_width, 
+					int full_page_height, 
+					String url, 
+					String title, 
+					boolean is_secure, 
+					int http_status_code, 
+					String full_page_screenshot_url_composite, 
+					String url_after_page_load
 	) {
 		assert screenshot_url != null;
 		assert elements != null;
@@ -352,8 +352,10 @@ public class PageState extends LookseeObject {
 		for(ElementState element : elements) {
 			key += element.getKey();
 		}
-		*/
 		return "pagestate" + org.apache.commons.codec.digest.DigestUtils.sha256Hex( this.getUrl() + BrowserService.generalizeSrc(BrowserService.extractBody(this.getSrc()) ));
+		 */
+		return "pagestate" + org.apache.commons.codec.digest.DigestUtils.sha256Hex( this.getUrl() + getFullPageScreenshotUrlOnload());
+
 	}
 
 	public String getSrc() {

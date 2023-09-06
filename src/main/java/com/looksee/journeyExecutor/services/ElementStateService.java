@@ -55,6 +55,26 @@ public class ElementStateService {
 	}
 	
 	/**
+	 * saves element state to database
+	 * 
+	 * @param element
+	 * @return saved record of element state
+	 * 
+	 * @pre element != null
+	 */
+	@Retry(name = "neoforj")
+	public ElementState save(long page_state_id, ElementState element) {
+		assert element != null;
+
+		ElementState element_record = element_repo.findByKey(element.getKey());
+		if(element_record == null) {
+			return element_repo.save(element);
+		}
+		
+		return element_record;
+	}
+	
+	/**
 	 * 
 	 * @param element
 	 * @return

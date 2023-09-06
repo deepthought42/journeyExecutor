@@ -208,13 +208,15 @@ public class ElementState extends LookseeObject implements Comparable<ElementSta
 	}
 
 	/**
-	 * Generates a key using both path and result in order to guarantee uniqueness of key as well 
-	 * as easy identity of {@link Test} when generated in the wild via discovery
+	 * Generates a key using the outer html. Keys are not unique across entire dataset. Instead, ElementState keys 
+	 * are only unique per domain.
 	 * 
 	 * @return
 	 */
 	public String generateKey() {
-		
+		return "elementstate"+org.apache.commons.codec.digest.DigestUtils.sha256Hex(getOuterHtml());
+
+		/*
 		String key = "";
 		List<String> properties = new ArrayList<>(getRenderedCssValues().keySet());
 		Collections.sort(properties);
@@ -223,6 +225,7 @@ public class ElementState extends LookseeObject implements Comparable<ElementSta
 		}
 		
 		return "elementstate"+org.apache.commons.codec.digest.DigestUtils.sha256Hex(key)+org.apache.commons.codec.digest.DigestUtils.sha256Hex(getOuterHtml());
+		*/
 	}
 
 	/**

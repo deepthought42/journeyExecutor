@@ -1734,14 +1734,14 @@ public class BrowserService {
 		//extract screenshots for elements
 		for(ElementState element: ordered_elements) {
 			//Check if ElementState already exists for DomainAudit and if so, then check if a screenshot already exists.
-			
-			
 			if(element.getYLocation() < browser.getYScrollOffset()) {
 				browser.scrollToTopOfPage();
 			}
 			
 			WebElement web_element = browser.getDriver().findElement(By.xpath(element.getXpath()));
+			enrichElementState(browser, web_element, element, full_page_screenshot, host);
 			
+			/*
 			if(!isElementVisibleInPane(browser, element)) {
 				browser.scrollToElement(web_element);
 			}
@@ -1832,9 +1832,123 @@ public class BrowserService {
 				image_element.setLogos(logos);
 				image_element.setLabels(labels);
 			}
+			*/
 		}
 		
 		return ordered_elements;
+	}
+	
+	/**
+	 * 
+	 * 
+	 * @param browser
+	 * @param web_element
+	 * @param element_state
+	 * @param page_screenshot
+	 * @param host
+	 * @return
+	 * @throws IOException
+	 */
+	public ElementState enrichElementState(Browser browser, 
+											WebElement web_element, 
+											ElementState element_state, 
+											BufferedImage page_screenshot, 
+											String host) throws IOException
+	{
+		if(!isElementVisibleInPane(browser, element_state)) {
+			browser.scrollToElement(web_element);
+		}
+		
+		String element_screenshot_url = "";
+		BufferedImage element_screenshot = null;
+		Map<String, String> rendered_css_props = Browser.loadCssProperties(web_element, browser.getDriver());
+		Map<String, String> attributes = browser.extractAttributes(web_element);
+		
+		if(BrowserUtils.isLargerThanViewport(element_state, browser.getViewportSize().getWidth(), browser.getViewportSize().getHeight())) {
+			try {
+				long manual_extraction_start = System.currentTimeMillis();
+				element_screenshot = Browser.getElementScreenshot(element_state, page_screenshot);						
+				String screenshot_checksum = ImageUtils.getChecksum(element_screenshot);
+				element_screenshot_url = GoogleCloudStorage.saveImage(element_screenshot, 
+																		host, 
+																		screenshot_checksum, 
+																		BrowserType.create(browser.getBrowserName()));
+
+				log.warn("DONE extracting ELEMENT screenshot manually from full page = "+(System.currentTimeMillis()-manual_extraction_start));
+			}
+			catch(Exception e1){
+				e1.printStackTrace();
+			}
+		}
+		else {
+			try {
+				//extract element screenshot from full page screenshot
+				long screenshot_extract_start = System.currentTimeMillis();
+
+				element_screenshot = browser.getElementScreenshot(web_element);
+				String screenshot_checksum = ImageUtils.getChecksum(element_screenshot);
+				
+				log.warn("DONE extracting element screenshot = "+(System.currentTimeMillis()-screenshot_extract_start));
+
+				element_screenshot_url = GoogleCloudStorage.saveImage(element_screenshot, host, screenshot_checksum, BrowserType.create(browser.getBrowserName()));
+				element_screenshot.flush();
+			}
+			catch(Exception e1){
+				log.warn("execption occurred capturing element screenshot at "+web_element);
+				log.warn("+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++");
+				log.warn("element location = "+element_state.getXLocation()+" , "+element_state.getYLocation());
+				log.warn("element size = "+element_state.getWidth()+" , "+element_state.getHeight());
+				log.warn("viewport size = "+browser.getViewportSize().getWidth()+" , "+browser.getViewportSize().getHeight());
+				log.warn("viewport offsets = "+browser.getXScrollOffset()+" , "+browser.getYScrollOffset());
+				log.warn("+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++");
+
+				e1.printStackTrace();
+				element_screenshot = Browser.getElementScreenshot(element_state, page_screenshot);
+				String screenshot_checksum = ImageUtils.getChecksum(element_screenshot);
+				element_screenshot_url = GoogleCloudStorage.saveImage(element_screenshot, host, screenshot_checksum, BrowserType.create(browser.getBrowserName()));
+				element_screenshot.flush();
+			}
+		}
+		
+		element_state.setScreenshotUrl(element_screenshot_url);
+		element_state.setAttributes(attributes);
+		element_state.setRenderedCssValues(rendered_css_props);
+		
+		if(element_state instanceof ImageElementState && !element_state.getScreenshotUrl().isEmpty()) {
+			long image_feature_start = System.currentTimeMillis();
+
+			//retrieve image landmark properties from google cloud vision
+			//Set<ImageLandmarkInfo> landmark_info_set = CloudVisionUtils.extractImageLandmarks(element_screenshot);
+			Set<ImageLandmarkInfo> landmark_info_set = null;
+			//retrieve image faces properties from google cloud vision
+			//Set<ImageFaceAnnotation> faces = CloudVisionUtils.extractImageFaces(element_screenshot);
+			Set<ImageFaceAnnotation> faces = null;
+			//retrieve image reverse image search properties from google cloud vision
+			ImageSearchAnnotation image_search_set = CloudVisionUtils.searchWebForImageUsage(element_screenshot);
+			ImageSafeSearchAnnotation img_safe_search_annotation = CloudVisionUtils.detectSafeSearch(element_screenshot);
+			
+			//retrieve image logos from google cloud vision
+			Set<Logo> logos = new HashSet<>();//CloudVisionUtils.extractImageLogos(element_screenshot);
+
+			//retrieve image labels
+			Set<Label> labels = CloudVisionUtils.extractImageLabels(element_screenshot);
+			log.warn("FINISHED extracting IMAGE ELEMENT features = "+(System.currentTimeMillis()-image_feature_start));
+
+			ImageElementState image_element = (ImageElementState)element_state;
+			image_element.setScreenshotUrl(element_screenshot_url);
+			image_element.setFaces(faces);
+			image_element.setLandmarkInfoSet(landmark_info_set);
+			image_element.setImageSearchSet(image_search_set);
+
+			image_element.setAdult(img_safe_search_annotation.getAdult());
+			image_element.setRacy(img_safe_search_annotation.getRacy());
+			image_element.setViolence(img_safe_search_annotation.getViolence());
+			image_element.setLogos(logos);
+			image_element.setLabels(labels);
+			return image_element;
+		}
+		
+		return element_state;
 	}
 }
 

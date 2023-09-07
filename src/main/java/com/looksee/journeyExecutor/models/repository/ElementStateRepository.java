@@ -127,4 +127,7 @@ public interface ElementStateRepository extends Neo4jRepository<ElementState, Lo
 	@Query("MATCH (p:PageState)-[]->(e:ElementState) WHERE id(p)=$page_state_id RETURN COUNT(e)")
 	public long getElementStateCount(@Param("page_state_id") long page_state_id);
 
+	@Query("MATCH (p:PageState)-[]->(e:ElementState{key:$element_key}) WHERE id(p)=$page_state_id RETURN COUNT(e)")
+	public ElementState findByPageStateAndKey(@Param("page_state_id") long page_state_id, @Param("element_key") String element_key);
+
 }

@@ -42,6 +42,7 @@ public class ElementStateService {
 	 * 
 	 * @pre element != null
 	 */
+	@Deprecated
 	@Retry(name = "neoforj")
 	public ElementState save(ElementState element) {
 		assert element != null;
@@ -66,9 +67,10 @@ public class ElementStateService {
 	public ElementState save(long page_state_id, ElementState element) {
 		assert element != null;
 
-		ElementState element_record = element_repo.findByKey(element.getKey());
+		ElementState element_record = element_repo.findByPageStateAndKey(page_state_id, element.getKey());
 		if(element_record == null) {
-			return element_repo.save(element);
+			element_record = element_repo.save(element);
+			element_repo.addElement(page_state_id, element_record.getId());
 		}
 		
 		return element_record;
@@ -213,22 +215,18 @@ public class ElementStateService {
 		return element_repo.findByPageStateAndXpath(page_state_key, xpath);
 	}
 
-	public List<ElementState> saveAll(List<ElementState> element_states) {
-		List<ElementState> existing_elements = element_states.stream()
-															 .map(element -> element_repo.findByKey(element.getKey()))
-															 .filter(element -> element != null)
-															 .collect(Collectors.toList());
-		
-		List<ElementState> saved_elements = element_states.stream()
-												  		   .filter(element -> !existing_elements.contains(element))
-														   .map(element -> save(element))
-														   .collect(Collectors.toList());
-		
-		saved_elements.addAll(existing_elements);
-		
-		return saved_elements;
+	/**
+	 * 
+	 * @param element_states
+	 * @param page_state_id
+	 * @return
+	 */
+	public List<ElementState> saveAll(List<ElementState> element_states, long page_state_id) {
+		return element_states.parallelStream()
+									   .map(element -> save(page_state_id, element))
+									   .collect(Collectors.toList());
 	}
-
+	
 	/**
 	 * Returns subset of element keys that exist within the database 
 	 * 

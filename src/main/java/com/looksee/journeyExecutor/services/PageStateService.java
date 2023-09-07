@@ -156,12 +156,7 @@ public class PageStateService {
 		return page_state_repo.findByUrl(url);
 	}
 
-	public boolean addElement(long page_id, long element_id) {		
-		Optional<ElementState> element_state = getElementState(page_id, element_id);
-		
-		if(element_state.isPresent()) {
-			return true;
-		}
+	public boolean addElement(long page_id, long element_id) {
 		return element_state_repo.addElement(page_id, element_id) != null;
 	}
 

@@ -176,6 +176,8 @@ public class Browser {
 			}
 			 */
 		}
+		
+		TimingUtils.pauseThread(5000L);
 	}
 
 	/**
@@ -981,8 +983,8 @@ public class Browser {
 	public void scrollToElement(WebElement element) 
     { 
 		((JavascriptExecutor)driver).executeScript("arguments[0].scrollIntoView({block: 'center'});", element);
-		long pause_time = Math.abs(this.getYScrollOffset() - element.getLocation().getY())/8;
-		TimingUtils.pauseThread(pause_time);
+		//long pause_time = Math.abs(this.getYScrollOffset() - element.getLocation().getY())/8;
+		//TimingUtils.pauseThread(pause_time);
 		getViewportScrollOffset();
     }
 	
@@ -994,8 +996,8 @@ public class Browser {
 	{ 
 		((JavascriptExecutor)driver).executeScript("arguments[0].scrollIntoView({block: 'center', behavior: 'instant'});", element);
 		//generate time to pause based on distance from current browser offset. constant of 8 denotes the pixels per ms that the browser scrolls
-		long pause_time = Math.abs(this.getYScrollOffset() - element.getLocation().getY())/8;
-		TimingUtils.pauseThread(pause_time);
+		//long pause_time = Math.abs(this.getYScrollOffset() - element.getLocation().getY())/8;
+		TimingUtils.pauseThread(500L);
 		getViewportScrollOffset();
 	}
 	
@@ -1006,6 +1008,7 @@ public class Browser {
 	public void scrollToElement(boolean scroll_down, WebElement element) 
 	{ 
 		((JavascriptExecutor)driver).executeScript("arguments[0].scrollIntoView("+scroll_down+");", element);
+		TimingUtils.pauseThread(500L);
 		getViewportScrollOffset();
 	}
 	

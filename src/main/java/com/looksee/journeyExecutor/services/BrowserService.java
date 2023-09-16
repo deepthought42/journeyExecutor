@@ -205,6 +205,70 @@ public class BrowserService {
 		assert element != null;
 		assert classification != null;
 		assert rendered_css_values != null;
+		assert web_elem != null;
+		
+		Point location = web_elem.getLocation();
+		Dimension dimension = web_elem.getSize();
+		
+		String foreground_color = rendered_css_values.get("color");
+		if(foreground_color == null || foreground_color.trim().isEmpty()) {
+			foreground_color = "rgb(0,0,0)";
+		}
+		
+		String background_color = rendered_css_values.get("background-color");
+		if(background_color == null) {
+			background_color = "rgb(255,255,255)";
+		}
+
+		ElementState element_state = new ImageElementState(
+													element.ownText().trim(),
+													element.text(),
+													xpath, 
+													element.tagName(), 
+													attributes, 
+													rendered_css_values, 
+													screenshot_url, 
+													location.getX(), 
+													location.getY(), 
+													dimension.getWidth(), 
+													dimension.getHeight(), 
+													classification,
+													element.outerHtml(),
+													web_elem.isDisplayed(),
+													css_selector, 
+													foreground_color,
+													background_color,
+													landmark_info_set,
+													faces,
+													image_search_set,
+													logos,
+													labels,
+													safe_search_annotation);
+		
+		return element_state;
+	}
+	
+	public static ElementState buildImageElementState(
+			String xpath, 
+			Map<String, String> attributes, 
+			Element element,
+			WebElement web_elem,
+			ElementClassification classification, 
+			Map<String, String> rendered_css_values, 
+			String screenshot_url,
+			String css_selector,
+			Set<ImageLandmarkInfo> landmark_info_set,
+			Set<ImageFaceAnnotation> faces,
+			ImageSearchAnnotation image_search_set,
+			Set<Logo> logos,
+			Set<Label> labels
+	) throws IOException{
+		assert xpath != null && !xpath.isEmpty();
+		assert attributes != null;
+		assert element != null;
+		assert classification != null;
+		assert rendered_css_values != null;
+		assert web_elem != null;
 		
 		Point location = web_elem.getLocation();
 		Dimension dimension = web_elem.getSize();
@@ -241,14 +305,24 @@ public class BrowserService {
 													faces,
 													image_search_set,
 													logos,
-													labels,
-													safe_search_annotation);
+													labels);
 		
 		return element_state;
 	}
 
+	/**
+	 * Generalizes HTML source by removing comments along with script, link, style, and iframe tags.
+	 * Also removes attributes. The goal of this method is to strip out any dynamic data that could cause problems
+	 * @param src
+	 * @return
+	 */
 	public static String generalizeSrc(String src) {
 		assert src != null;
+		
+		if(src.isBlank()) {
+			return "";
+		}
+		
 		Document html_doc = Jsoup.parse(src);
 		html_doc.select("script").remove();
 		html_doc.select("link").remove();
@@ -265,9 +339,11 @@ public class BrowserService {
 			*/
 		    List<String>  attToRemove = new ArrayList<>();
 			for (Attribute a : element.attributes()) {
+				/*
 				if(element.tagName().contentEquals("img") && a.getKey().contentEquals("src")) {
 					continue;
 				}
+				*/
 		        // transfer it into a list -
 		        // to be sure ALL data-attributes will be removed!!!
 		        attToRemove.add(a.getKey());
@@ -405,12 +481,10 @@ public class BrowserService {
 		boolean is_secure = BrowserUtils.checkIfSecure(current_url);
         int status_code = BrowserUtils.getHttpStatus(current_url);
 
-        log.warn("acquiring HTML source and page title");
         //scroll to bottom then back to top to make sure all elements that may be hidden until the page is scrolled
 		String source = Browser.cleanSrc(browser.getDriver().getPageSource());
 		String title = browser.getDriver().getTitle();
 
-		log.warn("Capturing Viewport screenshot");
 		BufferedImage viewport_screenshot = browser.getViewportScreenshot();
 		String screenshot_checksum = ImageUtils.getChecksum(viewport_screenshot);
 		String viewport_screenshot_url = GoogleCloudStorage.saveImage(viewport_screenshot, 
@@ -419,7 +493,6 @@ public class BrowserService {
 																	  BrowserType.create(browser.getBrowserName()));
 		viewport_screenshot.flush();
 		
-		log.warn("Capturing Full Page screenshot");
 		BufferedImage full_page_screenshot = browser.getFullPageScreenshotShutterbug();		
 		String full_page_screenshot_checksum = ImageUtils.getChecksum(full_page_screenshot);
 		String full_page_screenshot_url = GoogleCloudStorage.saveImage(full_page_screenshot, 
@@ -433,7 +506,6 @@ public class BrowserService {
 		long y_offset = browser.getYScrollOffset();
 		Dimension size = browser.getDriver().manage().window().getSize();
 		
-		log.warn("CREATING page state");
 		return new PageState(
 							viewport_screenshot_url,
 							new ArrayList<>(),
@@ -590,7 +662,7 @@ public class BrowserService {
 
 		//iterate over xpaths to build ElementStates without screenshots
 		for(String xpath : xpaths) {
-			long start_time = System.currentTimeMillis();
+			//long start_time = System.currentTimeMillis();
 			try {
 				WebElement web_element = browser.findElement(xpath);
 				if(web_element == null) {
@@ -608,11 +680,7 @@ public class BrowserService {
 				}
 				
 				String css_selector = generateCssSelectorFromXpath(xpath);
-				//Map<String, String> rendered_css_props = Browser.loadCssProperties(web_element, browser.getDriver());
-				//Map<String, String> attributes = browser.extractAttributes(web_element);
-
 				ElementClassification classification = null;
-				
 				List<String> children = getChildElements(xpath, xpaths);
 				
 				if(children.isEmpty()) {
@@ -629,8 +697,6 @@ public class BrowserService {
 				}
 								
 				Element element = elements.first();
-				
-
 				if(isImageElement(web_element)) {
 					ElementState element_state = buildImageElementState(xpath, 
 																	   new HashMap<>(), 
@@ -640,7 +706,6 @@ public class BrowserService {
 																	   new HashMap<>(), 
 																	   null,
 																	   css_selector,
-																	   null,
 																	   null,
 																	   null,
 																	   null,
@@ -704,6 +769,7 @@ public class BrowserService {
 				}
 				*/
 			}
+			/*
 			catch(NoSuchElementException e) {
 				log.warn("No such element found :: "+xpath+"       ;;    on page : "+page_state.getUrl());
 			}
@@ -713,14 +779,15 @@ public class BrowserService {
 			catch(NullPointerException e) {
 				log.warn("There was an NPE error finding element with xpath .... "+xpath + "   ;;   ON page :: "+page_state.getUrl());
 				//e.printStackTrace();
-			} catch (IOException e) {
+			} 
+			*/catch (IOException e) {
 				// TODO Auto-generated catch block
 				log.warn("IOException occurred while building elements");
 				//e.printStackTrace();
 			}
 			
-			long end_time = System.currentTimeMillis();
-			log.warn("Extracted element without screenshot or enrichment in ms = "+(end_time-start_time));
+			//long end_time = System.currentTimeMillis();
+			//log.warn("Extracted element without screenshot or enrichment in ms = "+(end_time-start_time));
 		}
 		
 
@@ -1640,7 +1707,7 @@ public class BrowserService {
         if(matcher.find()) {
         	return matcher.group();
         }
-        return null;
+        return "";
 	}
 
 	public static Set<String> extractMetadata(String src) {
@@ -1866,15 +1933,12 @@ public class BrowserService {
 		
 		if(BrowserUtils.isLargerThanViewport(element_state, browser.getViewportSize().getWidth(), browser.getViewportSize().getHeight())) {
 			try {
-				long manual_extraction_start = System.currentTimeMillis();
 				element_screenshot = Browser.getElementScreenshot(element_state, page_screenshot);						
 				String screenshot_checksum = ImageUtils.getChecksum(element_screenshot);
 				element_screenshot_url = GoogleCloudStorage.saveImage(element_screenshot, 
 																		host, 
 																		screenshot_checksum, 
 																		BrowserType.create(browser.getBrowserName()));
-
-				log.warn("DONE extracting ELEMENT screenshot manually from full page = "+(System.currentTimeMillis()-manual_extraction_start));
 			}
 			catch(Exception e1){
 				e1.printStackTrace();
@@ -1883,13 +1947,9 @@ public class BrowserService {
 		else {
 			try {
 				//extract element screenshot from full page screenshot
-				long screenshot_extract_start = System.currentTimeMillis();
-
 				element_screenshot = browser.getElementScreenshot(web_element);
 				String screenshot_checksum = ImageUtils.getChecksum(element_screenshot);
 				
-				log.warn("DONE extracting element screenshot = "+(System.currentTimeMillis()-screenshot_extract_start));
-
 				element_screenshot_url = GoogleCloudStorage.saveImage(element_screenshot, host, screenshot_checksum, BrowserType.create(browser.getBrowserName()));
 				element_screenshot.flush();
 			}
@@ -1914,6 +1974,70 @@ public class BrowserService {
 		element_state.setAttributes(attributes);
 		element_state.setRenderedCssValues(rendered_css_props);
 		
+		
+		
+		return element_state;
+	}
+
+	public List<ElementState> enrichImageElements(List<ElementState> element_states, 
+												   PageState page_state,
+												   Browser browser, 
+												   String host) 
+	{	
+		long enrich_start = System.currentTimeMillis();
+
+		List<ElementState> elements = element_states.parallelStream()
+													.map(element -> {
+														if(element instanceof ImageElementState && !element.getScreenshotUrl().isEmpty()) {
+															long image_feature_start = System.currentTimeMillis();
+															BufferedImage element_screenshot;
+															try {
+																element_screenshot = ImageIO.read(new URL(element.getScreenshotUrl()));
+							
+																//retrieve image landmark properties from google cloud vision
+																//Set<ImageLandmarkInfo> landmark_info_set = CloudVisionUtils.extractImageLandmarks(element_screenshot);
+																Set<ImageLandmarkInfo> landmark_info_set = null;
+																//retrieve image faces properties from google cloud vision
+																//Set<ImageFaceAnnotation> faces = CloudVisionUtils.extractImageFaces(element_screenshot);
+																Set<ImageFaceAnnotation> faces = null;
+																//retrieve image reverse image search properties from google cloud vision
+																ImageSearchAnnotation image_search_set = CloudVisionUtils.searchWebForImageUsage(element_screenshot);
+																ImageSafeSearchAnnotation img_safe_search_annotation = CloudVisionUtils.detectSafeSearch(element_screenshot);
+																
+																//retrieve image logos from google cloud vision
+																Set<Logo> logos = new HashSet<>();//CloudVisionUtils.extractImageLogos(element_screenshot);
+	
+																//retrieve image labels
+																Set<Label> labels = CloudVisionUtils.extractImageLabels(element_screenshot);
+																log.warn("FINISHED extracting IMAGE ELEMENT features = "+(System.currentTimeMillis()-image_feature_start));
+	
+																ImageElementState image_element = (ImageElementState)element;
+																//image_element.setScreenshotUrl(element_screenshot_url);
+																image_element.setFaces(faces);
+																image_element.setLandmarkInfoSet(landmark_info_set);
+																image_element.setImageSearchSet(image_search_set);
+	
+																image_element.setAdult(img_safe_search_annotation.getAdult());
+																image_element.setRacy(img_safe_search_annotation.getRacy());
+																image_element.setViolence(img_safe_search_annotation.getViolence());
+																image_element.setLogos(logos);
+																image_element.setLabels(labels);
+																return image_element;
+															} catch (MalformedURLException e) {
+																// TODO Auto-generated catch block
+																e.printStackTrace();
+															} catch (IOException e) {
+																// TODO Auto-generated catch block
+																e.printStackTrace();
+															}
+														}
+														return element;
+													})
+													.collect(Collectors.toList());
+		
+		log.warn("FINISHED extracting ALL IMAGE ELEMENT features = "+(System.currentTimeMillis()-enrich_start));
+
+		/*
 		if(element_state instanceof ImageElementState && !element_state.getScreenshotUrl().isEmpty()) {
 			long image_feature_start = System.currentTimeMillis();
 
@@ -1948,7 +2072,9 @@ public class BrowserService {
 			return image_element;
 		}
 		
-		return element_state;
+		return elements;
+		*/
+		return elements;
 	}
 }
 

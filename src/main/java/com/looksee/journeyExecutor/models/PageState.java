@@ -81,6 +81,9 @@ public class PageState extends LookseeObject {
 		setStylesheetUrls(new HashSet<>());
 		setMetadata(new HashSet<>());
 		setFaviconUrl(new HashSet<>());
+		setSrc("");
+		setBrowser(BrowserType.CHROME);
+		
 	}
 	
 	/**
@@ -345,17 +348,8 @@ public class PageState extends LookseeObject {
 	 * @pre page != null
 	 */
 	public String generateKey() {
-		/*
-		List<ElementState> elements = new ArrayList<>(this.getElements());
-		Collections.sort(elements);
-		String key = "";
-		for(ElementState element : elements) {
-			key += element.getKey();
-		}
-		return "pagestate" + org.apache.commons.codec.digest.DigestUtils.sha256Hex( this.getUrl() + BrowserService.generalizeSrc(BrowserService.extractBody(this.getSrc()) ));
-		 */
-		return "pagestate" + org.apache.commons.codec.digest.DigestUtils.sha256Hex( this.getUrl() + getFullPageScreenshotUrlOnload());
-
+		String gen_src = BrowserService.generalizeSrc(BrowserService.extractBody(this.getSrc()) );
+		return "pagestate" + org.apache.commons.codec.digest.DigestUtils.sha256Hex( getUrl() + gen_src +getBrowser());
 	}
 
 	public String getSrc() {

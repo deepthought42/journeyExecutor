@@ -124,7 +124,7 @@ public class AuditController {
 		Body.Message message = body.getMessage();
 		String data = message.getData();
 	    String target = !data.isEmpty() ? new String(Base64.getDecoder().decode(data)) : "";
-        log.warn("verify journey msg received = "+target);
+        log.debug("verify journey msg received = "+target);
 
 	    ObjectMapper input_mapper = new ObjectMapper();
 	    JourneyCandidateMessage journey_msg = input_mapper.readValue(target, JourneyCandidateMessage.class);
@@ -156,29 +156,29 @@ public class AuditController {
 			Domain domain = domain_service.findById(journey_msg.getDomainId()).get();
 			URL domain_url = new URL(BrowserUtils.sanitizeUserUrl(domain.getUrl()));
 			browser = browser_service.getConnection(BrowserType.CHROME, BrowserEnvironment.DISCOVERY);
+			
 			performJourneyStepsInBrowser(steps, browser);
 			
-			String current_url = BrowserUtils.getPageUrl(
-									BrowserUtils.sanitizeUserUrl(
-											browser.getDriver().getCurrentUrl()));
+			String sanitized_url = BrowserUtils.sanitizeUserUrl(browser.getDriver().getCurrentUrl());
+			String current_url = BrowserUtils.getPageUrl(sanitized_url);
 			//if current url is external URL then create ExternalPageState
-			if(BrowserUtils.isExternalLink(domain_url.getHost(), current_url)) {
+			log.warn("current url = "+current_url);
+			if(BrowserUtils.isExternalLink(domain_url.getHost(), new URL(sanitized_url).getHost())) {
+				log.warn("EXTERNAL URL detected = "+current_url);
 				final_page = new PageState();
 				final_page.setUrl(current_url);	
 				final_page.setKey(final_page.generateKey());
+				final_page.setSrc("");
+				final_page.setBrowser(BrowserType.CHROME);
 				final_page = page_state_service.save(domain_audit_id, final_page);
 			}
 			else {
-				//if current url is different than second to last page then try to lookup page in database before building page
-				log.warn("looking up url = "+current_url);
-				
-				log.warn("building page");
+				log.warn("INTERNAL URL detected = "+current_url);
+				//if current url is different than second to last page then try to lookup page in database before building page				
 				final_page = buildPage(browser, journey_msg.getDomainAuditRecordId());
 				
-				log.warn("loading element states for page = "+final_page.getId());
 				List<ElementState> elements = page_state_service.getElementStates(final_page.getId());
 				final_page.setElements(elements);					
-				log.warn("total elements for final page = "+final_page.getElements().size());
 			}
 		}
 		catch(JavascriptException e) {
@@ -197,16 +197,18 @@ public class AuditController {
 		}
 		catch(Exception e) {
 			log.warn("Exception occurred! Returning FAILURE;  message = "+e.getMessage());
-			
-			if(e.getMessage().contains("move target out of bounds")){
-				e.printStackTrace();
-			}
+			e.printStackTrace();
 			return new ResponseEntity<String>("Error occured while validating journey with id = "+journey.getId(), HttpStatus.INTERNAL_SERVER_ERROR);
 		}
 		finally {			
 			if(browser != null) {
 				browser.close();
 			}
+		}
+		
+		if(final_page == null) {
+			log.warn("FINAL PAGE IS NULL! RETURNING ERROR");
+			return new ResponseEntity<String>("Error occured building page while validating journey with id = "+journey.getId(), HttpStatus.INTERNAL_SERVER_ERROR);
 		}
 		
 		//STEP AND JOURNEY SETUP	
@@ -219,7 +221,6 @@ public class AuditController {
 			
 			//final_step.setStartPage(start_page);
 			final_step.setKey(final_step.generateKey());			
-			log.warn("final step action = "+((SimpleStep)final_step).getAction());
 			Step last_step = new SimpleStep(((SimpleStep)final_step).getAction(), "");
 			
 			last_step.setKey(final_step.getKey());
@@ -229,12 +230,9 @@ public class AuditController {
 			step_service.setElementState(last_step.getId(), ((SimpleStep)final_step).getElementState().getId());
 			final_step.setId(last_step.getId());
 				
-			//steps.set(steps.size()-1, final_step);
+			steps.set(steps.size()-1, final_step);
 		}
 		else {
-			log.warn("adding final page to final step and updating key =  "+final_page);
-			log.warn("final page id = "+final_page.getId());
-			log.warn("final step id = " +final_step.getId());
 			step_service.addEndPage(final_step.getId(), final_page.getId());
 			step_service.updateKey(final_step.getId(), final_step.getKey());
 		}
@@ -261,7 +259,7 @@ public class AuditController {
 		
 		
 		if(JourneyStatus.DISCARDED.equals(journey.getStatus()) || existsInJourney(steps.subList(0,  steps.size()-1), final_step)) {
-			log.warn("Journey Discarded! "+journey.getId());
+			log.warn("DISCARDED Journey! "+journey.getId());
 			DiscardedJourneyMessage journey_message = new DiscardedJourneyMessage(	journey, 
 																					BrowserType.CHROME, 
 																					journey_msg.getDomainId(),
@@ -275,16 +273,13 @@ public class AuditController {
 					&& !final_step.getStartPage().getUrl().equals(final_step.getEndPage().getUrl())) 
 		{
 			//if page state isn't associated with domain audit then send pageBuilt message
-			log.warn("Looking up page state with id = "+final_page.getId() + ";  Audit record id = "+journey_msg.getDomainAuditRecordId());
-
-			log.warn("page state record is null");
 			PageBuiltMessage page_built_msg = new PageBuiltMessage(journey_msg.getAccountId(),
 																	journey_msg.getDomainAuditRecordId(),
 																	journey_msg.getDomainId(),
 																	final_page.getId());
 			
 			String page_built_str = mapper.writeValueAsString(page_built_msg);
-			log.warn("sending page built message ...");
+			log.warn("SENDING page built message ...");
 			page_built_topic.publish(page_built_str);
 			
 			//create landing step and make it the first record in a new list of steps
@@ -358,8 +353,6 @@ public class AuditController {
 		
 		PageState second_to_last_page = PathUtils.getSecondToLastPageState(journey.getSteps());
 		PageState final_page = PathUtils.getLastPageState(journey.getSteps());
-		log.warn("final page = "+final_page);
-		log.warn("second to last page "+second_to_last_page);
 		
 		if((journey.getSteps().size() > 1 && !(last_step instanceof LandingStep)) 
 				&& (final_page.equals(second_to_last_page)
@@ -386,22 +379,19 @@ public class AuditController {
 		assert browser != null;
 		
 		PageState page_state = browser_service.performBuildPageProcess(browser);
-
 		PageState page_state_record = audit_record_service.findPageWithKey(domain_audit_id, page_state.getKey());
 
-		if(page_state_record == null 
-				|| element_state_service.getAllExistingKeys(page_state_record.getId()).isEmpty()) 
+		if(page_state_record == null ) 
 		{				
-			log.warn("Extracting element states...");
-			
+			log.warn("Extracting element states..."+page_state.getUrl()+";   key = "+page_state.getKey());
 			List<String> xpaths = browser_service.extractAllUniqueElementXpaths(page_state.getSrc());
 			List<ElementState> element_states = browser_service.getDomElementStates(page_state, 
 																					xpaths,
 																					browser);
 			
 			String host = (new URL(browser.getDriver().getCurrentUrl())).getHost();
-			
 			element_states = browser_service.enrichElementStates(element_states, page_state, browser, host);
+			element_states = browser_service.enrichImageElements(element_states, page_state, browser, host);
 			element_states = ElementStateUtils.enrichBackgroundColor(element_states);
 			
 			page_state.setElements(element_states);
@@ -409,7 +399,7 @@ public class AuditController {
 			audit_record_service.addPageToAuditRecord(domain_audit_id, page_state.getId());
 		}
 		else {
-			log.warn("page state already exists for domain audit!!!!!!");
+			log.warn("page state already exists for domain audit!!!!!! - "+page_state.getUrl());
 			page_state = page_state_record;
 		}
 		

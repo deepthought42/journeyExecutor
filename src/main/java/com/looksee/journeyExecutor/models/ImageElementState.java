@@ -46,6 +46,33 @@ public class ImageElementState extends ElementState {
 		setImageFlagged(false);
 	}
 	
+	/**
+	 * Constructor
+	 * 
+	 * @param owned_text
+	 * @param all_text
+	 * @param xpath
+	 * @param tagName
+	 * @param attributes
+	 * @param rendered_css_values
+	 * @param screenshot_url
+	 * @param x
+	 * @param y
+	 * @param width
+	 * @param height
+	 * @param classification
+	 * @param outer_html
+	 * @param is_visible visibility of the {@linkplain WebElement}
+	 * @param css_selector
+	 * @param foreground_color
+	 * @param background_color
+	 * @param landmark_info_set
+	 * @param faces
+	 * @param image_search
+	 * @param logos
+	 * @param labels
+	 * @param safe_search_annotation
+	 */
 	public ImageElementState(String owned_text, 
 							 String all_text, 
 							 String xpath, 
@@ -96,6 +123,54 @@ public class ImageElementState extends ElementState {
 		setAdult(safe_search_annotation.getAdult());
 		setRacy(safe_search_annotation.getRacy());
 		setViolence(safe_search_annotation.getViolence());
+	}
+	
+	public ImageElementState(String owned_text, 
+			 String all_text, 
+			 String xpath, 
+			 String tagName, 
+			 Map<String, String> attributes,
+			 Map<String, String> rendered_css_values, 
+			 String screenshot_url, 
+			 int x, 
+			 int y, 
+			 int width, 
+			 int height,
+			 ElementClassification classification, 
+			 String outer_html, 
+			 boolean is_visible, 
+			 String css_selector,
+			 String foreground_color, 
+			 String background_color, 
+			 Set<ImageLandmarkInfo> landmark_info_set,
+			 Set<ImageFaceAnnotation> faces, 
+			 ImageSearchAnnotation image_search, 
+			 Set<Logo> logos,
+			 Set<Label> labels) 
+	{
+		super(owned_text,
+				all_text,
+				xpath,
+				tagName,
+				attributes,
+				rendered_css_values,
+				screenshot_url,
+				x,
+				y,
+				width,
+				height,
+				classification,
+				outer_html,
+				is_visible,
+				css_selector,
+				foreground_color,
+				background_color,
+				false);
+			setLandmarkInfoSet(landmark_info_set);
+			setFaces(faces);
+			setImageSearchSet(image_search);
+			setLogos(logos);
+			setLabels(labels);
 	}
 
 	public Set<Logo> getLogos() {

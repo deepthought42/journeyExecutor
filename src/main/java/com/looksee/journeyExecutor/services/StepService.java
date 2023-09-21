@@ -1,11 +1,15 @@
 package com.looksee.journeyExecutor.services;
 
+import java.util.List;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import com.looksee.journeyExecutor.models.ElementState;
+import com.looksee.journeyExecutor.models.enums.JourneyStatus;
 import com.looksee.journeyExecutor.models.journeys.LandingStep;
 import com.looksee.journeyExecutor.models.journeys.LoginStep;
 import com.looksee.journeyExecutor.models.journeys.SimpleStep;
@@ -13,8 +17,10 @@ import com.looksee.journeyExecutor.models.journeys.Step;
 import com.looksee.journeyExecutor.models.repository.ElementStateRepository;
 import com.looksee.journeyExecutor.models.repository.LandingStepRepository;
 import com.looksee.journeyExecutor.models.repository.LoginStepRepository;
+import com.looksee.journeyExecutor.models.repository.PageStateRepository;
 import com.looksee.journeyExecutor.models.repository.SimpleStepRepository;
 import com.looksee.journeyExecutor.models.repository.StepRepository;
+import com.looksee.journeyExecutor.models.PageState;
 
 
 /**
@@ -38,15 +44,27 @@ public class StepService {
 	private ElementStateRepository element_state_repo;
 	
 	@Autowired
+	private PageStateRepository page_state_repo;
+	
+	@Autowired
 	private LandingStepRepository landing_step_repo;
 	
 	public Step findByKey(String step_key) {
 		return step_repo.findByKey(step_key);
 	}
 
+	/**
+	 * Saves a {@link Step} to the database
+	 * @Version - 9/19/2023
+	 * 
+	 * @param step
+	 * 
+	 * @return saved database record for {@link Step}
+	 */
+	@Transactional
 	public Step save(Step step) {
 		assert step != null;
-		
+				
 		if(step instanceof SimpleStep) {
 			log.warn("saving simple step");
 			SimpleStep step_record = simple_step_repo.findByKey(step.getKey());
@@ -59,18 +77,23 @@ public class StepService {
 				return step_record;
 			}
 			
-			/*
 			SimpleStep new_simple_step = new SimpleStep();
 			new_simple_step.setAction(simple_step.getAction());
 			new_simple_step.setActionInput(simple_step.getActionInput());
+			new_simple_step.setStatus(simple_step.getStatus());
+			new_simple_step.setCandidateKey(simple_step.getCandidateKey());
 			new_simple_step.setKey(simple_step.generateKey());
-			*/
-			SimpleStep new_simple_step = simple_step_repo.save(simple_step);
-			//new_simple_step.setStartPage(simple_step_repo.addStartPage(new_simple_step.getId(), simple_step.getStartPage().getId()));
+			new_simple_step = simple_step_repo.save(new_simple_step);
+			
+			setStartPage(new_simple_step.getId(), simple_step.getStartPage().getId());
 			new_simple_step.setStartPage(simple_step.getStartPage());
-			//new_simple_step.setEndPage(simple_step_repo.addEndPage(new_simple_step.getId(), simple_step.getEndPage().getId()));
-			new_simple_step.setEndPage(simple_step.getEndPage());
-			//new_simple_step.setElementState(simple_step_repo.addElementState(new_simple_step.getId(), simple_step.getElementState().getId()));
+			
+			if(simple_step.getEndPage() != null) {
+				addEndPage(new_simple_step.getId(), simple_step.getEndPage().getId());
+				new_simple_step.setEndPage(simple_step.getEndPage());
+			}
+			
+			setElementState(new_simple_step.getId(), simple_step.getElementState().getId());
 			new_simple_step.setElementState(simple_step.getElementState());
 			
 			return new_simple_step;
@@ -92,14 +115,20 @@ public class StepService {
 				return step_record;
 			}
 			
+			
 			LoginStep new_login_step = new LoginStep();
 			new_login_step.setKey(login_step.generateKey());
-			log.warn("saving login step");
+			new_login_step.setCandidateKey(login_step.getCandidateKey());
+			new_login_step.setStatus(login_step.getStatus());
+			log.warn("saving LOGIN step");
 			new_login_step = login_step_repo.save(new_login_step);
+			
 			log.warn("adding start page to login step");
+			setStartPage(new_login_step.getId(), login_step.getStartPage().getId());
 			new_login_step.setStartPage(login_step.getStartPage());
 			
 			log.warn("setting end page");
+			addEndPage(new_login_step.getId(), login_step.getEndPage().getId());
 			new_login_step.setEndPage(login_step.getEndPage());
 			
 			log.warn("adding username element to login step");
@@ -126,9 +155,12 @@ public class StepService {
 			}
 			else {
 				LandingStep landing_step = (LandingStep)step;
+				landing_step.setStatus(step.getStatus());
+				landing_step.setKey(step.getKey());
+				landing_step.setCandidateKey(step.getCandidateKey());
 				
 				Step saved_step = landing_step_repo.save(landing_step);
-				//page_state_repo.addStartPage(saved_step.getId(), landing_step.getStartPage().getId());
+				setStartPage(saved_step.getId(), landing_step.getStartPage().getId());
 				saved_step.setStartPage(landing_step.getStartPage());
 				
 				return saved_step;
@@ -155,14 +187,45 @@ public class StepService {
 		}
 	}
 
+	/**
+	 * Checks if page state is listed as a the start page for a journey step
+	 * 
+	 * @param page_state
+	 * @param domain_map_id TODO
+	 * @return
+	 * 
+	 * @pre page_state != null
+	 * @pre page_state.getId() != null
+	 */
+	@Transactional
+	public List<Step> getStepsWithStartPage(PageState page_state, long domain_map_id) {
+		assert page_state != null;
+		assert page_state.getId() != null;
+				
+		return step_repo.getStepsWithStartPage(domain_map_id, page_state.getId());
+	}
+
+	@Transactional
+	public List<Step> getStepsWithStartPage(long domainAuditRecordId, PageState page_state) {
+		return step_repo.getStepsWithStartPage(domainAuditRecordId, page_state.getKey());
+	}
+	
+	@Transactional
+	public PageState getEndPage(long id) {
+		return page_state_repo.getEndPageForStep(id);
+	}
+	
+	@Transactional
 	public ElementState getElementState(String step_key) {
 		return element_state_repo.getElementStateForStep(step_key);
 	}
 	
+	@Transactional
 	public void setElementState(long step_id, long element_id) {
 		step_repo.setElementState(step_id, element_id);
 	}
 
+	@Transactional
 	public void addEndPage(long step_id, long page_id) {
 		step_repo.addEndPage(step_id, page_id);
 	}
@@ -173,6 +236,10 @@ public class StepService {
 
 	public void setStartPage(Long step_id, Long page_id) {
 		step_repo.setStartPage(step_id, page_id);		
+	}
+
+	public void updateStatus(long step_id, JourneyStatus status) {
+		step_repo.updateStatus(step_id, status);
 	}
 }
 

@@ -5,10 +5,15 @@ import java.util.List;
 import org.springframework.data.neo4j.repository.Neo4jRepository;
 import org.springframework.data.neo4j.repository.query.Query;
 import org.springframework.data.repository.query.Param;
+import org.springframework.stereotype.Repository;
 
 import com.looksee.journeyExecutor.models.enums.JourneyStatus;
 import com.looksee.journeyExecutor.models.journeys.Journey;
 
+import io.github.resilience4j.retry.annotation.Retry;
+
+@Repository
+@Retry(name = "neoforj")
 public interface JourneyRepository extends Neo4jRepository<Journey, Long>  {
 	
 	public Journey findByKey(@Param("key") String key);

@@ -164,9 +164,10 @@ public class Browser {
 		
 		try {
 			waitForPageToLoad();
+			TimingUtils.pauseThread(3000L);
 		}catch(Exception e) {		
-			e.printStackTrace();
 			/*
+			e.printStackTrace();
 			Alert alert = isAlertPresent();
 			if(alert != null){
 				log.debug("Alert was encountered during navigation page load!!!");
@@ -187,6 +188,8 @@ public class Browser {
 	 * @return
 	 * 
 	 * @precondition src != null
+	 * 
+	 * @Version - 9/18/2023
 	 */
 	public static String cleanSrc(String src) {
 		Document html_doc = Jsoup.parse(src);
@@ -206,7 +209,13 @@ public class Browser {
 		}
 		
 		String html = html_doc.html();
+		html = html.replace("  ", " ");
+		html = html.replace("\n", "");
+		html = html.replace("\r", "");
+		html = html.replace("\t", "");
+
 		return html.replace(" style=\"\"", "");
+		
 		//html_doc.select("link,script,style").remove();
 		//return html_doc.html();
 	}
@@ -954,74 +963,7 @@ public class Browser {
 		this.xScrollOffset = x_scroll_offset;
 	}
 	
-	/**
-	 * Scroll to element by scrolling down 1 screen length at a time until the element is visible
-	 *  within the viewport\
-	 *  
-	 * @param xpath
-	 * @param elem
-	 */
-	public void scrollToElement(String xpath, WebElement elem) 
-    {
-		if(xpath.contains("nav") || xpath.startsWith("//body/header")) {
-			scrollToTopOfPage();
-			return;
-		}
-		
-		Point element_offset = elem.getLocation();
-		while(this.getYScrollOffset() != element_offset.getY()) {
-			scrollDownFull();
-		}
-
-		getViewportScrollOffset();
-    }
 	
-	/**
-	 * 
-	 * @param element
-	 */
-	public void scrollToElement(WebElement element) 
-    { 
-		((JavascriptExecutor)driver).executeScript("arguments[0].scrollIntoView({block: 'center'});", element);
-		//long pause_time = Math.abs(this.getYScrollOffset() - element.getLocation().getY())/8;
-		//TimingUtils.pauseThread(pause_time);
-		getViewportScrollOffset();
-    }
-	
-	/**
-	 * 
-	 * @param element
-	 */
-	public void scrollToElementCentered(WebElement element) 
-	{ 
-		((JavascriptExecutor)driver).executeScript("arguments[0].scrollIntoView({block: 'center', behavior: 'instant'});", element);
-		//generate time to pause based on distance from current browser offset. constant of 8 denotes the pixels per ms that the browser scrolls
-		//long pause_time = Math.abs(this.getYScrollOffset() - element.getLocation().getY())/8;
-		TimingUtils.pauseThread(500L);
-		getViewportScrollOffset();
-	}
-	
-	/**
-	 * 
-	 * @param element
-	 */
-	public void scrollToElement(boolean scroll_down, WebElement element) 
-	{ 
-		((JavascriptExecutor)driver).executeScript("arguments[0].scrollIntoView("+scroll_down+");", element);
-		TimingUtils.pauseThread(500L);
-		getViewportScrollOffset();
-	}
-	
-	/**
-	 * Scroll to coordinate
-	 * 
-	 * @param element
-	 */
-	public void scrollTo(int x, int y) 
-	{ 
-		((JavascriptExecutor)driver).executeScript("window.scrollTo("+x+","+y+");");
-		getViewportScrollOffset();
-	}
 	
 	/**
 	 * 
@@ -1358,9 +1300,7 @@ public class Browser {
 	 * Scroll to position (0,0)
 	 */
 	public void scrollToTopOfPage() {
-		((JavascriptExecutor) driver)
-	     	.executeScript("window.scrollTo(0, 0)");
-		getViewportScrollOffset();
+		scrollTo(0,0);
 	}
 	
 	public void scrollDownPercent(double percent) {
@@ -1370,11 +1310,86 @@ public class Browser {
 	}
 	
 	public void scrollDownFull() {
-		((JavascriptExecutor) driver)
-	     	.executeScript("window.scrollBy(0, window.innerHeight)");
-		getViewportScrollOffset();
+		scrollTo(0, getViewportSize().getHeight());
 	}
 
+	/**
+	 * Scroll to element by scrolling down 1 screen length at a time until the element is visible
+	 *  within the viewport\
+	 *  
+	 * @param xpath
+	 * @param elem
+	 */
+	public void scrollToElement(String xpath, WebElement elem) 
+    {
+		if(xpath.contains("nav") || xpath.startsWith("//body/header")) {
+			scrollToTopOfPage();
+			return;
+		}
+		
+		Point element_offset = elem.getLocation();
+		while(this.getYScrollOffset() != element_offset.getY()) {
+			scrollDownFull();
+		}
+
+		getViewportScrollOffset();
+    }
+	
+	/**
+	 * 
+	 * @param element
+	 */
+	public void scrollToElement(WebElement element) 
+    { 
+		((JavascriptExecutor)driver).executeScript("arguments[0].scrollIntoView({block: 'center'});", element);
+		long pause_time = Math.abs(this.getYScrollOffset() - element.getLocation().getY())/8;
+		TimingUtils.pauseThread(pause_time);
+		getViewportScrollOffset();
+    }
+	
+	/**
+	 * 
+	 * @param element
+	 */
+	public void scrollToElementCentered(WebElement element) 
+	{ 
+		((JavascriptExecutor)driver).executeScript("arguments[0].scrollIntoView({block: 'center', behavior: 'instant'});", element);
+
+		//generate time to pause based on distance from current browser offset. constant of 8 denotes the pixels per ms that the browser scrolls
+		long pause_time = Math.abs(this.getYScrollOffset() - element.getLocation().getY())/8;
+		TimingUtils.pauseThread(pause_time);
+		
+		getViewportScrollOffset();
+	}
+	
+	/**
+	 * 
+	 * @param element
+	 */
+	public void scrollToElement(boolean scroll_down, WebElement element) 
+	{ 
+		((JavascriptExecutor)driver).executeScript("arguments[0].scrollIntoView("+scroll_down+");", element);
+		//generate time to pause based on distance from current browser offset. constant of 8 denotes the pixels per ms that the browser scrolls
+		long pause_time = Math.abs(this.getYScrollOffset() - element.getLocation().getY())/8;
+		TimingUtils.pauseThread(pause_time);
+		getViewportScrollOffset();
+	}
+	
+	/**
+	 * Scroll to coordinate
+	 * 
+	 * @param element
+	 */
+	public void scrollTo(int x, int y) 
+	{ 
+		((JavascriptExecutor)driver).executeScript("window.scrollTo("+x+","+y+");");
+		//generate time to pause based on distance from current browser offset. constant of 8 denotes the pixels per ms that the browser scrolls
+		long pause_time = Math.abs(this.getYScrollOffset() - y)/4;
+		TimingUtils.pauseThread(pause_time);
+
+		getViewportScrollOffset();
+	}
+	
 	/**
 	 * Retrieve HTML source form webpage
 	 * 

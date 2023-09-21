@@ -6,7 +6,10 @@ import java.util.List;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonTypeName;
+import com.looksee.journeyExecutor.models.enums.JourneyStatus;
 import com.looksee.journeyExecutor.models.enums.StepType;
+import com.looksee.journeyExecutor.models.journeys.Redirect;
+import com.looksee.journeyExecutor.models.journeys.Step;
 
 @JsonIgnoreProperties(ignoreUnknown = true)
 @JsonTypeName("REDIRECT")
@@ -21,7 +24,10 @@ public class Redirect extends Step {
 		setKey(generateKey());
 	}
 	
-	public Redirect(String start_url, List<String> urls) {
+	public Redirect(String start_url, 
+					List<String> urls, 
+					JourneyStatus status) 
+	{
 		assert urls != null;
 		assert !urls.isEmpty();
 		assert start_url != null;
@@ -29,7 +35,11 @@ public class Redirect extends Step {
 		
 		setStartUrl(start_url);
 		setUrls(urls);
+		setStatus(status);
 		setKey(generateKey());
+		if(JourneyStatus.CANDIDATE.equals(status)) {
+			setCandidateKey(generateCandidateKey());
+		}
 	}
 
 	@Override
@@ -41,6 +51,11 @@ public class Redirect extends Step {
 		return "redirect"+org.apache.commons.codec.digest.DigestUtils.sha256Hex(url_string);
 	}
 
+	@Override
+	public String generateCandidateKey() {
+		return generateKey();
+	}
+	
 	public List<String> getUrls() {
 		return urls;
 	}
@@ -92,15 +107,14 @@ public class Redirect extends Step {
 		}
 		this.startUrl = new_url;
 	}
-
+	
 	@Override
 	public Step clone() {
-		return new Redirect(getStartUrl(), getUrls());
+		return new Redirect(getStartUrl(), getUrls(), getStatus());
 	}
 
 	@Override
 	StepType getStepType() {
 		return StepType.REDIRECT;
 	}
-
 }

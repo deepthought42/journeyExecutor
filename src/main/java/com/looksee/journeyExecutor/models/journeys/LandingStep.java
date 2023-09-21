@@ -2,6 +2,7 @@ package com.looksee.journeyExecutor.models.journeys;
 
 
 import com.looksee.journeyExecutor.models.enums.Action;
+import com.looksee.journeyExecutor.models.enums.JourneyStatus;
 import com.looksee.journeyExecutor.models.enums.StepType;
 
 import org.springframework.data.neo4j.core.schema.Node;
@@ -24,15 +25,19 @@ public class LandingStep extends Step {
 		super();
 	}
 	
-	public LandingStep(PageState start_page) 
+	public LandingStep(PageState start_page, JourneyStatus status) 
 	{
 		setStartPage(start_page);
+		setStatus(status);
+		if(JourneyStatus.CANDIDATE.equals(status)) {
+			setCandidateKey(generateCandidateKey());
+		}
 		setKey(generateKey());
 	}
 
 	@Override
 	public LandingStep clone() {
-		return new LandingStep(getStartPage());
+		return new LandingStep(getStartPage(), getStatus());
 	}
 	
 	@Override
@@ -40,6 +45,10 @@ public class LandingStep extends Step {
 		return "landingstep"+getStartPage().getId();
 	}
 
+	@Override
+	public String generateCandidateKey() {
+		return generateKey();
+	}
 	
 	@Override
 	public String toString() {

@@ -9,6 +9,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import com.looksee.journeyExecutor.models.Audit;
 import com.looksee.journeyExecutor.models.AuditRecord;
@@ -66,6 +67,7 @@ public class AuditRecordService {
 		return audit_record_repo.save(audit);
 	}
 	
+	@Transactional
 	public AuditRecord save(AuditRecord audit, Long account_id, Long domain_id) {
 		assert audit != null;
 

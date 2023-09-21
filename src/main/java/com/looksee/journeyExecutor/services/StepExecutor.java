@@ -1,6 +1,8 @@
 package com.looksee.journeyExecutor.services;
 
 import org.openqa.selenium.By;
+import org.openqa.selenium.Dimension;
+import org.openqa.selenium.Point;
 import org.openqa.selenium.WebElement;
 import org.openqa.selenium.interactions.MoveTargetOutOfBoundsException;
 import org.slf4j.Logger;
@@ -31,19 +33,19 @@ public class StepExecutor {
 		try {
 			if(step instanceof SimpleStep) {
 				SimpleStep simple_step = (SimpleStep)step;
-				log.warn(simple_step.getAction() + "  on element = "+simple_step.getElementState());
 				ElementState element = simple_step.getElementState();
 				current_element=element;
+				
+				browser.scrollToTopOfPage();
 				
 				WebElement web_element = browser.getDriver().findElement(By.xpath(element.getXpath()));
 				int escape_count = 0;
 				int escape_limit = 30;
 				long last_y_offset = browser.getYScrollOffset();
 				while(escape_count < escape_limit && !BrowserService.isElementVisibleInPane(browser, 
-															 web_element.getLocation(), 
-															 web_element.getSize())) 
+															 new Point(element.getXLocation(), element.getYLocation()),
+															 new Dimension(element.getWidth(), element.getHeight()))) 
 				{			
-					log.warn("scrolling to element location = "+element.getYLocation()+"; browser y-offset = "+browser.getYScrollOffset());
 					browser.scrollToElementCentered(web_element);
 					long current_y_offset = browser.getYScrollOffset();
 					if(current_y_offset == last_y_offset) {

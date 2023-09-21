@@ -2,6 +2,7 @@ package com.looksee.journeyExecutor.models.journeys;
 
 
 import com.looksee.journeyExecutor.models.enums.Action;
+import com.looksee.journeyExecutor.models.enums.JourneyStatus;
 import com.looksee.journeyExecutor.models.enums.StepType;
 
 import org.slf4j.Logger;
@@ -28,7 +29,6 @@ public class SimpleStep extends Step  {
 	@SuppressWarnings("unused")
 	private static Logger log = LoggerFactory.getLogger(SimpleStep.class);
 	
-	
 	@Relationship(type = "HAS", direction = Direction.OUTGOING)
 	private ElementState element;
 	
@@ -39,8 +39,10 @@ public class SimpleStep extends Step  {
 		super();
 		setActionInput("");
 		setAction(Action.UNKNOWN);
+		setStatus(JourneyStatus.CANDIDATE);
 	}
 	
+	@Deprecated
 	public SimpleStep(Action action, String input_string) {
 		super();
 		setActionInput(input_string);
@@ -52,14 +54,19 @@ public class SimpleStep extends Step  {
 						@JsonProperty("elementState") ElementState element,
 						@JsonProperty("action") Action action,
 						@JsonProperty("actionInput") String action_input, 
-						@JsonProperty("endPage") PageState end_page) 
+						@JsonProperty("endPage") PageState end_page, 
+						@JsonProperty("status") JourneyStatus status) 
 	{
 		setStartPage(start_page);
 		setElementState(element);
 		setAction(action);
 		setActionInput(action_input);
 		setEndPage(end_page);
+		setStatus(status);
 		setKey(generateKey());
+		if(JourneyStatus.CANDIDATE.equals(status)) {
+			setCandidateKey(generateCandidateKey());
+		}
 	}
 	
 	public Step clone() {
@@ -67,7 +74,8 @@ public class SimpleStep extends Step  {
 							  getElementState(), 
 							  getAction(), 
 							  getActionInput(), 
-							  getEndPage());
+							  getEndPage(),
+							  getStatus());
 	}
 	
 	public ElementState getElementState() {
@@ -104,6 +112,10 @@ public class SimpleStep extends Step  {
 		return "simplestep"+key+action+actionInput;
 	}
 
+	@Override
+	public String generateCandidateKey() {
+		return generateKey();
+	}
 	
 	@Override
 	public String toString() {

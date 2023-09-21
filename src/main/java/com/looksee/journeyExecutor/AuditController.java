@@ -37,7 +37,6 @@ import com.looksee.journeyExecutor.models.enums.PathStatus;
 import com.looksee.journeyExecutor.models.journeys.DomainMap;
 import com.looksee.journeyExecutor.models.journeys.Journey;
 import com.looksee.journeyExecutor.models.journeys.LandingStep;
-import com.looksee.journeyExecutor.models.journeys.SimpleStep;
 import com.looksee.journeyExecutor.models.journeys.Step;
 import com.looksee.journeyExecutor.models.message.DiscardedJourneyMessage;
 import com.looksee.journeyExecutor.models.message.JourneyCandidateMessage;
@@ -47,7 +46,6 @@ import com.looksee.journeyExecutor.services.AuditRecordService;
 import com.looksee.journeyExecutor.services.BrowserService;
 import com.looksee.journeyExecutor.services.DomainMapService;
 import com.looksee.journeyExecutor.services.DomainService;
-import com.looksee.journeyExecutor.services.ElementStateService;
 import com.looksee.journeyExecutor.services.JourneyService;
 import com.looksee.journeyExecutor.services.PageStateService;
 import com.looksee.journeyExecutor.services.StepService;
@@ -56,7 +54,6 @@ import com.looksee.utils.BrowserUtils;
 import com.looksee.utils.ElementStateUtils;
 import com.looksee.utils.JourneyUtils;
 import com.looksee.utils.PathUtils;
-import com.looksee.utils.TimingUtils;
 
 
 /*
@@ -98,9 +95,6 @@ public class AuditController {
 	
 	@Autowired
 	private DomainMapService domain_map_service;
-	
-	@Autowired
-	private ElementStateService element_state_service;
 	
 	@Autowired
 	private PubSubJourneyVerifiedPublisherImpl journey_verified_topic;
@@ -162,7 +156,7 @@ public class AuditController {
 			String sanitized_url = BrowserUtils.sanitizeUserUrl(browser.getDriver().getCurrentUrl());
 			String current_url = BrowserUtils.getPageUrl(sanitized_url);
 			//if current url is external URL then create ExternalPageState
-			log.warn("current url = "+current_url);
+			log.warn("current url = "+current_url+";  sanitized url = "+ (new URL(sanitized_url).getHost()) +";  domain host = "+domain_url.getHost());
 			if(BrowserUtils.isExternalLink(domain_url.getHost(), new URL(sanitized_url).getHost())) {
 				log.warn("EXTERNAL URL detected = "+current_url);
 				final_page = new PageState();
@@ -171,14 +165,15 @@ public class AuditController {
 				final_page.setSrc("");
 				final_page.setBrowser(BrowserType.CHROME);
 				final_page = page_state_service.save(domain_audit_id, final_page);
+				audit_record_service.addPageToAuditRecord(domain_audit_id, final_page.getId());
 			}
 			else {
 				log.warn("INTERNAL URL detected = "+current_url);
 				//if current url is different than second to last page then try to lookup page in database before building page				
-				final_page = buildPage(browser, journey_msg.getDomainAuditRecordId());
+				final_page = buildPageAndAddToDomainAudit(browser, journey_msg.getDomainAuditRecordId());
 				
-				List<ElementState> elements = page_state_service.getElementStates(final_page.getId());
-				final_page.setElements(elements);					
+				//List<ElementState> elements = page_state_service.getElementStates(final_page.getId());
+				//final_page.setElements(elements);					
 			}
 		}
 		catch(JavascriptException e) {
@@ -217,22 +212,13 @@ public class AuditController {
 
 		if(final_step.getId() == null) {
 			log.warn("Final step start page has id = "+final_step.getStartPage().getId());
-			//PageState start_page = final_step.getStartPage();
-			
-			//final_step.setStartPage(start_page);
 			final_step.setKey(final_step.generateKey());			
-			Step last_step = new SimpleStep(((SimpleStep)final_step).getAction(), "");
-			
-			last_step.setKey(final_step.getKey());
-			last_step = step_service.save(last_step);
-			step_service.addEndPage(last_step.getId(), final_page.getId());
-			step_service.setStartPage(last_step.getId(),  final_step.getStartPage().getId());
-			step_service.setElementState(last_step.getId(), ((SimpleStep)final_step).getElementState().getId());
-			final_step.setId(last_step.getId());
-				
+			Step result_record = step_service.save(final_step);
+			final_step.setId(result_record.getId());
 			steps.set(steps.size()-1, final_step);
 		}
 		else {
+			step_service.updateStatus(final_step.getId(), JourneyStatus.VERIFIED);
 			step_service.addEndPage(final_step.getId(), final_page.getId());
 			step_service.updateKey(final_step.getId(), final_step.getKey());
 		}
@@ -283,11 +269,8 @@ public class AuditController {
 			page_built_topic.publish(page_built_str);
 			
 			//create landing step and make it the first record in a new list of steps
-			Step landing_step = new LandingStep(final_page);
-			Step temp_step = new LandingStep();
-			temp_step.setKey(landing_step.getKey());
-			landing_step = step_service.save(temp_step);
-			step_service.setStartPage(landing_step.getId(), final_page.getId());
+			Step landing_step = new LandingStep(final_page, JourneyStatus.VERIFIED);
+			landing_step = step_service.save(landing_step);
 			landing_step.setStartPage(final_page);
 
 			steps = new ArrayList<>();
@@ -375,7 +358,7 @@ public class AuditController {
 	 * 
 	 * @pre browser != null
 	 */
-	private PageState buildPage(Browser browser, long domain_audit_id) throws Exception {
+	private PageState buildPageAndAddToDomainAudit(Browser browser, long domain_audit_id) throws Exception {
 		assert browser != null;
 		
 		PageState page_state = browser_service.performBuildPageProcess(browser);

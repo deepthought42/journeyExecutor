@@ -201,6 +201,8 @@ public class BrowserUtils {
 	 * 
 	 * @return true if link is empty or if it starts with a '/' and doesn't contain the domain host, otherwise false
 	 * @throws URISyntaxException
+	 * 
+	 * @Version - 9/20/2023
 	 */
 	public static boolean isRelativeLink(String domain_host, String link_url) {
 		assert domain_host != null;
@@ -212,7 +214,9 @@ public class BrowserUtils {
 		}
 		
 		//check if link is a path by ensuring that it neither contains the/a domain host or a protocol
-		
+		boolean check3 = (link_without_params.charAt(0) == '#' && !link_without_params.contains(domain_host));
+		boolean check4 = !link_without_params.contains(domain_host) && !containsHost(link_url);
+
 		return link_without_params.isEmpty()
 				|| (link_without_params.charAt(0) == '/' && !link_without_params.startsWith("//") && !link_without_params.contains(domain_host)) 
 				|| (link_without_params.charAt(0) == '?' && !link_without_params.contains(domain_host))
@@ -235,7 +239,7 @@ public class BrowserUtils {
 	 */
 	public static boolean containsHost(String link_url) {
 
-		String host_pattern = "([a-zA-Z0-9.-]+(:[a-zA-Z0-9.&%$-]+)*@)*((25[0-5]|2[0-4][0-9]|1[0-9]{2}|[1-9][0-9]?)(\\.(25[0-5]|2[0-4][0-9]|1[0-9]{2}|[1-9]?[0-9])){3}|([a-zA-Z0-9-]+\\.)*[a-zA-Z0-9-]+\\.(com|app|edu|gov|int|mil|net|org|biz|arpa|info|name|pro|aero|coop|museum|website|space|ca|us|co))(:[0-9]+)*";
+		String host_pattern = "([a-zA-Z0-9.-]+(:[a-zA-Z0-9.&%$-]+)*@)*((25[0-5]|2[0-4][0-9]|1[0-9]{2}|[1-9][0-9]?)(\\.(25[0-5]|2[0-4][0-9]|1[0-9]{2}|[1-9]?[0-9])){3}|([a-zA-Z0-9-]+\\.)*[a-zA-Z0-9-]+\\.(com|app|edu|gov|int|mil|net|org|biz|arpa|info|name|pro|aero|coop|museum|website|space|ca|us|co|uk|cc))(:[0-9]+)*";
 		Pattern pattern = Pattern.compile(host_pattern);
         Matcher matcher = pattern.matcher(link_url);
 

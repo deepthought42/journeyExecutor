@@ -30,9 +30,7 @@ import org.jsoup.select.Elements;
 import org.openqa.selenium.By;
 import org.openqa.selenium.Dimension;
 import org.openqa.selenium.InvalidSelectorException;
-import org.openqa.selenium.NoSuchElementException;
 import org.openqa.selenium.Point;
-import org.openqa.selenium.StaleElementReferenceException;
 import org.openqa.selenium.WebDriver;
 import org.openqa.selenium.WebDriverException;
 import org.openqa.selenium.WebElement;
@@ -470,6 +468,8 @@ public class BrowserService {
 	 * @throws Exception 
 	 * 
 	 * @pre browser != null
+	 * 
+	 * @Version - 9/18/2023
 	 */
 	public PageState buildPageState( Browser browser) throws WebDriverException, IOException {
 		assert browser != null;

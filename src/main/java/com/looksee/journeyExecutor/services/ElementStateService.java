@@ -9,6 +9,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import com.looksee.api.exception.ExistingRuleException;
 import com.looksee.journeyExecutor.models.Domain;
@@ -63,6 +64,7 @@ public class ElementStateService {
 	 * 
 	 * @pre element != null
 	 */
+	@Transactional
 	@Retry(name = "neoforj")
 	public ElementState save(long page_state_id, ElementState element) {
 		assert element != null;
@@ -102,6 +104,7 @@ public class ElementStateService {
 		return element_record;
 	}
 
+	@Transactional
 	public ElementState findByKey(String key){
 		return element_repo.findByKey(key);
 	}
@@ -114,6 +117,7 @@ public class ElementStateService {
 		return false;
 	}
 
+	@Transactional
 	public ElementState findById(long id) {
 		return element_repo.findById(id).get();
 	}

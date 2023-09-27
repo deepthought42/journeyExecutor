@@ -61,7 +61,6 @@ public class StepService {
 	 * 
 	 * @return saved database record for {@link Step}
 	 */
-	@Transactional
 	public Step save(Step step) {
 		assert step != null;
 				
@@ -197,7 +196,6 @@ public class StepService {
 	 * @pre page_state != null
 	 * @pre page_state.getId() != null
 	 */
-	@Transactional
 	public List<Step> getStepsWithStartPage(PageState page_state, long domain_map_id) {
 		assert page_state != null;
 		assert page_state.getId() != null;
@@ -205,27 +203,22 @@ public class StepService {
 		return step_repo.getStepsWithStartPage(domain_map_id, page_state.getId());
 	}
 
-	@Transactional
 	public List<Step> getStepsWithStartPage(long domainAuditRecordId, PageState page_state) {
 		return step_repo.getStepsWithStartPage(domainAuditRecordId, page_state.getKey());
 	}
 	
-	@Transactional
 	public PageState getEndPage(long id) {
 		return page_state_repo.getEndPageForStep(id);
 	}
 	
-	@Transactional
 	public ElementState getElementState(String step_key) {
 		return element_state_repo.getElementStateForStep(step_key);
 	}
 	
-	@Transactional
 	public void setElementState(long step_id, long element_id) {
 		step_repo.setElementState(step_id, element_id);
 	}
 
-	@Transactional
 	public void addEndPage(long step_id, long page_id) {
 		step_repo.addEndPage(step_id, page_id);
 	}

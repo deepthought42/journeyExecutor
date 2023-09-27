@@ -60,7 +60,6 @@ public class PageStateService {
 	 * 
 	 * @pre page_state != null
 	 */
-	@Transactional
 	@Retry(name = "neoforj")
 	public PageState save(long domain_audit_id, PageState page_state) throws Exception {
 		assert page_state != null;
@@ -95,7 +94,6 @@ public class PageStateService {
 		return page_state_repo.findByAnimationImageChecksum(user_id, screenshot_checksum);		
 	}
 	
-	@Transactional
 	public List<ElementState> getElementStates(String page_key){
 		assert page_key != null;
 		assert !page_key.isEmpty();
@@ -103,7 +101,6 @@ public class PageStateService {
 		return element_state_repo.getElementStates(page_key);
 	}
 	
-	@Transactional
 	public List<ElementState> getElementStates(long page_state_id){
 		return element_state_repo.getElementStates(page_state_id);
 	}
@@ -153,7 +150,6 @@ public class PageStateService {
 		return element_state_repo.getVisibleLeafElements(page_state_key);
 	}
 
-	@Transactional
 	public PageState findByUrl(String url) {
 		assert url != null;
 		assert !url.isEmpty();
@@ -161,12 +157,10 @@ public class PageStateService {
 		return page_state_repo.findByUrl(url);
 	}
 
-	@Transactional
 	public boolean addElement(long page_id, long element_id) {
 		return element_state_repo.addElement(page_id, element_id) != null;
 	}
 
-	@Transactional
 	private Optional<ElementState> getElementState(long page_id, long element_id) {
 		return element_state_repo.getElementState(page_id, element_id);
 	}

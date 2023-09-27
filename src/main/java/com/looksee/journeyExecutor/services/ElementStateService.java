@@ -64,7 +64,6 @@ public class ElementStateService {
 	 * 
 	 * @pre element != null
 	 */
-	@Transactional
 	@Retry(name = "neoforj")
 	public ElementState save(long page_state_id, ElementState element) {
 		assert element != null;
@@ -104,7 +103,6 @@ public class ElementStateService {
 		return element_record;
 	}
 
-	@Transactional
 	public ElementState findByKey(String key){
 		return element_repo.findByKey(key);
 	}
@@ -117,7 +115,6 @@ public class ElementStateService {
 		return false;
 	}
 
-	@Transactional
 	public ElementState findById(long id) {
 		return element_repo.findById(id).get();
 	}

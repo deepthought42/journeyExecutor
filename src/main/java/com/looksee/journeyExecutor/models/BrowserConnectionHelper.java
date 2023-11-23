@@ -6,6 +6,7 @@ import java.util.Random;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.retry.annotation.Retryable;
 
 import com.looksee.journeyExecutor.models.enums.BrowserEnvironment;
 import com.looksee.journeyExecutor.models.enums.BrowserType;
@@ -63,8 +64,8 @@ public class BrowserConnectionHelper {
 	 * 
 	 * @throws MalformedURLException
 	 */
-    @Retry(name="webdriver")
-	public static Browser getConnection(BrowserType browser, BrowserEnvironment environment) throws MalformedURLException {
+    @Retryable
+	public static Browser getConnection(BrowserType browser, BrowserEnvironment environment) throws Exception {
 		assert browser != null;
 		assert environment != null;
 		

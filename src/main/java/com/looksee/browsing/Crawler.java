@@ -36,7 +36,6 @@ public class Crawler {
 		ActionFactory actionFactory = new ActionFactory(driver);
 		WebElement element = driver.findElement(By.xpath(elem.getXpath()));
 		actionFactory.execAction(element, "", action);
-		//TimingUtils.pauseThread(500L);
 	}
 
 	/**
@@ -49,7 +48,6 @@ public class Crawler {
 		ActionFactory actionFactory = new ActionFactory(driver);
 		WebElement element = driver.findElement(By.xpath(elem.getXpath()));
 		actionFactory.execAction(element, "", action);
-		//TimingUtils.pauseThread(500L);
 	}
 	
 	public static void scrollDown(WebDriver driver, int distance)

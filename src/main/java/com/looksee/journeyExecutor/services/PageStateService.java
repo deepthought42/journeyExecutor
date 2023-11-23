@@ -8,8 +8,8 @@ import java.util.Optional;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.retry.annotation.Retryable;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
 
 import com.looksee.journeyExecutor.models.Audit;
 import com.looksee.journeyExecutor.models.ElementState;
@@ -23,8 +23,6 @@ import com.looksee.journeyExecutor.models.repository.AuditRepository;
 import com.looksee.journeyExecutor.models.repository.ElementStateRepository;
 import com.looksee.journeyExecutor.models.repository.PageStateRepository;
 import com.looksee.journeyExecutor.models.repository.ScreenshotRepository;
-
-import io.github.resilience4j.retry.annotation.Retry;
 
 
 
@@ -54,13 +52,14 @@ public class PageStateService {
 	
 	/**
 	 * Save a {@link PageState} object and its associated objects
+	 * 
 	 * @param page_state
 	 * @return
 	 * @throws Exception 
 	 * 
 	 * @pre page_state != null
 	 */
-	@Retry(name = "neoforj")
+	@Retryable
 	public PageState save(long domain_audit_id, PageState page_state) throws Exception {
 		assert page_state != null;
 		
@@ -157,6 +156,7 @@ public class PageStateService {
 		return page_state_repo.findByUrl(url);
 	}
 
+	@Retryable
 	public boolean addElement(long page_id, long element_id) {
 		return element_state_repo.addElement(page_id, element_id) != null;
 	}
@@ -178,10 +178,12 @@ public class PageStateService {
 		return page_state_repo.findById(page_id);
 	}
 
+	@Retryable
 	public void updateCompositeImageUrl(Long id, String composite_img_url) {
 		page_state_repo.updateCompositeImageUrl(id, composite_img_url);
 	}
 
+	@Retryable
 	public void addAllElements(long page_state_id, List<Long> element_ids) {
 		page_state_repo.addAllElements(page_state_id, element_ids);
 	}

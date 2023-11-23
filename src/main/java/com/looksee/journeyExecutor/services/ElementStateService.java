@@ -3,26 +3,21 @@ package com.looksee.journeyExecutor.services;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
-import java.util.stream.Collectors;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.retry.annotation.Retryable;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
 
-import com.looksee.api.exception.ExistingRuleException;
 import com.looksee.journeyExecutor.models.Domain;
 import com.looksee.journeyExecutor.models.Element;
 import com.looksee.journeyExecutor.models.ElementState;
 import com.looksee.journeyExecutor.models.repository.ElementStateRepository;
-import com.looksee.journeyExecutor.models.repository.RuleRepository;
-import com.looksee.models.rules.Rule;
-
-import io.github.resilience4j.retry.annotation.Retry;
 
 @Service
 public class ElementStateService {
+	
 	@SuppressWarnings("unused")
 	private static Logger log = LoggerFactory.getLogger(ElementStateService.class);
 
@@ -31,9 +26,6 @@ public class ElementStateService {
 
 	@Autowired
 	private PageStateService page_state_service;
-	
-	@Autowired
-	private RuleRepository rule_repo;
 	
 	/**
 	 * saves element state to database
@@ -44,7 +36,7 @@ public class ElementStateService {
 	 * @pre element != null
 	 */
 	@Deprecated
-	@Retry(name = "neoforj")
+	@Retryable
 	public ElementState save(ElementState element) {
 		assert element != null;
 
@@ -64,6 +56,7 @@ public class ElementStateService {
 	 * 
 	 * @pre element != null
 	 */
+	/*
 	@Retry(name = "neoforj")
 	public ElementState save(long page_state_id, ElementState element) {
 		assert element != null;
@@ -75,6 +68,26 @@ public class ElementStateService {
 		}
 		
 		return element_record;
+	}
+	*/
+	
+	/**
+	 * saves element state to database
+	 * 
+	 * @param element
+	 * @return saved record of element state
+	 * 
+	 * @pre element != null
+	 */
+	@Retryable
+	public ElementState save(long domain_audit_id, ElementState element) {
+		assert element != null;
+
+		ElementState element_record = element_repo.findByDomainAuditAndKey(domain_audit_id, element.getKey());
+		if(element_record == null) {
+			return element_repo.save(element);
+		}
+		 return element_record;
 	}
 	
 	/**
@@ -106,10 +119,6 @@ public class ElementStateService {
 	public ElementState findByKey(String key){
 		return element_repo.findByKey(key);
 	}
-
-	public void removeRule(String user_id, String element_key, String rule_key){
-		element_repo.removeRule(user_id, element_key, rule_key);
-	}
 	
 	public boolean doesElementExistInOtherPageStateWithLowerScrollOffset(Element element){
 		return false;
@@ -119,28 +128,8 @@ public class ElementStateService {
 		return element_repo.findById(id).get();
 	}
 
-	public Set<Rule> getRules(String user_id, String element_key) {
-		return rule_repo.getRules(user_id, element_key);
-	}
-
-	public Set<Rule> addRuleToFormElement(String username, String element_key, Rule rule) {
-		//Check that rule doesn't already exist
-		Rule rule_record = rule_repo.getElementRule(username, element_key, rule.getKey());
-		if(rule_record == null) {
-			rule_record = rule_repo.addRuleToFormElement(username, element_key, rule.getKey());
-			return rule_repo.getRules(username, element_key);
-		}
-		else {
-			throw new ExistingRuleException(rule.getType().toString());
-		}
-	}
-
 	public ElementState findByOuterHtml(long account_id, String snippet) {
 		return element_repo.findByOuterHtml(account_id, snippet);
-	}
-
-	public void clearBugMessages(long account_id, String form_key) {
-		element_repo.clearBugMessages(account_id, form_key);
 	}
 
 	public List<ElementState> getChildElementsForUser(String user_id, String element_key) {
@@ -176,24 +165,6 @@ public class ElementStateService {
 	}
 
 	/**
-	 * gets parent element for given {@link Element} within the given {@link PageState}
-	 * 
-	 * @param page_state_key
-	 * @param element_state_key
-	 * @return
-	 */
-	public ElementState getParentElement(String page_state_key, String element_state_key) {
-		return element_repo.getParentElement(page_state_key, element_state_key);
-	}
-	
-	public void addChildElement(String parent_element_key, String child_element_key) {
-		//check if element has child already
-		if(getChildElementForParent(parent_element_key, child_element_key).isEmpty()) {
-			element_repo.addChildElement(parent_element_key, child_element_key);
-		}
-	}
-
-	/**
 	 * Fetch element that is the parent of the given child element for a given page
 	 * 
 	 * @param page_state_key
@@ -217,18 +188,6 @@ public class ElementStateService {
 	}
 
 	/**
-	 * 
-	 * @param element_states
-	 * @param page_state_id
-	 * @return
-	 */
-	public List<ElementState> saveAll(List<ElementState> element_states, long page_state_id) {
-		return element_states.parallelStream()
-									   .map(element -> save(page_state_id, element))
-									   .collect(Collectors.toList());
-	}
-	
-	/**
 	 * Returns subset of element keys that exist within the database 
 	 * 
 	 * @param element_keys
@@ -244,5 +203,9 @@ public class ElementStateService {
 	
 	public List<ElementState> getVisibleLeafElements(long page_state_id) {
 		return element_repo.getVisibleLeafElements(page_state_id);
+	}
+
+	public ElementState findByDomainAuditAndKey(long domain_audit_id, ElementState element) throws Exception {
+		return element_repo.findByDomainAuditAndKey(domain_audit_id, element.getKey());
 	}
 }

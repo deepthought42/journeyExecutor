@@ -33,6 +33,7 @@ import org.jsoup.nodes.Element;
 import org.jsoup.select.Elements;
 import org.openqa.selenium.Dimension;
 import org.openqa.selenium.Point;
+import org.openqa.selenium.Rectangle;
 import org.openqa.selenium.WebDriverException;
 import org.openqa.selenium.WebElement;
 import org.slf4j.Logger;
@@ -179,18 +180,15 @@ public class BrowserUtils {
 		//remove protocol for checking same domain
 		String url_without_protocol = url.replace("http://", "");
 		url_without_protocol = url_without_protocol.replace("https://", "");
-		boolean is_same_domain = false;
-		
+		boolean is_same_domain = false;		
 		boolean contains_domain = url_without_protocol.contains(domain_host);
-		//boolean is_url_longer = url_without_protocol.length() > domain_host.length();
-		//boolean url_contains_long_host = url.contains(domain_host+"/");
+
 		if( contains_domain ) {
 			is_same_domain = true;
 		}
 		
 		boolean is_relative = isRelativeLink(domain_host, url);
 		
-		log.warn("current url = "+url+ ";  domain host = "+domain_host + "; IS INTERNAL?? = "+is_same_domain+";  IS RELATIVE ?? = "+is_relative);
 		return (!is_same_domain && !is_relative ) || url.contains("////");
 	}
 	
@@ -1017,53 +1015,6 @@ public class BrowserUtils {
 			return true;
 		}
 	}
-
-	/**
-	 * Extracts the page source from the URL.
-	 * Attempts to connect to the browser service, then navigates to the url and extracts the source.
-	 * 
-	 * @param sanitized_url The sanitized URL that contains the page source
-	 * @param browser_service 
-	 * @return {@code String} The page source
-	 * 
-	 * @pre sanitized_url != null
-	 * @pre browser_service != null
-	 */
-	public static String extractPageSrc(URL sanitized_url, BrowserService browser_service){
-		assert sanitized_url != null;
-		assert browser_service != null;
-
-		//Extract page source from url
-		int attempt_cnt = 0;
-		String page_src = "";
-		
-		do {
-			Browser browser = null;
-			try {
-				browser = browser_service.getConnection(BrowserType.CHROME, BrowserEnvironment.DISCOVERY);
-				browser.navigateTo(sanitized_url.toString());
-				
-				sanitized_url = new URL(browser.getDriver().getCurrentUrl());
-				page_src = browser_service.getPageSource(browser, sanitized_url);
-				attempt_cnt = 10000000;
-				break;
-			}
-			catch(MalformedURLException e) {
-				log.warn("Malformed URL exception occurred for  "+sanitized_url);
-				break;
-			}
-			catch(WebDriverException e) {								
-				log.warn("failed to obtain page source during crawl of :: "+sanitized_url);
-			}
-			finally {
-				if(browser != null) {
-					browser.close();
-				}
-			}
-		} while (page_src.trim().isEmpty() && attempt_cnt < 1000);
-
-		return page_src;
-  }	
 	
 	/**
 	 * Retrieves {@link ElementStates} that contain text
@@ -1185,5 +1136,11 @@ public class BrowserUtils {
 	 */
 	public static boolean isLargerThanViewport(ElementState element, int viewportWidth, int viewportHeight) {
 		return element.getWidth() > viewportWidth || element.getHeight() > viewportHeight;
+	}
+
+
+	public static boolean isHidden(WebElement web_element) {
+		Rectangle rect = web_element.getRect();
+		return rect.getX()==0 && rect.getY()==0 && rect.getWidth()==0 && rect.getHeight()==0;
 	}
 }

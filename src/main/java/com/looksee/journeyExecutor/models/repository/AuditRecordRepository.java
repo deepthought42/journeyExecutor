@@ -20,7 +20,6 @@ import io.github.resilience4j.retry.annotation.Retry;
  * Repository interface for Spring Data Neo4j to handle interactions with {@link Audit} objects
  */
 @Repository
-@Retry(name = "neoforj")
 public interface AuditRecordRepository extends Neo4jRepository<AuditRecord, Long> {
 	public AuditRecord findByKey(@Param("key") String key);
 	
@@ -84,6 +83,9 @@ public interface AuditRecordRepository extends Neo4jRepository<AuditRecord, Long
 
 	@Query("MATCH (a:PageAuditRecord)-[:FOR]->(ps:PageState) WHERE id(ps)=$id RETURN a ORDER BY a.created_at DESC LIMIT 1")
 	public PageAuditRecord getAuditRecord(@Param("id") long page_state_id);
+	
+	@Query("MATCH (audit_record:DomainAuditRecord) WHERE id(audit_record)=$audit_record_id MATCH (audit_record)-[:FOR]->(page:PageState) WHERE id(page)=$page_id RETURN audit_record")
+	public AuditRecord findPageWithId(@Param("audit_record_id") long audit_record_id, @Param("page_id") long page_id);
 	
 	@Query("MATCH (ar:DomainAuditRecord) WITH ar MATCH (map:DomainMap) WHERE id(ar)=$audit_record_id AND id(map)=$domain_map_id MERGE (ar)-[:CONTAINS]->(map) RETURN ar")
 	public AuditRecord addDomainMap(@Param("audit_record_id") long audit_record_id, @Param("domain_map_id") long domain_map_id);

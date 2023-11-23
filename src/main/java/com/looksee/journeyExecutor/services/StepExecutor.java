@@ -1,8 +1,7 @@
 package com.looksee.journeyExecutor.services;
 
 import org.openqa.selenium.By;
-import org.openqa.selenium.Dimension;
-import org.openqa.selenium.Point;
+import org.openqa.selenium.JavascriptExecutor;
 import org.openqa.selenium.WebElement;
 import org.openqa.selenium.interactions.MoveTargetOutOfBoundsException;
 import org.slf4j.Logger;
@@ -30,32 +29,25 @@ public class StepExecutor {
 		assert step != null;
 		
 		ElementState current_element = null;
+		WebElement last_webelem = null;
 		try {
 			if(step instanceof SimpleStep) {
 				SimpleStep simple_step = (SimpleStep)step;
 				ElementState element = simple_step.getElementState();
 				current_element=element;
+				WebElement web_element = browser.findElement(element.getXpath());
 				
-				browser.scrollToTopOfPage();
-				
-				WebElement web_element = browser.getDriver().findElement(By.xpath(element.getXpath()));
-				int escape_count = 0;
-				int escape_limit = 30;
-				long last_y_offset = browser.getYScrollOffset();
-				while(escape_count < escape_limit && !BrowserService.isElementVisibleInPane(browser, 
-															 new Point(element.getXLocation(), element.getYLocation()),
-															 new Dimension(element.getWidth(), element.getHeight()))) 
-				{			
-					browser.scrollToElementCentered(web_element);
-					long current_y_offset = browser.getYScrollOffset();
-					if(current_y_offset == last_y_offset) {
-						throw new Exception("Scrolling not working correctly. Retry again in a few minutes");
-					}
-					escape_count++;
-				}
-				
-				ActionFactory action_factory = new ActionFactory(browser.getDriver());
-				action_factory.execAction(web_element, "", simple_step.getAction());
+				/*
+				browser.scrollToElementCentered(web_element);
+				WebDriverWait wait = new WebDriverWait(browser.getDriver(), 1000);
+				wait.until(ExpectedConditions.elementToBeClickable(web_element));
+				browser.getViewportScrollOffset();
+				*/
+				last_webelem = web_element;
+				//ActionFactory action_factory = new ActionFactory(browser.getDriver());
+				//action_factory.execAction(web_element, "", simple_step.getAction());
+				((JavascriptExecutor)browser.getDriver()).executeScript("arguments[0].click();", web_element);
+
 			}
 			else if(step instanceof LoginStep) {
 				LoginStep login_step = (LoginStep)step;
@@ -79,6 +71,7 @@ public class StepExecutor {
 			}
 		}
 		catch(MoveTargetOutOfBoundsException e) {
+			browser.getViewportScrollOffset();
 			log.warn("MOVE TO TARGET EXCEPTION FOR ELEMENT = "+e.getMessage());
 			log.warn("============================================================");;
 			log.warn("URL = "+browser.getDriver().getCurrentUrl());
@@ -87,9 +80,11 @@ public class StepExecutor {
 			log.warn("element xpath = "+current_element.getXpath());
 			log.warn("element location = "+current_element.getXLocation()+" , "+current_element.getYLocation());
 			log.warn("element dimension = "+current_element.getWidth()+" , "+current_element.getHeight());
-			log.warn("is element visible? = "+current_element.isVisible());
+
+			log.warn("WEB element = "+last_webelem);
+			log.warn("is element visible? = "+last_webelem.isDisplayed());//current_element.isVisible());
 			log.warn("============================================================");;
-			e.printStackTrace();
+			//e.printStackTrace();
 			throw e;
 		}
 	}

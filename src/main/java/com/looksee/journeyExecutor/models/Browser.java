@@ -1,7 +1,5 @@
 package com.looksee.journeyExecutor.models;
 
-import static org.assertj.core.api.Assertions.assertThatIllegalStateException;
-
 import java.awt.Graphics2D;
 import java.awt.image.BufferedImage;
 import java.io.BufferedReader;
@@ -59,9 +57,7 @@ import org.openqa.selenium.support.ui.WebDriverWait;
 
 import com.assertthat.selenium_shutterbug.core.Capture;
 import com.assertthat.selenium_shutterbug.core.Shutterbug;
-import com.looksee.journeyExecutor.models.ElementState;
 import com.looksee.utils.ImageUtils;
-import com.looksee.utils.TimingUtils;
 
 import cz.vutbr.web.css.CSSFactory;
 import cz.vutbr.web.css.CombinedSelector;
@@ -164,7 +160,6 @@ public class Browser {
 		
 		try {
 			waitForPageToLoad();
-			TimingUtils.pauseThread(3000L);
 		}catch(Exception e) {		
 			/*
 			e.printStackTrace();
@@ -177,8 +172,6 @@ public class Browser {
 			}
 			 */
 		}
-		
-		TimingUtils.pauseThread(5000L);
 	}
 
 	/**
@@ -541,14 +534,22 @@ public class Browser {
 	}
 	
 	/**
+	 * Retrieves element screenshot by obtaining subimage of full page screenshot
 	 * 
-	 * @param screenshot
-	 * @param elem
-	 * @return
+	 * @param element_state
+	 * @param page screenshot
+	 * @return 
+	 * 
 	 * @throws IOException
+	 * 
+	 * @pre element_state != null
+	 * @pre page_screenshot != null
 	 */
 	public static BufferedImage getElementScreenshot(ElementState element_state, 
 													BufferedImage page_screenshot) throws IOException{
+		assert element_state != null;
+		assert page_screenshot != null;
+		
 		int width = element_state.getWidth();
 		int height = element_state.getHeight();
 		
@@ -1095,7 +1096,7 @@ public class Browser {
 	 * Waits for the document ready state to be complete, then observes page transition if it exists
 	 */
 	public void waitForPageToLoad() {
-		new WebDriverWait(driver, 30L).until(
+		new WebDriverWait(driver, 60L).until(
 				webDriver -> ((JavascriptExecutor) webDriver)
 					.executeScript("return document.readyState")
 					.equals("complete"));
@@ -1342,9 +1343,20 @@ public class Browser {
 	public void scrollToElement(WebElement element) 
     { 
 		((JavascriptExecutor)driver).executeScript("arguments[0].scrollIntoView({block: 'center'});", element);
-		long pause_time = Math.abs(this.getYScrollOffset() - element.getLocation().getY())/8;
-		TimingUtils.pauseThread(pause_time);
 		getViewportScrollOffset();
+    }
+	
+	/**
+	 * 
+	 * @param element
+	 */
+	public void scrollToElement(ElementState element) 
+    { 
+		int viewport_height = getViewportSize().getHeight();
+		int quarter_size = (int)Math.round(viewport_height/4.0);
+		scrollTo(element.getXLocation(), element.getYLocation()-quarter_size);
+		
+		//getViewportScrollOffset();
     }
 	
 	/**
@@ -1353,27 +1365,11 @@ public class Browser {
 	 */
 	public void scrollToElementCentered(WebElement element) 
 	{ 
-		((JavascriptExecutor)driver).executeScript("arguments[0].scrollIntoView({block: 'center', behavior: 'instant'});", element);
-
-		//generate time to pause based on distance from current browser offset. constant of 8 denotes the pixels per ms that the browser scrolls
-		long pause_time = Math.abs(this.getYScrollOffset() - element.getLocation().getY())/8;
-		TimingUtils.pauseThread(pause_time);
+		((JavascriptExecutor)driver).executeScript("arguments[0].scrollIntoView({block: 'center'});", element);
 		
 		getViewportScrollOffset();
 	}
 	
-	/**
-	 * 
-	 * @param element
-	 */
-	public void scrollToElement(boolean scroll_down, WebElement element) 
-	{ 
-		((JavascriptExecutor)driver).executeScript("arguments[0].scrollIntoView("+scroll_down+");", element);
-		//generate time to pause based on distance from current browser offset. constant of 8 denotes the pixels per ms that the browser scrolls
-		long pause_time = Math.abs(this.getYScrollOffset() - element.getLocation().getY())/8;
-		TimingUtils.pauseThread(pause_time);
-		getViewportScrollOffset();
-	}
 	
 	/**
 	 * Scroll to coordinate
@@ -1383,10 +1379,6 @@ public class Browser {
 	public void scrollTo(int x, int y) 
 	{ 
 		((JavascriptExecutor)driver).executeScript("window.scrollTo("+x+","+y+");");
-		//generate time to pause based on distance from current browser offset. constant of 8 denotes the pixels per ms that the browser scrolls
-		long pause_time = Math.abs(this.getYScrollOffset() - y)/4;
-		TimingUtils.pauseThread(pause_time);
-
 		getViewportScrollOffset();
 	}
 	

@@ -10,17 +10,18 @@ import org.springframework.stereotype.Repository;
 import com.looksee.journeyExecutor.models.enums.JourneyStatus;
 import com.looksee.journeyExecutor.models.journeys.Journey;
 
-import io.github.resilience4j.retry.annotation.Retry;
-
 @Repository
-@Retry(name = "neoforj")
 public interface JourneyRepository extends Neo4jRepository<Journey, Long>  {
 	
 	public Journey findByKey(@Param("key") String key);
 
+	@Query("MATCH (map:DomainMap) WITH map WHERE id(map)=$map_id MATCH (map)-[:CONTAINS]->(j:Journey{key:$key}) RETURN j LIMIT 1")
+	public Journey findByKey(@Param("map_id") long domain_map_id, @Param("key") String key);
+
 	@Query("MATCH (j:Journey) WITH j WHERE id(j)=$journey_id MATCH (s:Step) WHERE id(s)=$step_id MERGE (j)-[:HAS]->(s) RETURN j")
 	public Journey addStep(@Param("journey_id") long journey_id, @Param("step_id") long id);
 
+	@Deprecated
 	@Query("MATCH (j:Journey{candidateKey:$candidateKey}) RETURN j LIMIT 1")
 	public Journey findByCandidateKey(@Param("candidateKey") String candidateKey);
 	
@@ -33,6 +34,9 @@ public interface JourneyRepository extends Neo4jRepository<Journey, Long>  {
 								@Param("key") String key,
 								@Param("ordered_ids") List<Long> ordered_ids);
 
-	@Query("MATCH (map:DomainMap) WITH map WHERE id(map)=$map_id MATCH (map)-[:CONTAINS]->(j:Journey{candidateKey:$candidateKey}) RETURN j")
+	@Query("MATCH (map:DomainMap) WITH map WHERE id(map)=$map_id MATCH (map)-[:CONTAINS]->(j:Journey{candidateKey:$candidateKey}) RETURN j LIMIT 1")
 	public Journey findByCandidateKey(@Param("map_id") long domain_map_id, @Param("candidateKey") String candidate_key);
+
+	@Query("MATCH (journey:Journey) WHERE id(journey)=$journey_id SET journey.status=$status RETURN journey")
+	public Journey updateStatus(@Param("journey_id") long journey_id, @Param("status") String status);
 }

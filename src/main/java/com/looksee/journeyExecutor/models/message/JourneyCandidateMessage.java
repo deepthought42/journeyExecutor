@@ -1,15 +1,12 @@
 package com.looksee.journeyExecutor.models.message;
 
-
 import com.looksee.journeyExecutor.models.enums.BrowserType;
 import com.looksee.journeyExecutor.models.journeys.Journey;
-import com.looksee.journeyExecutor.models.message.JourneyCandidateMessage;
-
 
 /**
  * 
  */
-public class JourneyCandidateMessage extends Message {
+public class JourneyCandidateMessage extends DomainAuditMessage {
 
 	private long map_id;
 	private Journey journey;
@@ -19,21 +16,20 @@ public class JourneyCandidateMessage extends Message {
 	
 	public JourneyCandidateMessage(Journey journey, 
 								   BrowserType browser_type, 
-								   long domain_id, 
 								   long account_id, 
-								   long audit_record_id,
+								   long audit_record_id, 
 								   long map_id)
 	{
-		super(account_id, audit_record_id, domain_id);
+		super(account_id, audit_record_id);
 		setJourney(journey);
+		//setSteps(steps);
 		setBrowser(browser_type);
 		setMapId(map_id);
 	}
 
 	public JourneyCandidateMessage clone(){
-		return new JourneyCandidateMessage(null, 
+		return new JourneyCandidateMessage(getJourney(), 
 								  getBrowser(), 
-								  getDomainId(),
 								  getAccountId(), 
 								  getDomainAuditRecordId(),
 								  getMapId());
@@ -64,4 +60,3 @@ public class JourneyCandidateMessage extends Message {
 	}
 	
 }
-

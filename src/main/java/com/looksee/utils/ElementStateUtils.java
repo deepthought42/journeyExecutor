@@ -4,7 +4,6 @@ import java.net.URL;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
-import java.util.stream.Stream;
 
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
@@ -135,46 +134,40 @@ public class ElementStateUtils {
 	 * @param element_states
 	 * @return
 	 */
-	public static List<ElementState> enrichBackgroundColor(List<ElementState> element_states) {
+	public static ElementState enrichBackgroundColor(ElementState element) {
 		//ENRICHMENT : BACKGROUND COLORS
-		return element_states.parallelStream()
-								.filter(element -> element != null)
-								.map(element -> {
-				try {
-					String color_css = element.getRenderedCssValues().get("color");
-					if(color_css == null) {
-						color_css = "#000000";
-					}
-					
-					ColorData font_color = new ColorData(color_css);
-					
-					//extract opacity color
-					ColorData bkg_color = null;
-					if(element.getScreenshotUrl().trim().isEmpty()) {
-					bkg_color = new ColorData(element.getRenderedCssValues().get("background-color"));
-					}
-					else {
-						bkg_color = ImageUtils.extractBackgroundColor( new URL(element.getScreenshotUrl()),
-																		font_color);
-					}
-					
-					
-					//Identify background color by getting largest color used in picture
-					//ColorData background_color_data = ImageUtils.extractBackgroundColor(new URL(element.getScreenshotUrl()));
-					String bg_color = bkg_color.rgb();	
-					ColorData background_color = new ColorData(bg_color);
-					element.setBackgroundColor(background_color.rgb());
-					element.setForegroundColor(font_color.rgb());
-					
-					double contrast = ColorData.computeContrast(background_color, font_color);
-					element.setTextContrast(contrast);
-					return element;
-				}
-				catch (Exception e) {
-					e.printStackTrace();
-				}
-			return element;
-		})
-		.collect(Collectors.toList());
+		try {
+			String color_css = element.getRenderedCssValues().get("color");
+			if(color_css == null) {
+				color_css = "#000000";
+			}
+			
+			ColorData font_color = new ColorData(color_css);
+			
+			//extract opacity color
+			ColorData bkg_color = null;
+			if(element.getScreenshotUrl().trim().isEmpty()) {
+			bkg_color = new ColorData(element.getRenderedCssValues().get("background-color"));
+			}
+			else {
+				bkg_color = ImageUtils.extractBackgroundColor( new URL(element.getScreenshotUrl()),
+																font_color);
+			}
+			
+			
+			//Identify background color by getting largest color used in picture
+			//ColorData background_color_data = ImageUtils.extractBackgroundColor(new URL(element.getScreenshotUrl()));
+			String bg_color = bkg_color.rgb();	
+			ColorData background_color = new ColorData(bg_color);
+			element.setBackgroundColor(background_color.rgb());
+			element.setForegroundColor(font_color.rgb());
+			
+			double contrast = ColorData.computeContrast(background_color, font_color);
+			element.setTextContrast(contrast);
+		}
+		catch (Exception e) {
+			e.printStackTrace();
+		}
+		return element;
 	}
 }

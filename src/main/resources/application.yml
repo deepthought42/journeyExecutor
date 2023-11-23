@@ -11,19 +11,22 @@ resilience4j.retry:
                 - java.net.ConnectException
                 - java.lang.Exception
         webdriver:
-            maxAttempts: 10
+            maxAttempts: 3
             waitDuration: 1s
             retryExceptions:
                 - org.openqa.selenium.WebDriverException
                 - org.openqa.selenium.remote.UnreachableBrowserException
                 - org.openqa.selenium.NoSuchSessionException
+                - org.openqa.selenium.json.JsonException
+                - org.openqa.selenium.SessionNotCreatedException
                 - java.lang.Exception
+                - java.lang.reflect.InvocationTargetException
                 - java.io.IOException
                 - java.net.ConnectException
                 - java.net.SocketException
         neoforj:
-            maxAttempts: 2
-            waitDuration: 30s
+            maxAttempts: 3
+            waitDuration: 1s
             retryExceptions:
                 - org.neo4j.ogm.exception.ConnectionException
                 - org.neo4j.driver.exceptions.SessionExpiredException
@@ -36,7 +39,7 @@ resilience4j.retry:
                 - java.util.NoSuchElementException
                 - org.springframework.dao.TransientDataAccessResourceException
         gcp:
-            maxAttempts: 10
+            maxAttempts: 3
             waitDuration: 1s
             retryExceptions:
                 - java.io.IOException

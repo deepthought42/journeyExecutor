@@ -75,7 +75,6 @@ public class PageState extends LookseeObject {
 
 	public PageState() {
 		super();
-		setElements(new ArrayList<>());
 		setKeywords(new HashSet<>());
 		setScriptUrls(new HashSet<>());
 		setStylesheetUrls(new HashSet<>());
@@ -90,7 +89,6 @@ public class PageState extends LookseeObject {
 	 * 	 Constructor
 	 * 
 	 * @param screenshot_url
-	 * @param elements
 	 * @param src
 	 * @param isLandable
 	 * @param scroll_x_offset
@@ -110,16 +108,15 @@ public class PageState extends LookseeObject {
 	 * @throws MalformedURLException 
 	 */
 	public PageState(String screenshot_url, 
-					List<ElementState> elements, 
 					String src, 
 					boolean isLandable, 
 					long scroll_x_offset, 
-					long scroll_y_offset,
-					int viewport_width, 
+					long scroll_y_offset, 
+					int viewport_width,
 					int viewport_height, 
 					BrowserType browser_type, 
-					String full_page_screenshot_url_onload,
-					int full_page_width, 
+					String full_page_screenshot_url_onload, 
+					int full_page_width,
 					int full_page_height, 
 					String url, 
 					String title, 
@@ -141,7 +138,6 @@ public class PageState extends LookseeObject {
 		setViewportWidth(viewport_width);
 		setViewportHeight(viewport_height);
 		setBrowser(browser_type);
-		setElements(elements);
 		setLandable(isLandable);
 		setSrc(src);
 		setScrollXOffset(scroll_x_offset);
@@ -247,8 +243,7 @@ public class PageState extends LookseeObject {
 	@Override
 	public PageState clone() {
 		List<ElementState> elements = new ArrayList<ElementState>(getElements());
-		return new PageState(getViewportScreenshotUrl(), 
-							 elements, 
+		PageState page = new PageState(getViewportScreenshotUrl(), 
 							 getSrc(), 
 							 isLandable(), 
 							 getScrollXOffset(), 
@@ -259,12 +254,14 @@ public class PageState extends LookseeObject {
 							 getFullPageScreenshotUrlOnload(), 
 							 getFullPageWidth(), 
 							 getFullPageHeight(), 
-							 getUrl(),
+							 getUrl(), 
 							 getTitle(),
 							 isSecured(),
 							 getHttpStatus(),
 							 getFullPageScreenshotUrlComposite(),
 							 getUrlAfterLoading());
+		page.setElements(elements);
+		return page;
 	}
 
 	@JsonIgnore
@@ -349,6 +346,7 @@ public class PageState extends LookseeObject {
 	 */
 	public String generateKey() {
 		String gen_src = BrowserService.generalizeSrc(BrowserService.extractBody(this.getSrc()) );
+		
 		return "pagestate" + org.apache.commons.codec.digest.DigestUtils.sha256Hex( getUrl() + gen_src +getBrowser());
 	}
 

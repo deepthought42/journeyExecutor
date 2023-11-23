@@ -5,8 +5,8 @@ import java.util.List;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.retry.annotation.Retryable;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
 
 import com.looksee.journeyExecutor.models.ElementState;
 import com.looksee.journeyExecutor.models.enums.JourneyStatus;
@@ -63,9 +63,9 @@ public class StepService {
 	 */
 	public Step save(Step step) {
 		assert step != null;
-				
+		
 		if(step instanceof SimpleStep) {
-			log.warn("saving simple step");
+			log.debug("saving simple step");
 			SimpleStep step_record = simple_step_repo.findByKey(step.getKey());
 			SimpleStep simple_step = (SimpleStep)step;
 			
@@ -83,7 +83,6 @@ public class StepService {
 			new_simple_step.setCandidateKey(simple_step.getCandidateKey());
 			new_simple_step.setKey(simple_step.generateKey());
 			new_simple_step = simple_step_repo.save(new_simple_step);
-			
 			setStartPage(new_simple_step.getId(), simple_step.getStartPage().getId());
 			new_simple_step.setStartPage(simple_step.getStartPage());
 			
@@ -98,12 +97,9 @@ public class StepService {
 			return new_simple_step;
 		}
 		else if(step instanceof LoginStep) {
-			log.warn("looking up LOGIN step with key :: "+step.getKey());
 			LoginStep step_record = login_step_repo.findByKey(step.getKey());
 			LoginStep login_step = (LoginStep)step;
 			if(step_record != null) {
-				log.warn("found login step with key :: "+step_record.getKey());
-				log.warn("loading LOGIN STEP connections...");
 				step_record.setTestUser(login_step.getTestUser());
 				step_record.setUsernameElement(login_step.getUsernameElement());
 				step_record.setPasswordElement(login_step.getPasswordElement());
@@ -119,27 +115,21 @@ public class StepService {
 			new_login_step.setKey(login_step.generateKey());
 			new_login_step.setCandidateKey(login_step.getCandidateKey());
 			new_login_step.setStatus(login_step.getStatus());
-			log.warn("saving LOGIN step");
+			log.debug("saving LOGIN step");
 			new_login_step = login_step_repo.save(new_login_step);
 			
-			log.warn("adding start page to login step");
 			setStartPage(new_login_step.getId(), login_step.getStartPage().getId());
 			new_login_step.setStartPage(login_step.getStartPage());
 			
-			log.warn("setting end page");
 			addEndPage(new_login_step.getId(), login_step.getEndPage().getId());
 			new_login_step.setEndPage(login_step.getEndPage());
 			
-			log.warn("adding username element to login step");
 			new_login_step.setUsernameElement(login_step.getUsernameElement());
 			
-			log.warn("adding password element to login step");
 			new_login_step.setPasswordElement(login_step.getPasswordElement());
 
-			log.warn("adding submit element to login step");
 			new_login_step.setSubmitElement(login_step.getSubmitElement());
 
-			log.warn("login step test user id :: "+login_step.getTestUser().getId());
 			new_login_step.setTestUser(login_step.getTestUser());
 
 			return new_login_step;
@@ -153,37 +143,20 @@ public class StepService {
 				return landing_step_record;
 			}
 			else {
-				LandingStep landing_step = (LandingStep)step;
+				LandingStep landing_step = new LandingStep();
 				landing_step.setStatus(step.getStatus());
 				landing_step.setKey(step.getKey());
 				landing_step.setCandidateKey(step.getCandidateKey());
 				
 				Step saved_step = landing_step_repo.save(landing_step);
-				setStartPage(saved_step.getId(), landing_step.getStartPage().getId());
-				saved_step.setStartPage(landing_step.getStartPage());
+				setStartPage(saved_step.getId(), step.getStartPage().getId());
+				saved_step.setStartPage(step.getStartPage());
 				
 				return saved_step;
 			}
 		}
-		else {
-			Step step_record = step_repo.findByKey(step.getKey());
-			
-			if(step_record != null) {
-				step_record.setStartPage(step.getStartPage());
-				step_record.setEndPage(step.getEndPage());
-				
-				return step_record;
-			}
-			else {
-				Step saved_step = step_repo.save(step);
-				//step_repo.addStartPage(saved_step.getId(), saved_step.getStartPage().getId());
-				//step_repo.addEndPage(saved_step.getId(), saved_step.getEndPage().getId());
-				saved_step.setStartPage(saved_step.getStartPage());
-				saved_step.setEndPage(saved_step.getEndPage());
-				
-				return saved_step;
-			}
-		}
+		
+		return null;
 	}
 
 	/**
@@ -219,20 +192,18 @@ public class StepService {
 		step_repo.setElementState(step_id, element_id);
 	}
 
+	@Retryable
 	public void addEndPage(long step_id, long page_id) {
 		step_repo.addEndPage(step_id, page_id);
 	}
 
+	@Retryable
 	public Step updateKey(long step_id, String key) {
 		return step_repo.updateKey(step_id, key);
 	}
 
 	public void setStartPage(Long step_id, Long page_id) {
 		step_repo.setStartPage(step_id, page_id);		
-	}
-
-	public void updateStatus(long step_id, JourneyStatus status) {
-		step_repo.updateStatus(step_id, status);
 	}
 }
 

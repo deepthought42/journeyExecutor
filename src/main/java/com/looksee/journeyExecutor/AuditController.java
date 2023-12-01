@@ -41,6 +41,7 @@ import com.looksee.journeyExecutor.models.journeys.DomainMap;
 import com.looksee.journeyExecutor.models.journeys.Journey;
 import com.looksee.journeyExecutor.models.journeys.LandingStep;
 import com.looksee.journeyExecutor.models.journeys.Step;
+import com.looksee.journeyExecutor.models.message.DiscardedJourneyMessage;
 import com.looksee.journeyExecutor.models.message.DomainPageBuiltMessage;
 import com.looksee.journeyExecutor.models.message.JourneyCandidateMessage;
 import com.looksee.journeyExecutor.models.message.VerifiedJourneyMessage;
@@ -103,7 +104,10 @@ public class AuditController {
 	private DomainService domain_service;
 	
 	@Autowired
-	private PubSubJourneyVerifiedPublisherImpl journey_verified_topic;
+	private PubSubJourneyVerifiedPublisherImpl verified_journey_topic;
+	
+	@Autowired
+	private PubSubDiscardedJourneyPublisherImpl discarded_journey_topic;
 	
 	@Autowired
 	private AuditRecordService audit_record_service;
@@ -249,7 +253,7 @@ public class AuditController {
 			log.warn("DISCARDED Journey! "+updated_journey.getId() + " with status = "+updated_journey.getStatus());
 		    journey_service.updateStatus(updated_journey.getId(), JourneyStatus.DISCARDED);
 		    
-		    /*
+		    
 			DiscardedJourneyMessage journey_message = new DiscardedJourneyMessage(	journey, 
 																					BrowserType.CHROME, 
 																					domain.getId(),
@@ -258,7 +262,7 @@ public class AuditController {
 
 			String discarded_journey_json = mapper.writeValueAsString(journey_message);
 			discarded_journey_topic.publish(discarded_journey_json);
-			*/
+			
 			log.warn("Returning success for journey with status = " +updated_journey.getStatus() + ";   journey id ="+updated_journey.getId());
 		}
 		else if(!JourneyUtils.hasLoginStep(steps)
@@ -305,7 +309,7 @@ public class AuditController {
 																				journey_msg.getDomainAuditRecordId());
 			
 			String journey_json = mapper.writeValueAsString(journey_message);
-		    journey_verified_topic.publish(journey_json);
+		    verified_journey_topic.publish(journey_json);
 		    
 		    log.warn("Returning success for journey with status = " +new_journey.getStatus() + ";   journey id ="+new_journey.getId());
 		}
@@ -319,7 +323,7 @@ public class AuditController {
 																	journey_msg.getDomainAuditRecordId());
 			
 			String journey_json = mapper.writeValueAsString(journey_message);
-			journey_verified_topic.publish(journey_json);
+			verified_journey_topic.publish(journey_json);
 			log.warn("Returning success for journey with status = " +updated_journey.getStatus() + ";   journey id ="+updated_journey.getId());
 
 		}

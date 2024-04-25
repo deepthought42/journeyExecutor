@@ -44,6 +44,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.web.bind.annotation.ResponseStatus;
 
 import com.google.cloud.storage.StorageException;
+import com.looksee.journeyExecutor.gcp.CloudVisionUtils;
 import com.looksee.journeyExecutor.gcp.GoogleCloudStorage;
 import com.looksee.journeyExecutor.gcp.ImageSafeSearchAnnotation;
 import com.looksee.journeyExecutor.models.Browser;
@@ -61,7 +62,6 @@ import com.looksee.journeyExecutor.models.enums.BrowserEnvironment;
 import com.looksee.journeyExecutor.models.enums.BrowserType;
 import com.looksee.journeyExecutor.models.enums.ElementClassification;
 import com.looksee.journeyExecutor.models.enums.TemplateType;
-import com.looksee.journeyExecutor.gcp.CloudVisionUtils;
 import com.looksee.utils.BrowserUtils;
 import com.looksee.utils.ElementStateUtils;
 import com.looksee.utils.ImageUtils;
@@ -325,7 +325,7 @@ public class BrowserService {
 	public static String generalizeSrc(String src) {
 		assert src != null;
 		
-		if(src.isBlank()) {
+		if(src.isEmpty()) {
 			return "";
 		}
 		

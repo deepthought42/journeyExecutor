@@ -18,6 +18,7 @@ import com.looksee.journeyExecutor.models.journeys.LoginStep;
 import com.looksee.journeyExecutor.models.journeys.SimpleStep;
 import com.looksee.journeyExecutor.models.journeys.Step;
 import com.looksee.utils.BrowserUtils;
+import com.looksee.utils.TimingUtils;
 
 @Service
 public class StepExecutor {
@@ -64,7 +65,9 @@ public class StepExecutor {
 			else if(step instanceof LandingStep) {
 				PageState initial_page = step.getStartPage();
 				String sanitized_url = BrowserUtils.sanitizeUrl(initial_page.getUrl(), initial_page.isSecured());
+				log.warn("navigating to url = "+sanitized_url);
 				browser.navigateTo(sanitized_url);
+				TimingUtils.pauseThread(5000L);
 			}
 			else {
 				log.warn("Unknown step type during execution = " + step.getKey());

@@ -52,12 +52,11 @@ import com.looksee.journeyExecutor.services.DomainService;
 import com.looksee.journeyExecutor.services.ElementStateService;
 import com.looksee.journeyExecutor.services.JourneyService;
 import com.looksee.journeyExecutor.services.PageStateService;
-import com.looksee.journeyExecutor.services.StepService;
 import com.looksee.journeyExecutor.services.StepExecutor;
+import com.looksee.journeyExecutor.services.StepService;
 import com.looksee.utils.BrowserUtils;
 import com.looksee.utils.JourneyUtils;
 import com.looksee.utils.PathUtils;
-import com.looksee.utils.TimingUtils;
 
 
 /*
@@ -143,11 +142,11 @@ public class AuditController {
 	    journey_service.updateStatus(journey.getId(), JourneyStatus.REVIEWING);
 		
 		List<Step> steps = new ArrayList<>(journey.getSteps());
-		long domain_audit_id = journey_msg.getDomainAuditRecordId();
+		long domain_audit_id = journey_msg.getAuditRecordId();
 		//if journey with same candidate key exists that also has a status of VERIFIED or DISCARDED then don't iterate
 		PageState final_page = null;
 		Browser browser = null;
-		Domain domain = domain_service.findByAuditRecord(journey_msg.getDomainAuditRecordId());
+		Domain domain = domain_service.findByAuditRecord(journey_msg.getAuditRecordId());
 		String current_url = "";
 		
 		try {
@@ -155,9 +154,9 @@ public class AuditController {
 			browser = browser_service.getConnection(BrowserType.CHROME, BrowserEnvironment.DISCOVERY);
 			
 			performJourneyStepsInBrowser(steps, browser);
-			TimingUtils.pauseThread(5000L);
 			
-			String sanitized_url = BrowserUtils.sanitizeUserUrl(browser.getDriver().getCurrentUrl());
+			current_url = browser.getDriver().getCurrentUrl();
+			String sanitized_url = BrowserUtils.sanitizeUserUrl(current_url);
 			current_url = BrowserUtils.getPageUrl(sanitized_url);
 			
 			//if current url is external URL then create ExternalPageState			
@@ -172,7 +171,7 @@ public class AuditController {
 			}
 			else {
 				//if current url is different than second to last page then try to lookup page in database before building page				
-				final_page = buildPageAndAddToDomainAudit(browser, journey_msg.getDomainAuditRecordId());			
+				final_page = buildPageAndAddToDomainAudit(browser, journey_msg.getAuditRecordId());			
 			}
 		}
 		catch(JavascriptException e) {
@@ -195,6 +194,11 @@ public class AuditController {
 			log.warn("MOVE TO TARGET EXCEPTION FOR ELEMENT;    journey = "+journey.getId() + "  with status = "+journey.getStatus() + "  --> "+e.getMessage());
 		    journey_service.updateStatus(journey.getId(), JourneyStatus.CANDIDATE);
 			return new ResponseEntity<String>("MoveToTarget Exception occured while validating journey with id = "+journey.getId()+". Returning ERROR in hopes it works out in another journey", HttpStatus.INTERNAL_SERVER_ERROR);
+		}
+		catch(MalformedURLException e){
+			log.error("error processing url = "+current_url);
+			log.error("journey msg received = "+target);
+			e.printStackTrace();
 		}
 		catch(Exception e) {
 			log.warn("Exception occurred! Returning FAILURE;   journey = "+journey.getId() + "  with status = "+journey.getStatus()+" message = "+e.getMessage());
@@ -258,7 +262,7 @@ public class AuditController {
 																					BrowserType.CHROME, 
 																					domain.getId(),
 																					journey_msg.getAccountId(), 
-																					journey_msg.getDomainAuditRecordId());
+																					journey_msg.getAuditRecordId());
 
 			String discarded_journey_json = mapper.writeValueAsString(journey_message);
 			discarded_journey_topic.publish(discarded_journey_json);
@@ -270,7 +274,7 @@ public class AuditController {
 		{
 			//if page state isn't associated with domain audit then send pageBuilt message
 			DomainPageBuiltMessage page_built_msg = new DomainPageBuiltMessage(journey_msg.getAccountId(),
-																				journey_msg.getDomainAuditRecordId(),
+																				journey_msg.getAuditRecordId(),
 																				final_page.getId());
 			
 			String page_built_str = mapper.writeValueAsString(page_built_msg);
@@ -303,10 +307,9 @@ public class AuditController {
 			
 			//send candidate message with new landing step journey
 			VerifiedJourneyMessage journey_message = new VerifiedJourneyMessage(new_journey,
-																				JourneyStatus.VERIFIED, 
 																				BrowserType.CHROME, 
 																				journey_msg.getAccountId(), 
-																				journey_msg.getDomainAuditRecordId());
+																				journey_msg.getAuditRecordId());
 			
 			String journey_json = mapper.writeValueAsString(journey_message);
 		    verified_journey_topic.publish(journey_json);
@@ -317,10 +320,9 @@ public class AuditController {
 		    journey_service.updateStatus(updated_journey.getId(), JourneyStatus.VERIFIED);
 
 			VerifiedJourneyMessage journey_message = new VerifiedJourneyMessage(updated_journey,
-																	JourneyStatus.VERIFIED, 
 																	BrowserType.CHROME, 
 																	journey_msg.getAccountId(), 
-																	journey_msg.getDomainAuditRecordId());
+																	journey_msg.getAuditRecordId());
 			
 			String journey_json = mapper.writeValueAsString(journey_message);
 			verified_journey_topic.publish(journey_json);
@@ -421,13 +423,14 @@ public class AuditController {
 	 * 
 	 * @pre steps != null
 	 * @pre !steps.isEmpty()
+	 * @pre browser != null;
 	 */
 	private void performJourneyStepsInBrowser(List<Step> steps, Browser browser) throws Exception  {
 		assert steps != null;
 		assert !steps.isEmpty();
+		assert browser != null;
 		
 		String last_url = browser.getDriver().getCurrentUrl();
-		
 		//execute all steps sequentially in the journey
 		for(Step step: steps) {
 			step_executor.execute(browser, step);

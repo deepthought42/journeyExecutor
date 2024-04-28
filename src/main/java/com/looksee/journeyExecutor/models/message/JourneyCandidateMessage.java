@@ -11,8 +11,16 @@ import lombok.Setter;
  */
 public class JourneyCandidateMessage extends Message {
 
-	private long map_id;
+	@Getter
+	@Setter
+	private long mapId;
+
+	@Getter
+	@Setter
 	private Journey journey;
+
+	@Getter
+	@Setter
 	private BrowserType browser;
 	
 	@Getter
@@ -41,29 +49,4 @@ public class JourneyCandidateMessage extends Message {
 								  getAuditRecordId(),
 								  getMapId());
 	}
-
-	public BrowserType getBrowser() {
-		return browser;
-	}
-
-	public void setBrowser(BrowserType browser) {
-		this.browser = browser;
-	}
-
-	public Journey getJourney() {
-		return journey;
-	}
-
-	public void setJourney(Journey journey) {
-		this.journey = journey;
-	}
-
-	public long getMapId() {
-		return map_id;
-	}
-
-	public void setMapId(long map_id) {
-		this.map_id = map_id;
-	}
-	
 }

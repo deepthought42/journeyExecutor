@@ -2,10 +2,25 @@ package com.looksee.journeyExecutor.models.message;
 
 import com.looksee.journeyExecutor.models.enums.AuditCategory;
 
+import lombok.Getter;
+import lombok.Setter;
+
 public class AuditError extends Message{
-	private String error_message;
-	private AuditCategory audit_category;
+	@Getter
+	@Setter
+	private String errorMessage;
+	
+	@Getter
+	@Setter
+	private AuditCategory auditCategory;
+	
+	@Getter
+	@Setter
 	private double progress;
+
+	@Getter
+	@Setter
+	private long auditRecordId;
 	
 	public AuditError(long accountId, 
 					  long auditRecordId, 
@@ -18,30 +33,6 @@ public class AuditError extends Message{
 		setErrorMessage(error_message);
 		setAuditCategory(category);
 		setProgress(progress);
+		setAuditRecordId(auditRecordId);
 	}
-
-	public String getErrorMessage() {
-		return error_message;
-	}
-
-	public void setErrorMessage(String error_message) {
-		this.error_message = error_message;
-	}
-
-	public AuditCategory getAuditCategory() {
-		return audit_category;
-	}
-
-	public void setAuditCategory(AuditCategory audit_category) {
-		this.audit_category = audit_category;
-	}
-
-	public double getProgress() {
-		return progress;
-	}
-
-	public void setProgress(double progress) {
-		this.progress = progress;
-	}
-
 }

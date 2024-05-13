@@ -1,5 +1,9 @@
 package com.looksee.journeyExecutor;
 
+import java.util.Random;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.boot.autoconfigure.domain.EntityScan;
@@ -8,10 +12,6 @@ import org.springframework.context.annotation.PropertySource;
 import org.springframework.context.annotation.PropertySources;
 import org.springframework.data.neo4j.repository.config.EnableNeo4jRepositories;
 import org.springframework.retry.annotation.EnableRetry;
-
-import java.util.Random;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 
 @SpringBootApplication
@@ -31,5 +31,4 @@ public class Application {
 		System.setProperty("webdriver.http.factory", "jdk-http-client");
 		SpringApplication.run(Application.class, args);
 	}
-
 }

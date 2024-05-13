@@ -6,7 +6,7 @@ import com.looksee.journeyExecutor.models.journeys.Journey;
 import lombok.Getter;
 import lombok.Setter;
 
-public class DiscardedJourneyMessage extends DomainAuditMessage {
+public class DiscardedJourneyMessage extends Message {
 
 	@Getter
 	@Setter
@@ -22,11 +22,11 @@ public class DiscardedJourneyMessage extends DomainAuditMessage {
    
 	public DiscardedJourneyMessage() {}
 	
-	public DiscardedJourneyMessage(Journey journey, 
-								   BrowserType browserType, 
-								   long accountId, 
-								   long auditRecordId) {
-		super(accountId, auditRecordId);
+	public DiscardedJourneyMessage( Journey journey, 
+									BrowserType browserType, 
+									long accountId, 
+									long auditRecordId) {
+		super(accountId);
 		setJourney(journey);
 		setBrowserType(browserType);
 		setAuditRecordId(auditRecordId);

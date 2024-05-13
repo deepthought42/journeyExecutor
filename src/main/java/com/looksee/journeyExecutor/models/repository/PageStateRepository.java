@@ -11,8 +11,6 @@ import org.springframework.stereotype.Repository;
 
 import com.looksee.journeyExecutor.models.PageState;
 
-import io.github.resilience4j.retry.annotation.Retry;
-
 /**
  * 
  */
@@ -100,7 +98,7 @@ public interface PageStateRepository extends Neo4jRepository<PageState, Long> {
 	@Query("MATCH (domain_audit:DomainAuditRecord) with domain_audit  WHERE id(domain_audit)=$domain_audit_id MATCH (domain_audit)-[*2]->(page_state:PageState) WHERE id(page_state)=$page_state_id RETURN page_state")
 	public PageState findByDomainAudit(@Param("domain_audit_id") long domainAuditRecordId, @Param("page_state_id") long page_state_id);
 
-	@Query("MATCH (audit_record:DomainAuditRecord)-[:FOR]->(page:PageState) WHERE id(audit_record)=$audit_record_id AND page.key=$page_key RETURN page LIMIT 1")
+	@Query("MATCH (audit_record:DomainAuditRecord)-[*2]->(page:PageState) WHERE id(audit_record)=$audit_record_id AND page.key=$page_key RETURN page LIMIT 1")
 	public PageState findPageWithKey(@Param("audit_record_id") long audit_record_id, @Param("page_key") String key);
 
 	@Query("MATCH (domain_audit:DomainAuditRecord)-[:FOR]->(page_state:PageState) WHERE id(domain_audit)=$domain_audit_id AND page_state.url=$url MATCH page=(page_state)-[]->(:ElementState) RETURN page LIMIT 1")

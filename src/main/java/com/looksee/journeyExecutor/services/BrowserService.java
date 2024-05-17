@@ -548,16 +548,6 @@ public class BrowserService {
 			String css_selector = generateCssSelectorFromXpath(xpath);
 			ElementClassification classification = null;
 			
-			/*
-			List<String> children = getChildElements(xpath, xpaths);
-			
-			if(children.isEmpty()) {
-				classification = ElementClassification.LEAF;
-			}
-			else {
-				classification = ElementClassification.ANCESTOR;
-			}
-			*/
 			classification = ElementClassification.UNKNOWN;
 			
 			//load json element
@@ -585,7 +575,7 @@ public class BrowserService {
 				ElementState element_record = element_state_service.findByDomainAuditAndKey(domain_audit_id, element_state);
 				if(element_record == null) {
 					element_state = enrichElementState(browser, web_element, element_state, full_page_screenshot, host);
-					element_state = enrichImageElement(element_state, page_state, browser, host);
+					element_state = enrichImageElement(element_state);
 					element_record = element_state_service.save(domain_audit_id, element_state);
 				}
 				
@@ -604,7 +594,7 @@ public class BrowserService {
 				ElementState element_record = element_state_service.findByDomainAuditAndKey(domain_audit_id, element_state);
 				if(element_record == null) {
 					element_state = enrichElementState(browser, web_element, element_state, full_page_screenshot, host);
-					element_state = ElementStateUtils.enrichBackgroundColor(element_state);
+					//element_state = ElementStateUtils.enrichBackgroundColor(element_state);
 					element_record = element_state_service.save(domain_audit_id, element_state);
 				}
 				
@@ -612,6 +602,9 @@ public class BrowserService {
 			}
 		}
 		
+		visited_elements = visited_elements.parallelStream()
+											.map(element -> ElementStateUtils.enrichBackgroundColor(element))
+											.collect(Collectors.toList());
 
 		return visited_elements;
 	}
@@ -1761,16 +1754,16 @@ public class BrowserService {
 		
 		if(BrowserUtils.isLargerThanViewport(element_state, browser.getViewportSize().getWidth(), browser.getViewportSize().getHeight())) {
 			try {
-				element_screenshot = Browser.getElementScreenshot(element_state, page_screenshot);						
+				element_screenshot = Browser.getElementScreenshot(element_state, page_screenshot);
 				String screenshot_checksum = ImageUtils.getChecksum(element_screenshot);
 				element_screenshot_url = GoogleCloudStorage.saveImage(element_screenshot, 
 																		host, 
 																		screenshot_checksum, 
 																		BrowserType.create(browser.getBrowserName()));
+				element_screenshot.flush();
 			}
 			catch(Exception e1){
 				log.warn("Exception occurred while extracting screenshot from full page screenshot");
-				//e1.printStackTrace();
 			}
 		}
 		else {
@@ -1809,13 +1802,70 @@ public class BrowserService {
 		return element_state;
 	}
 
-	public ElementState enrichImageElement(ElementState element_state, 
-												   PageState page_state,
-												   Browser browser, 
-												   String host) 
+	/**
+	 * Performs image enrichment in parallel for all elements in the given list
+	 * @param element_states
+	 * @return
+	 */
+	public List<ElementState> enrichImageElement(List<ElementState> element_states) 
+	{	
+		return element_states.parallelStream().map(element_state -> {
+			if(element_state instanceof ImageElementState && !element_state.getScreenshotUrl().isEmpty()) {
+				BufferedImage element_screenshot;
+				try {
+					element_screenshot = ImageIO.read(new URL(element_state.getScreenshotUrl()));
+
+					//retrieve image landmark properties from google cloud vision
+					//Set<ImageLandmarkInfo> landmark_info_set = CloudVisionUtils.extractImageLandmarks(element_screenshot);
+					Set<ImageLandmarkInfo> landmark_info_set = null;
+					//retrieve image faces properties from google cloud vision
+					//Set<ImageFaceAnnotation> faces = CloudVisionUtils.extractImageFaces(element_screenshot);
+					Set<ImageFaceAnnotation> faces = null;
+					//retrieve image reverse image search properties from google cloud vision
+					ImageSearchAnnotation image_search_set = CloudVisionUtils.searchWebForImageUsage(element_screenshot);
+					ImageSafeSearchAnnotation img_safe_search_annotation = CloudVisionUtils.detectSafeSearch(element_screenshot);
+					
+					//retrieve image logos from google cloud vision
+					Set<Logo> logos = new HashSet<>();//CloudVisionUtils.extractImageLogos(element_screenshot);
+
+					//retrieve image labels
+					Set<Label> labels = CloudVisionUtils.extractImageLabels(element_screenshot);
+
+					ImageElementState image_element = (ImageElementState)element_state;
+					//image_element.setScreenshotUrl(element_screenshot_url);
+					image_element.setFaces(faces);
+					image_element.setLandmarkInfoSet(landmark_info_set);
+					image_element.setImageSearchSet(image_search_set);
+
+					image_element.setAdult(img_safe_search_annotation.getAdult());
+					image_element.setRacy(img_safe_search_annotation.getRacy());
+					image_element.setViolence(img_safe_search_annotation.getViolence());
+					image_element.setLogos(logos);
+					image_element.setLabels(labels);
+					return image_element;
+				} catch (MalformedURLException e) {
+					// TODO Auto-generated catch block
+					e.printStackTrace();
+				} catch (IOException e) {
+					// TODO Auto-generated catch block
+					e.printStackTrace();
+				}
+			}
+			return null;
+
+		}).filter(e -> e==null)
+		.collect(Collectors.toList());
+	}
+
+	/**
+	 * Enriches elements using cloud vision utils
+	 * 
+	 * @param element_state
+	 * @return
+	 */
+	public ElementState enrichImageElement(ElementState element_state) 
 	{	
 		if(element_state instanceof ImageElementState && !element_state.getScreenshotUrl().isEmpty()) {
-			long image_feature_start = System.currentTimeMillis();
 			BufferedImage element_screenshot;
 			try {
 				element_screenshot = ImageIO.read(new URL(element_state.getScreenshotUrl()));

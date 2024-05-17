@@ -12,6 +12,9 @@ import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.looksee.journeyExecutor.models.LookseeObject;
 import com.looksee.journeyExecutor.models.enums.JourneyStatus;
 
+import lombok.Getter;
+import lombok.Setter;
+
 
 /**
  * Represents the series of steps taken for an end to end journey
@@ -21,9 +24,17 @@ import com.looksee.journeyExecutor.models.enums.JourneyStatus;
 public class Journey extends LookseeObject {
 
 	@Relationship(type = "HAS")
+
+	@Getter
+	@Setter
 	private List<Step> steps;
-	
+
+	@Getter
+	@Setter
 	private List<Long> orderedIds;
+
+	@Getter
+	@Setter
 	private String candidateKey;
 	private String status;
 	
@@ -80,7 +91,6 @@ public class Journey extends LookseeObject {
 		List<String> ordered_keys = getSteps().stream()
 								  		.map(step -> step.getKey())
 								  		.collect(Collectors.toList());
-		
 		return "journey"+org.apache.commons.codec.digest.DigestUtils.sha256Hex(StringUtils.join(ordered_keys, "|"));
 	}
 	
@@ -109,26 +119,6 @@ public class Journey extends LookseeObject {
 									  .map(step -> step.getId())
 									  .collect(Collectors.toList());
 		setOrderedIds(ordered_ids);
-	}
-
-	public boolean addStep(SimpleStep step) {
-		return this.steps.add(step);
-	}
-	
-	public List<Long> getOrderedIds() {
-		return orderedIds;
-	}
-	
-	public void setOrderedIds(List<Long> ordered_ids) {
-		this.orderedIds = ordered_ids;
-	}
-
-	public String getCandidateKey() {
-		return candidateKey;
-	}
-
-	public void setCandidateKey(String candidateKey) {
-		this.candidateKey = candidateKey;
 	}
 
 	public JourneyStatus getStatus() {

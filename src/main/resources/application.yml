@@ -11,7 +11,7 @@ resilience4j.retry:
                 - java.net.ConnectException
                 - java.lang.Exception
         webdriver:
-            maxAttempts: 3
+            maxAttempts: 15
             waitDuration: 1s
             retryExceptions:
                 - org.openqa.selenium.WebDriverException

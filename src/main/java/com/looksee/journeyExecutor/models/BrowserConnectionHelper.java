@@ -2,7 +2,6 @@ package com.looksee.journeyExecutor.models;
 
 import java.net.MalformedURLException;
 import java.net.URL;
-import java.util.Random;
 
 import org.openqa.selenium.WebDriver;
 import org.slf4j.Logger;
@@ -12,7 +11,9 @@ import org.springframework.retry.annotation.Retryable;
 import com.looksee.journeyExecutor.models.enums.BrowserEnvironment;
 import com.looksee.journeyExecutor.models.enums.BrowserType;
 
-//@Retry(name="webdriver")
+import io.github.resilience4j.retry.annotation.Retry;
+
+@Retry(name="webdriver")
 public class BrowserConnectionHelper {
 	@SuppressWarnings("unused")
 	private static Logger log = LoggerFactory.getLogger(BrowserConnectionHelper.class);
@@ -71,19 +72,17 @@ public class BrowserConnectionHelper {
 		
 		URL hub_url = null;
 		if(environment.equals(BrowserEnvironment.DISCOVERY) && "chrome".equalsIgnoreCase(browser.toString())){
-			Random randomGenerator = new Random();
+			//Random randomGenerator = new Random();
 			//int randomInt = randomGenerator.nextInt(RESOURCE_HEAVY_REQUEST_HUB_IP_ADDRESS.length);
 			hub_url = new URL( "https://"+RESOURCE_HEAVY_REQUEST_HUB_IP_ADDRESS[SELENIUM_HUB_IDX]+"/wd/hub");
 		}
 		else if(environment.equals(BrowserEnvironment.DISCOVERY) && "firefox".equalsIgnoreCase(browser.toString())){
-			Random randomGenerator = new Random();
+			//Random randomGenerator = new Random();
 			//int randomInt = randomGenerator.nextInt(RESOURCE_HEAVY_REQUEST_HUB_IP_ADDRESS.length);
 			hub_url = new URL( "https://"+RESOURCE_HEAVY_REQUEST_HUB_IP_ADDRESS[SELENIUM_HUB_IDX]+"/wd/hub");
 		}
-		SELENIUM_HUB_IDX++;
-		if(SELENIUM_HUB_IDX >= RESOURCE_HEAVY_REQUEST_HUB_IP_ADDRESS.length){
-			SELENIUM_HUB_IDX=0;
-		}
+		SELENIUM_HUB_IDX = (SELENIUM_HUB_IDX+1)%RESOURCE_HEAVY_REQUEST_HUB_IP_ADDRESS.length;
+		
 		return new Browser(browser.toString(), hub_url);
 	}
 }

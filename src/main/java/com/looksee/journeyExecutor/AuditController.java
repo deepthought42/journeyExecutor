@@ -135,7 +135,7 @@ public class AuditController {
 	    //CHECK IF JOURNEY WITH CANDIDATE KEY HAS ALREADY BEEN EVALUATED
 		if(!JourneyStatus.CANDIDATE.equals(journey.getStatus())) {
 			log.warn("Journey has already been verified or discarded, or is being evaluated with status = "+journey.getStatus());
-			return new ResponseEntity<String>("Successfully generated journey expansions", HttpStatus.OK);
+			return new ResponseEntity<String>("Journey "+ journey.getId()+" does not have CANDIDATE status. It has already been evaluated", HttpStatus.OK);
 		}
 
 		//update journey status to REVIEWING
@@ -187,8 +187,8 @@ public class AuditController {
 		catch(NoSuchElementException e) {
 			log.warn("Failed to acquire browser element for journey = "+journey.getId()+ " with status = "+journey.getStatus()+" ;  on page = " + current_url +  ";     " +e.getLocalizedMessage());
 			//e.printStackTrace();
-		    journey_service.updateStatus(journey.getId(), JourneyStatus.CANDIDATE);
-			return new ResponseEntity<String>("Failed to acquire browser connection", HttpStatus.INTERNAL_SERVER_ERROR);
+		    journey_service.updateStatus(journey.getId(), JourneyStatus.DISCARDED);
+			return new ResponseEntity<String>("Element not found", HttpStatus.OK);
 		}
 		catch(org.openqa.selenium.interactions.MoveTargetOutOfBoundsException e) {
 			log.warn("MOVE TO TARGET EXCEPTION FOR ELEMENT;    journey = "+journey.getId() + "  with status = "+journey.getStatus() + "  --> "+e.getMessage());

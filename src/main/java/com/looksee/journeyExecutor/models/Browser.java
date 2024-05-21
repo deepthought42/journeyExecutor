@@ -58,7 +58,6 @@ import org.w3c.dom.Node;
 import com.assertthat.selenium_shutterbug.core.Capture;
 import com.assertthat.selenium_shutterbug.core.Shutterbug;
 import com.google.api.gax.rpc.ApiException;
-import com.looksee.browsing.RateLimitExecutor;
 import com.looksee.utils.ImageUtils;
 
 import cz.vutbr.web.css.CSSFactory;
@@ -230,7 +229,9 @@ public class Browser {
 		ImmutableCapabilities capabilities = new ImmutableCapabilities("browserName", "firefox");
 
 		//options.setHeadless(true);
-	    RemoteWebDriver driver = new RemoteWebDriver(new RateLimitExecutor(hub_node_url), capabilities);
+	    //RemoteWebDriver driver = new RemoteWebDriver(new RateLimitExecutor(hub_node_url), capabilities);
+		RemoteWebDriver driver = new RemoteWebDriver(hub_node_url, capabilities);
+
 		driver.manage().window().maximize();
 
 	    //driver.manage().window().setSize(new Dimension(1024, 768));
@@ -296,7 +297,7 @@ public class Browser {
 	    //DesiredCapabilities capabilities = DesiredCapabilities.internetExplorer();
 		ImmutableCapabilities capabilities = new ImmutableCapabilities("browserName", "ie");
 
-		RemoteWebDriver driver = new RemoteWebDriver(new RateLimitExecutor(hub_node_url), capabilities);
+		RemoteWebDriver driver = new RemoteWebDriver(hub_node_url, capabilities);
 		
 		return driver;
 	}
@@ -317,7 +318,7 @@ public class Browser {
 		chrome_options.addArguments("--remote-allow-origins=*");
 
 		//ImmutableCapabilities capabilities = new ImmutableCapabilities("browserName", "chrome");
-		RemoteWebDriver driver = new RemoteWebDriver(new RateLimitExecutor(hub_node_url), chrome_options);
+		RemoteWebDriver driver = new RemoteWebDriver(hub_node_url, chrome_options);
 		driver.manage().window().maximize();
 		//options.setHeadless(true);
 

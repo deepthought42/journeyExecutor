@@ -30,7 +30,7 @@ public class RateLimitExecutor extends HttpCommandExecutor {
             try {
                 Thread.sleep(TimeUnit.SECONDS.toMillis((long)(SECONDS_PER_ACTION - elapsedTime)));
             } catch (InterruptedException e) {
-                e.printStackTrace();
+                //e.printStackTrace();
             }
         }
         lastExecutionTime = Instant.now().toEpochMilli();

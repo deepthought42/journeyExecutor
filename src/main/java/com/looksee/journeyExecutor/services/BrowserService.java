@@ -10,6 +10,7 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -494,7 +495,7 @@ public class BrowserService {
 	/**
 	 * identify and collect data for elements within the Document Object Model 
 	 * 
-	 * @param domain_audit_id TODO
+	 * @param domain_map_id TODO
 	 * @param full_page_screenshot TODO
 	 * @param page_source
 	 * @param rule_sets TODO
@@ -514,14 +515,15 @@ public class BrowserService {
 			PageState page_state, 
 			List<String> xpaths, 
 			Browser browser, 
-			long domain_audit_id, 
+			long domain_map_id, 
 			BufferedImage full_page_screenshot
 	) throws Exception {
 		assert xpaths != null;
 		assert browser != null;
 		assert page_state != null;
 		
-		List<ElementState> visited_elements = new ArrayList<>();		
+		List<ElementState> visited_elements = new ArrayList<>();
+		List<ElementState> image_elements = new ArrayList<>();
 		String body_src = extractBody(page_state.getSrc());
 		
 		Document html_doc = Jsoup.parse(body_src);
@@ -558,12 +560,12 @@ public class BrowserService {
 							
 			Element element = elements.first();
 			if(isImageElement(web_element)) {
-				ElementState element_state = buildImageElementState(xpath, 
-																   new HashMap<>(), 
-																   element, 
-																   web_element, 
-																   classification, 
-																   new HashMap<>(), 
+				ElementState element_state = buildImageElementState(xpath,
+																   new HashMap<>(),
+																   element,
+																   web_element,
+																   classification,
+																   new HashMap<>(),
 																   null,
 																   css_selector,
 																   null,
@@ -572,30 +574,30 @@ public class BrowserService {
 																   null,
 																   null);
 				
-				ElementState element_record = element_state_service.findByDomainAuditAndKey(domain_audit_id, element_state);
+				ElementState element_record = element_state_service.findByDomainMapAndKey(domain_map_id, element_state);
 				if(element_record == null) {
 					element_state = enrichElementState(browser, web_element, element_state, full_page_screenshot, host);
-					element_state = enrichImageElement(element_state);
-					element_record = element_state_service.save(domain_audit_id, element_state);
+					//element_state = enrichImageElement(element_state);
+					element_record = element_state_service.save(domain_map_id, element_state);
 				}
 				
-				visited_elements.add(element_record);
+				image_elements.add(element_record);
 			}
 			else {
-				ElementState element_state = buildElementState(xpath, 
-															   new HashMap<>(), 
-															   element, 
-															   web_element, 
-															   classification, 
-															   new HashMap<>(), 
+				ElementState element_state = buildElementState(xpath,
+															   new HashMap<>(),
+															   element,
+															   web_element,
+															   classification,
+															   new HashMap<>(),
 															   null,
 															   css_selector);
 				
-				ElementState element_record = element_state_service.findByDomainAuditAndKey(domain_audit_id, element_state);
+				ElementState element_record = element_state_service.findByDomainMapAndKey(domain_map_id, element_state);
 				if(element_record == null) {
 					element_state = enrichElementState(browser, web_element, element_state, full_page_screenshot, host);
 					//element_state = ElementStateUtils.enrichBackgroundColor(element_state);
-					element_record = element_state_service.save(domain_audit_id, element_state);
+					element_record = element_state_service.save(domain_map_id, element_state);
 				}
 				
 				visited_elements.add(element_record);
@@ -603,9 +605,15 @@ public class BrowserService {
 		}
 		
 		visited_elements = visited_elements.parallelStream()
+											.filter(Objects::nonNull)
 											.map(element -> ElementStateUtils.enrichBackgroundColor(element))
 											.collect(Collectors.toList());
-
+											
+		image_elements = image_elements.parallelStream()
+											.filter(Objects::nonNull)
+											.map(element -> enrichImageElement(element))
+											.collect(Collectors.toList());
+		visited_elements.addAll(image_elements);
 		return visited_elements;
 	}
 
@@ -1730,10 +1738,10 @@ public class BrowserService {
 	 * @return
 	 * @throws IOException
 	 */
-	public ElementState enrichElementState(Browser browser, 
-											WebElement web_element, 
-											ElementState element_state, 
-											BufferedImage page_screenshot, 
+	public ElementState enrichElementState(Browser browser,
+											WebElement web_element,
+											ElementState element_state,
+											BufferedImage page_screenshot,
 											String host) throws IOException
 	{	
 		if(element_state.getYLocation() < browser.getYScrollOffset()) {

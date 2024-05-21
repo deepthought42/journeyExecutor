@@ -103,5 +103,8 @@ public interface PageStateRepository extends Neo4jRepository<PageState, Long> {
 
 	@Query("MATCH (domain_audit:DomainAuditRecord)-[:FOR]->(page_state:PageState) WHERE id(domain_audit)=$domain_audit_id AND page_state.url=$url MATCH page=(page_state)-[]->(:ElementState) RETURN page LIMIT 1")
 	public PageState findByDomainAudit(@Param("domain_audit_id") long domainAuditRecordId, @Param("url") String url);
+
+	@Query("MATCH (dm:DomainMap)-[*3]->(page:PageState) WHERE id(dm)=$domain_map_id AND page.key=$page_key RETURN page LIMIT 1")
+    public PageState findPageInDomainMapWithKey(@Param("domain_map_id") long domain_map_id,  @Param("page_key") String key);
 	
 }

@@ -126,4 +126,7 @@ public interface ElementStateRepository extends Neo4jRepository<ElementState, Lo
 
 	@Query("MATCH p=(d:DomainAuditRecord)-[]->(n:PageState) WHERE id(d)=$domain_audit_id MATCH a=(n)-[]-(e:ElementState{key:$key}) RETURN e LIMIT 1")
 	public ElementState findByDomainAuditAndKey(@Param("domain_audit_id") long domain_audit_id, @Param("key") String element_key);
+
+	@Query("MATCH p=(d:DomainMap)-[*3]->(n:PageState) WHERE id(d)=$domain_map_id MATCH a=(n)-[]-(e:ElementState{key:$key}) RETURN e LIMIT 1")
+	public ElementState findByDomainMapAndKey(@Param("domain_map_id") long domain_map_id, @Param("key") String key);
 }

@@ -12,6 +12,7 @@ import org.springframework.retry.annotation.Retryable;
 import org.springframework.stereotype.Service;
 
 import com.looksee.journeyExecutor.models.Audit;
+import com.looksee.journeyExecutor.models.AuditRecord;
 import com.looksee.journeyExecutor.models.ElementState;
 import com.looksee.journeyExecutor.models.PageAuditRecord;
 import com.looksee.journeyExecutor.models.PageState;
@@ -63,7 +64,7 @@ public class PageStateService {
 	public PageState save(long domain_audit_id, PageState page_state) throws Exception {
 		assert page_state != null;
 		
-		PageState page_state_record = page_state_repo.findPageWithKey(domain_audit_id, page_state.getKey());		
+		PageState page_state_record = page_state_repo.findPageWithKey(domain_audit_id, page_state.getKey());
 		if(page_state_record == null) {
 			log.warn("page state wasn't found in database. Saving new page state to neo4j; key  = "+page_state.getKey());
 			

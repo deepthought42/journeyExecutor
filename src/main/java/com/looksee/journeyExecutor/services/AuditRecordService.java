@@ -9,7 +9,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
 
 import com.looksee.journeyExecutor.models.Audit;
 import com.looksee.journeyExecutor.models.AuditRecord;
@@ -381,5 +380,9 @@ public class AuditRecordService {
 
 	public PageState findPageWithKey(long audit_record_id, String key) {
 		return page_state_repo.findPageWithKey(audit_record_id, key);
+	}
+
+	public PageState findPageInDomainMapWithKey(long domain_map_id, String key) {
+		return page_state_repo.findPageInDomainMapWithKey(domain_map_id, key);
 	}
 }

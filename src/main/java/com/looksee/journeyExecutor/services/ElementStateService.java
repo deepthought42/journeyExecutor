@@ -80,10 +80,10 @@ public class ElementStateService {
 	 * @pre element != null
 	 */
 	@Retryable
-	public ElementState save(long domain_audit_id, ElementState element) {
+	public ElementState save(long domain_map_id, ElementState element) {
 		assert element != null;
 
-		ElementState element_record = element_repo.findByDomainAuditAndKey(domain_audit_id, element.getKey());
+		ElementState element_record = element_repo.findByDomainMapAndKey(domain_map_id, element.getKey());
 		if(element_record == null) {
 			return element_repo.save(element);
 		}
@@ -207,5 +207,9 @@ public class ElementStateService {
 
 	public ElementState findByDomainAuditAndKey(long domain_audit_id, ElementState element) throws Exception {
 		return element_repo.findByDomainAuditAndKey(domain_audit_id, element.getKey());
+	}
+
+	public ElementState findByDomainMapAndKey(long domain_map_id, ElementState element) throws Exception {
+		return element_repo.findByDomainMapAndKey(domain_map_id, element.getKey());
 	}
 }

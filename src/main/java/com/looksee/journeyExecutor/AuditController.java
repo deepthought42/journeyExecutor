@@ -6,6 +6,7 @@ import java.net.URL;
 import java.util.ArrayList;
 import java.util.Base64;
 import java.util.List;
+import java.util.Optional;
 import java.util.stream.Collectors;
 
 import javax.imageio.ImageIO;
@@ -131,10 +132,15 @@ public class AuditController {
 
 		JsonMapper mapper = JsonMapper.builder().addModule(new JavaTimeModule()).build();
 		Journey journey = journey_msg.getJourney();
-				
+		Optional<Journey> journey_opt = journey_service.findById(journey.getId());
+
+		if(journey_opt.isPresent() && !JourneyStatus.CANDIDATE.equals(journey_opt.get().getStatus())){
+			log.warn("(NEW)Journey has already been verified or discarded, or is being evaluated with status = "+journey_opt.get().getStatus());
+			return new ResponseEntity<String>("Journey "+ journey_opt.get().getId()+" does not have CANDIDATE status. It has already been evaluated", HttpStatus.OK);
+		}
 	    //CHECK IF JOURNEY WITH CANDIDATE KEY HAS ALREADY BEEN EVALUATED
 		if(!JourneyStatus.CANDIDATE.equals(journey.getStatus())) {
-			log.warn("Journey has already been verified or discarded, or is being evaluated with status = "+journey.getStatus());
+			log.warn("(OLD) Journey has already been verified or discarded, or is being evaluated with status = "+journey.getStatus());
 			return new ResponseEntity<String>("Journey "+ journey.getId()+" does not have CANDIDATE status. It has already been evaluated", HttpStatus.OK);
 		}
 
@@ -159,7 +165,7 @@ public class AuditController {
 			String sanitized_url = BrowserUtils.sanitizeUserUrl(current_url);
 			current_url = BrowserUtils.getPageUrl(sanitized_url);
 			
-			//if current url is external URL then create ExternalPageState			
+			//if current url is external URL then create ExternalPageState
 			if(BrowserUtils.isExternalLink(domain_url.getHost(), new URL(sanitized_url).getHost())) {
 				final_page = new PageState();
 				final_page.setUrl(current_url);
@@ -170,8 +176,8 @@ public class AuditController {
 				audit_record_service.addPageToAuditRecord(domain_audit_id, final_page.getId());
 			}
 			else {
-				//if current url is different than second to last page then try to lookup page in database before building page				
-				final_page = buildPage(browser, journey_msg.getAuditRecordId());			
+				//if current url is different than second to last page then try to lookup page in database before building page
+				final_page = buildPage(browser, journey_msg.getMapId());
 			}
 		}
 		catch(JavascriptException e) {
@@ -199,6 +205,8 @@ public class AuditController {
 			log.error("error processing url = "+current_url);
 			log.error("journey msg received = "+target);
 			e.printStackTrace();
+			journey_service.updateStatus(journey.getId(), JourneyStatus.DISCARDED);
+			return new ResponseEntity<String>(current_url + " is malformed", HttpStatus.OK);
 		}
 		catch(Exception e) {
 			log.warn("Exception occurred! Returning FAILURE;   journey = "+journey.getId() + "  with status = "+journey.getStatus()+" message = "+e.getMessage());
@@ -272,9 +280,9 @@ public class AuditController {
 		{
 			//if page state isn't associated with domain audit then send pageBuilt message
 			PageBuiltMessage page_built_msg = new PageBuiltMessage(journey_msg.getAccountId(),
-																				final_page.getId(),
-																				journey_msg.getAuditRecordId());
-			
+																	final_page.getId(),
+																	journey_msg.getAuditRecordId());
+
 			String page_built_str = mapper.writeValueAsString(page_built_msg);
 			log.warn("SENDING page built message ...");
 			page_built_topic.publish(page_built_str);
@@ -362,21 +370,22 @@ public class AuditController {
 	/**
 	 * Constructs a {@link PageState page} including all {@link ElementState elements} on the page as a {@linkplain List}
 	 * @param browser
-	 * @param domain_audit_id TODO
+	 * @param domain_map_id TODO
 	 * 
 	 * @return
 	 * @throws Exception
 	 * 
 	 * @pre browser != null
 	 */
-	private PageState buildPage(Browser browser, long domain_audit_id) throws Exception {
+	private PageState buildPage(Browser browser, long domain_map_id) throws Exception {
 		assert browser != null;
 		
 		PageState page_state = browser_service.performBuildPageProcess(browser);
-		PageState page_state_record = audit_record_service.findPageWithKey(domain_audit_id, page_state.getKey());
+		//PageState page_state_record = audit_record_service.findPageWithKey(domain_audit_id, page_state.getKey());
+		PageState page_state_record = audit_record_service.findPageWithKey(domain_map_id, page_state.getKey());
 
-		if(page_state_record == null ) 
-		{				
+		if(page_state_record == null )
+		{
 			log.warn("Extracting element states..."+page_state.getUrl()+";   key = "+page_state.getKey());
 			List<String> xpaths = browser_service.extractAllUniqueElementXpaths(page_state.getSrc(), null);
 			
@@ -384,15 +393,14 @@ public class AuditController {
 			List<ElementState> element_states = browser_service.getDomElementStates(page_state, 
 																					xpaths,
 																					browser,
-																					domain_audit_id,
+																					domain_map_id,
 																					full_page_screenshot);
 			
-			//page_state.setElements(element_states);			
-			page_state = page_state_service.save(domain_audit_id, page_state);
+			page_state = page_state_service.save(domain_map_id, page_state);
 			
 			for(ElementState element: element_states) {
 				if(element.getId() == null) {
-					element = element_state_service.save(domain_audit_id, element);
+					element = element_state_service.save(domain_map_id, element);
 				}
 				page_state_service.addElement(page_state.getId(), element.getId());
 			}
@@ -400,7 +408,6 @@ public class AuditController {
 			if(element_count != element_states.size()) {
 				log.warn("Saved element count does not match!!! pageid = "+page_state.getId()+";    with elements size = "+element_states.size() + ";    element count = "+element_count);
 			}
-			//audit_record_service.addPageToAuditRecord(domain_audit_id, page_state.getId());
 		}
 		else {
 			page_state = page_state_record;

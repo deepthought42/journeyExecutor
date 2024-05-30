@@ -41,6 +41,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
+import org.springframework.retry.annotation.Retryable;
 import org.springframework.stereotype.Service;
 import org.springframework.web.bind.annotation.ResponseStatus;
 
@@ -63,10 +64,12 @@ import com.looksee.journeyExecutor.models.enums.BrowserEnvironment;
 import com.looksee.journeyExecutor.models.enums.BrowserType;
 import com.looksee.journeyExecutor.models.enums.ElementClassification;
 import com.looksee.journeyExecutor.models.enums.TemplateType;
+import com.looksee.journeyExecutor.models.journeys.DomainMap;
 import com.looksee.utils.BrowserUtils;
 import com.looksee.utils.ElementStateUtils;
 import com.looksee.utils.ImageUtils;
 
+import io.github.resilience4j.retry.annotation.Retry;
 import us.codecraft.xsoup.Xsoup;
 
 /**
@@ -74,6 +77,7 @@ import us.codecraft.xsoup.Xsoup;
  *
  */
 @Service
+@Retry(name="webdriver")
 public class BrowserService {
 	private static Logger log = LoggerFactory.getLogger(BrowserService.class);
 	
@@ -81,6 +85,9 @@ public class BrowserService {
 	
 	@Autowired
 	private ElementStateService element_state_service;
+
+	@Autowired
+	private PageStateService page_state_service;
 	
 	/**
 	 * retrieves a new browser connection
@@ -392,37 +399,10 @@ public class BrowserService {
 	}
 	
 	/**
+	 *
 	 * Navigates to a url, checks that the service is available, then removes drift 
 	 * 	chat client from page if it exists. Finally it builds a {@link PageState}
-	 * 
-	 * @param url
-	 * @param browser TODO
-	 * 
-	 * @pre url != null;
-	 * @pre browser != null
-	 * 
-	 * @return {@link PageState}
-	 * @throws WebDriverException 
-	 * @throws  
-	 * 
-	 * @throws MalformedURLException
-	 * @throws IOException 
-	 */
-	public PageState performBuildPageProcess(Browser browser) throws WebDriverException, IOException 
-	{
-		assert browser != null;
-		
-		if(browser.is503Error()) {
-			throw new ServiceUnavailableException("503(Service Unavailable) Error encountered. Starting over..");
-		}
-		
-        //remove 3rd party chat apps such as drift, and ...(NB: fill in as more identified)
-		browser.removeDriftChat();
-		
-		return buildPageState(browser);
-	}
-
-	/**
+	 *
 	 *Constructs a page object that contains all child elements that are considered to be potentially expandable.
 	 * @param url_after_loading TODO
 	 * @param title TODO
@@ -436,23 +416,34 @@ public class BrowserService {
 	 * 
 	 * @Version - 9/18/2023
 	 */
-	public PageState buildPageState( Browser browser) throws WebDriverException, IOException {
+	public PageState buildPageState( Browser browser, long audit_record_id) throws WebDriverException, IOException {
 		assert browser != null;
-
+		
+		if(browser.is503Error()) {
+			throw new ServiceUnavailableException("503(Service Unavailable) Error encountered. Starting over..");
+		}
+		
+        //remove 3rd party chat apps such as drift, and ...(NB: fill in as more identified)
+		browser.removeDriftChat();
+		
 		URL current_url = new URL(browser.getDriver().getCurrentUrl());
 		String url_without_protocol = BrowserUtils.getPageUrl(current_url.toString());
-
-		boolean is_secure = BrowserUtils.checkIfSecure(current_url);
-        int status_code = BrowserUtils.getHttpStatus(current_url);
-
-        //scroll to bottom then back to top to make sure all elements that may be hidden until the page is scrolled
 		String source = Browser.cleanSrc(browser.getDriver().getPageSource());
+		
+		PageState page_record = retrievePageFromDB(audit_record_id, url_without_protocol, source, BrowserType.CHROME);
+		if(page_record != null){
+			return page_record;
+		}
+		
+		boolean is_secure = BrowserUtils.checkIfSecure(current_url);
+		int status_code = BrowserUtils.getHttpStatus(current_url);
+        //scroll to bottom then back to top to make sure all elements that may be hidden until the page is scrolled
 		String title = browser.getDriver().getTitle();
 
 		BufferedImage viewport_screenshot = browser.getViewportScreenshot();
 		String screenshot_checksum = ImageUtils.getChecksum(viewport_screenshot);
 
-		BufferedImage full_page_screenshot = browser.getFullPageScreenshotShutterbug();		
+		BufferedImage full_page_screenshot = browser.getFullPageScreenshotShutterbug();
 		String full_page_screenshot_checksum = ImageUtils.getChecksum(full_page_screenshot);
 		
 		String viewport_screenshot_url = GoogleCloudStorage.saveImage(viewport_screenshot, 
@@ -489,9 +480,43 @@ public class BrowserService {
 							is_secure,
 							status_code,
 							composite_url, 
-							current_url.toString());
+							current_url.toString(),
+							audit_record_id);
 	}
 	
+	/**
+	 * Builds a temporary {@link PageState} to generate a valid key that is used to then check if there is a page state
+	 * that already exists for the given {@link DomainMap}
+	 * @param url_without_protocol
+	 * @param source
+	 * @param chrome
+	 * @return
+	 */
+	private synchronized PageState retrievePageFromDB(long audit_record_id, String url_without_protocol, String source, BrowserType chrome) {
+		PageState temp_page_state = new PageState(
+										"",
+										source,
+										false,
+										0,
+										0,
+										0,
+										0,
+										BrowserType.CHROME,
+										"",
+										0,
+										0, 
+										url_without_protocol, 
+										"",
+										false,
+										200,
+										"", 
+										"",
+										audit_record_id);
+
+		PageState page_state = page_state_service.findPageWithKey(audit_record_id, temp_page_state.getKey());
+		return page_state;
+	}
+
 	/**
 	 * identify and collect data for elements within the Document Object Model 
 	 * 
@@ -511,11 +536,12 @@ public class BrowserService {
 	 * @pre element_states_map != null
 	 * @pre page_state != null
 	 */
+	@Retryable
 	public List<ElementState> getDomElementStates(
-			PageState page_state, 
-			List<String> xpaths, 
-			Browser browser, 
-			long domain_map_id, 
+			PageState page_state,
+			List<String> xpaths,
+			Browser browser,
+			long domain_map_id,
 			BufferedImage full_page_screenshot
 	) throws Exception {
 		assert xpaths != null;
@@ -529,10 +555,18 @@ public class BrowserService {
 		Document html_doc = Jsoup.parse(body_src);
 		String host = (new URL(browser.getDriver().getCurrentUrl())).getHost();
 		
+		xpaths = xpaths.parallelStream().map(xpath -> xpath).filter(Objects::nonNull).collect(Collectors.toList());
+		
+		if(page_state.getViewportWidth() != 1920){
+			log.warn("XPATH COUNT = "+xpaths.size()+";;;    page id = "+page_state.getKey()+"  :   "+page_state.getUrl());
+			log.warn("viewport doesn't match expections");
+		}
+
 		//iterate over xpaths to build ElementStates without screenshots
 		for(String xpath : xpaths) {
 			WebElement web_element = browser.findElement(xpath);
 			if(web_element == null) {
+				log.warn("web element is null : "+xpath+"  ;;   for page = "+page_state.getKey());
 				continue;
 			}
 			Dimension element_size = web_element.getSize();
@@ -553,11 +587,7 @@ public class BrowserService {
 			classification = ElementClassification.UNKNOWN;
 			
 			//load json element
-			Elements elements = Xsoup.compile(xpath).evaluate(html_doc).getElements();
-			if(elements.size() == 0) {
-				log.warn("NO ELEMENTS WITH XPATH FOUND :: "+xpath);
-			}
-							
+			Elements elements = Xsoup.compile(xpath).evaluate(html_doc).getElements();							
 			Element element = elements.first();
 			if(isImageElement(web_element)) {
 				ElementState element_state = buildImageElementState(xpath,
@@ -599,21 +629,25 @@ public class BrowserService {
 					//element_state = ElementStateUtils.enrichBackgroundColor(element_state);
 					element_record = element_state_service.save(domain_map_id, element_state);
 				}
-				
+
 				visited_elements.add(element_record);
 			}
 		}
 		
 		visited_elements = visited_elements.parallelStream()
+											.map(element -> element)
 											.filter(Objects::nonNull)
 											.map(element -> ElementStateUtils.enrichBackgroundColor(element))
 											.collect(Collectors.toList());
-											
+
 		image_elements = image_elements.parallelStream()
+											.map(element -> element)
 											.filter(Objects::nonNull)
 											.map(element -> enrichImageElement(element))
 											.collect(Collectors.toList());
+
 		visited_elements.addAll(image_elements);
+
 		return visited_elements;
 	}
 
@@ -1563,10 +1597,9 @@ public class BrowserService {
 	/**
 	 * 
 	 * @param src
-	 * @param driver TODO
 	 * @return
 	 */
-	public List<String> extractAllUniqueElementXpaths(String src, WebDriver driver) {
+	public List<String> extractAllUniqueElementXpaths(String src) {
 		assert src != null;
 		
 		Map<String, String> frontier = new HashMap<>();

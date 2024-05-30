@@ -34,7 +34,6 @@ import org.jsoup.select.Elements;
 import org.openqa.selenium.Dimension;
 import org.openqa.selenium.Point;
 import org.openqa.selenium.Rectangle;
-import org.openqa.selenium.WebDriverException;
 import org.openqa.selenium.WebElement;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -42,13 +41,12 @@ import org.slf4j.LoggerFactory;
 import com.looksee.journeyExecutor.gcp.GoogleCloudStorage;
 import com.looksee.journeyExecutor.models.Browser;
 import com.looksee.journeyExecutor.models.ColorData;
+import com.looksee.journeyExecutor.models.Domain;
 import com.looksee.journeyExecutor.models.ElementState;
 import com.looksee.journeyExecutor.models.ImageElementState;
 import com.looksee.journeyExecutor.models.PageLoadAnimation;
 import com.looksee.journeyExecutor.models.PageState;
-import com.looksee.journeyExecutor.models.enums.BrowserEnvironment;
 import com.looksee.journeyExecutor.models.enums.BrowserType;
-import com.looksee.journeyExecutor.services.BrowserService;
 
 
 /**
@@ -159,7 +157,7 @@ public class BrowserUtils {
 	 * Checks if url is part of domain including sub-domains
 	 *  
 	 * @param domain_host host of {@link Domain domain}
-	 * @param url 
+	 * @param url
 	 * 
 	 * @return true if url is external, otherwise false
 	 * 
@@ -180,7 +178,7 @@ public class BrowserUtils {
 		//remove protocol for checking same domain
 		String url_without_protocol = url.replace("http://", "");
 		url_without_protocol = url_without_protocol.replace("https://", "");
-		boolean is_same_domain = false;		
+		boolean is_same_domain = false;
 		boolean contains_domain = url_without_protocol.contains(domain_host);
 
 		if( contains_domain ) {

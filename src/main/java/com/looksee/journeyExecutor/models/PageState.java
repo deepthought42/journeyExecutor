@@ -29,6 +29,9 @@ import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.looksee.journeyExecutor.models.enums.BrowserType;
 import com.looksee.journeyExecutor.services.BrowserService;
 
+import lombok.Getter;
+import lombok.Setter;
+
 /**
  * A reference to a web page
  *
@@ -39,7 +42,9 @@ public class PageState extends LookseeObject {
 	@SuppressWarnings("unused")
 	private static Logger log = LoggerFactory.getLogger(PageState.class);
 
-	//@JsonIgnore
+	@Getter
+	@Setter
+	private long auditRecordId;
 	private String src;
 	private String url;
 	private String urlAfterLoading;
@@ -53,6 +58,10 @@ public class PageState extends LookseeObject {
 	private boolean loginRequired;
 	private boolean secured;
 	private boolean landable;
+
+	@Getter
+	@Setter
+	private boolean elementExtractionComplete;
 	
 	private long scrollXOffset;
 	private long scrollYOffset;
@@ -82,6 +91,8 @@ public class PageState extends LookseeObject {
 		setFaviconUrl(new HashSet<>());
 		setSrc("");
 		setBrowser(BrowserType.CHROME);
+		setElementExtractionComplete(false);
+		setAuditRecordId(-1L);
 		
 	}
 	
@@ -123,7 +134,8 @@ public class PageState extends LookseeObject {
 					boolean is_secure, 
 					int http_status_code, 
 					String full_page_screenshot_url_composite, 
-					String url_after_page_load
+					String url_after_page_load,
+					long audit_record_id
 	) {
 		assert screenshot_url != null;
 		assert elements != null;
@@ -158,6 +170,8 @@ public class PageState extends LookseeObject {
 		setScriptUrls( BrowserService.extractScriptUrls(src));
 		setFaviconUrl(BrowserService.extractIconLinks(src));
 		setKeywords(new HashSet<>());
+		setElementExtractionComplete(false);
+		setAuditRecordId(audit_record_id);
 		setKey(generateKey());
 	}
 
@@ -259,7 +273,8 @@ public class PageState extends LookseeObject {
 							 isSecured(),
 							 getHttpStatus(),
 							 getFullPageScreenshotUrlComposite(),
-							 getUrlAfterLoading());
+							 getUrlAfterLoading(),
+							 getAuditRecordId());
 		page.setElements(elements);
 		return page;
 	}
@@ -347,7 +362,7 @@ public class PageState extends LookseeObject {
 	public String generateKey() {
 		String gen_src = BrowserService.generalizeSrc(BrowserService.extractBody(this.getSrc()) );
 		
-		return "pagestate" + org.apache.commons.codec.digest.DigestUtils.sha256Hex( getUrl() + gen_src +getBrowser());
+		return "pagestate" + org.apache.commons.codec.digest.DigestUtils.sha256Hex( getAuditRecordId()+getUrl() + gen_src +getBrowser());
 	}
 
 	public String getSrc() {

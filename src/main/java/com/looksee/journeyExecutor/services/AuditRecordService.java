@@ -8,6 +8,7 @@ import org.apache.commons.collections4.IterableUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.retry.annotation.Retryable;
 import org.springframework.stereotype.Service;
 
 import com.looksee.journeyExecutor.models.Audit;
@@ -277,6 +278,7 @@ public class AuditRecordService {
 		return page_state_repo.getPageStatesForDomainAuditRecord(audit_record_id);
 	}
 
+	@Retryable
 	public void addPageToAuditRecord(long audit_record_id, long page_state_id) {
 		audit_record_repo.addPageToAuditRecord( audit_record_id, page_state_id );		
 	}
@@ -376,13 +378,5 @@ public class AuditRecordService {
 	
 	public void addDomainMap(long domainAuditId, long domainMapId) {
 		audit_record_repo.addDomainMap(domainAuditId, domainMapId);
-	}
-
-	public PageState findPageWithKey(long audit_record_id, String key) {
-		return page_state_repo.findPageWithKey(audit_record_id, key);
-	}
-
-	public PageState findPageInDomainMapWithKey(long domain_map_id, String key) {
-		return page_state_repo.findPageInDomainMapWithKey(domain_map_id, key);
 	}
 }

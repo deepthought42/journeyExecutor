@@ -4,12 +4,15 @@ package com.looksee.journeyExecutor.services;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.retry.annotation.Retryable;
 import org.springframework.stereotype.Service;
 
+import com.looksee.journeyExecutor.models.PageState;
 import com.looksee.journeyExecutor.models.journeys.DomainMap;
 import com.looksee.journeyExecutor.models.repository.DomainMapRepository;
 
 import io.github.resilience4j.retry.annotation.Retry;
+import lombok.Synchronized;
 
 /**
  * Enables interacting with database for {@link InteractiveStep Steps}
@@ -42,5 +45,16 @@ public class DomainMapService {
 
 	public DomainMap findByDomainAuditId(long domain_audit_id) {
 		return domain_map_repo.findByDomainAuditId(domain_audit_id);
+	}
+
+	/**
+	 * Adds a {@link PageState} to a {@link DomainMap}
+	 * @param map_id
+	 * @param page_id
+	 */
+	@Retryable
+	@Synchronized
+	public void addPageToDomainMap(long map_id, long page_id) {
+		domain_map_repo.addPageToDomainMap(map_id, page_id);
 	}
 }

@@ -18,7 +18,6 @@ import com.looksee.journeyExecutor.models.journeys.LoginStep;
 import com.looksee.journeyExecutor.models.journeys.SimpleStep;
 import com.looksee.journeyExecutor.models.journeys.Step;
 import com.looksee.utils.BrowserUtils;
-import com.looksee.utils.TimingUtils;
 
 @Service
 public class StepExecutor {
@@ -38,17 +37,10 @@ public class StepExecutor {
 				current_element=element;
 				WebElement web_element = browser.findElement(element.getXpath());
 				
-				/*
-				browser.scrollToElementCentered(web_element);
-				WebDriverWait wait = new WebDriverWait(browser.getDriver(), 1000);
-				wait.until(ExpectedConditions.elementToBeClickable(web_element));
-				browser.getViewportScrollOffset();
-				*/
 				last_webelem = web_element;
 				//ActionFactory action_factory = new ActionFactory(browser.getDriver());
 				//action_factory.execAction(web_element, "", simple_step.getAction());
 				((JavascriptExecutor)browser.getDriver()).executeScript("arguments[0].click();", web_element);
-
 			}
 			else if(step instanceof LoginStep) {
 				LoginStep login_step = (LoginStep)step;
@@ -65,9 +57,7 @@ public class StepExecutor {
 			else if(step instanceof LandingStep) {
 				PageState initial_page = step.getStartPage();
 				String sanitized_url = BrowserUtils.sanitizeUrl(initial_page.getUrl(), initial_page.isSecured());
-				log.warn("navigating to url = "+sanitized_url);
 				browser.navigateTo(sanitized_url);
-				TimingUtils.pauseThread(5000L);
 			}
 			else {
 				log.warn("Unknown step type during execution = " + step.getKey());

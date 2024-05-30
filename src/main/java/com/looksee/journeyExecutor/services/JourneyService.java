@@ -34,6 +34,7 @@ public class JourneyService {
 	 * @param journey
 	 * @return
 	 */
+	@Retryable
 	public Journey save(long domain_map_id, Journey journey) {
 		Journey journey_record = journey_repo.findByKey(domain_map_id, journey.getKey());
 		if(journey_record == null) {

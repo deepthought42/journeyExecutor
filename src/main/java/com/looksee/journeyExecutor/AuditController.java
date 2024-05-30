@@ -125,37 +125,31 @@ public class AuditController {
 		Body.Message message = body.getMessage();
 		String data = message.getData();
 		String target = !data.isEmpty() ? new String(Base64.getDecoder().decode(data)) : "";
-        log.debug("verify journey msg received = "+target);
-
+		
 		ObjectMapper input_mapper = new ObjectMapper();
 		JourneyCandidateMessage journey_msg = input_mapper.readValue(target, JourneyCandidateMessage.class);
-
+		
 		JsonMapper mapper = JsonMapper.builder().addModule(new JavaTimeModule()).build();
 		Journey journey = journey_msg.getJourney();
-		Optional<Journey> journey_opt = journey_service.findById(journey.getId());
-
-		if(journey_opt.isPresent() && !JourneyStatus.CANDIDATE.equals(journey_opt.get().getStatus())){
-			log.warn("(NEW)Journey has already been verified or discarded, or is being evaluated with status = "+journey_opt.get().getStatus());
-			return new ResponseEntity<String>("Journey "+ journey_opt.get().getId()+" does not have CANDIDATE status. It has already been evaluated", HttpStatus.OK);
-		}
-	    //CHECK IF JOURNEY WITH CANDIDATE KEY HAS ALREADY BEEN EVALUATED
-		if(!JourneyStatus.CANDIDATE.equals(journey.getStatus())) {
-			log.warn("(OLD) Journey has already been verified or discarded, or is being evaluated with status = "+journey.getStatus());
-			return new ResponseEntity<String>("Journey "+ journey.getId()+" does not have CANDIDATE status. It has already been evaluated", HttpStatus.OK);
-		}
-
-		//update journey status to REVIEWING
-		journey_service.updateStatus(journey.getId(), JourneyStatus.REVIEWING);
-		
 		List<Step> steps = new ArrayList<>(journey.getSteps());
-		long domain_audit_id = journey_msg.getAuditRecordId();
-		//if journey with same candidate key exists that also has a status of VERIFIED or DISCARDED then don't iterate
+		String current_url = "";
 		PageState final_page = null;
 		Browser browser = null;
-		Domain domain = domain_service.findByAuditRecord(journey_msg.getAuditRecordId());
-		String current_url = "";
-		
+		long domain_audit_id = journey_msg.getAuditRecordId();
+
 		try {
+			Optional<Journey> journey_opt = journey_service.findById(journey.getId());
+
+			if(journey_opt.isPresent() && !JourneyStatus.CANDIDATE.equals(journey_opt.get().getStatus())){
+				return new ResponseEntity<String>("Journey "+ journey_opt.get().getId()+" does not have CANDIDATE status. It has already been evaluated", HttpStatus.OK);
+			}
+
+			//update journey status to REVIEWING
+			journey_service.updateStatus(journey.getId(), JourneyStatus.REVIEWING);
+			
+			//if journey with same candidate key exists that also has a status of VERIFIED or DISCARDED then don't iterate
+			Domain domain = domain_service.findByAuditRecord(journey_msg.getAuditRecordId());
+		
 			URL domain_url = new URL(BrowserUtils.sanitizeUserUrl(domain.getUrl()));
 			browser = browser_service.getConnection(BrowserType.CHROME, BrowserEnvironment.DISCOVERY);
 			
@@ -172,12 +166,14 @@ public class AuditController {
 				final_page.setKey(final_page.generateKey());
 				final_page.setSrc("");
 				final_page.setBrowser(BrowserType.CHROME);
-				final_page = page_state_service.save(domain_audit_id, final_page);
-				audit_record_service.addPageToAuditRecord(domain_audit_id, final_page.getId());
+				final_page.setElementExtractionComplete(true);
+				final_page.setAuditRecordId(journey_msg.getAuditRecordId());
+				final_page = page_state_service.save( journey_msg.getMapId(), final_page);
+				domain_map_service.addPageToDomainMap(journey_msg.getMapId(), final_page.getId());
 			}
 			else {
 				//if current url is different than second to last page then try to lookup page in database before building page
-				final_page = buildPage(browser, journey_msg.getMapId());
+				final_page = buildPage(browser, journey_msg.getMapId(), journey_msg.getAuditRecordId());
 			}
 		}
 		catch(JavascriptException e) {
@@ -194,7 +190,7 @@ public class AuditController {
 			log.warn("Failed to acquire browser element for journey = "+journey.getId()+ " with status = "+journey.getStatus()+" ;  on page = " + current_url +  ";     " +e.getLocalizedMessage());
 			//e.printStackTrace();
 		    journey_service.updateStatus(journey.getId(), JourneyStatus.DISCARDED);
-			return new ResponseEntity<String>("Element not found", HttpStatus.OK);
+			return new ResponseEntity<String>("Element not found", HttpStatus.INTERNAL_SERVER_ERROR);
 		}
 		catch(org.openqa.selenium.interactions.MoveTargetOutOfBoundsException e) {
 			log.warn("MOVE TO TARGET EXCEPTION FOR ELEMENT;    journey = "+journey.getId() + "  with status = "+journey.getStatus() + "  --> "+e.getMessage());
@@ -217,12 +213,6 @@ public class AuditController {
 			if(browser != null) {
 				browser.close();
 			}
-		}
-		
-		if(final_page == null) {
-			log.warn("FINAL PAGE IS NULL! RETURNING ERROR;  journey = "+journey.getId() + "  with status = "+journey.getStatus());
-		    journey_service.updateStatus(journey.getId(), JourneyStatus.CANDIDATE);
-			return new ResponseEntity<String>("Error occured building page while validating journey with id = "+journey.getId(), HttpStatus.INTERNAL_SERVER_ERROR);
 		}
 		
 		//STEP AND JOURNEY SETUP
@@ -377,44 +367,49 @@ public class AuditController {
 	 * 
 	 * @pre browser != null
 	 */
-	private PageState buildPage(Browser browser, long domain_map_id) throws Exception {
+	private PageState buildPage(Browser browser, long domain_map_id, long audit_record_id) throws Exception {
 		assert browser != null;
 		
-		PageState page_state = browser_service.performBuildPageProcess(browser);
-		//PageState page_state_record = audit_record_service.findPageWithKey(domain_audit_id, page_state.getKey());
-		PageState page_state_record = audit_record_service.findPageWithKey(domain_map_id, page_state.getKey());
+		PageState page_state = browser_service.buildPageState(browser, audit_record_id);
+		//PageState page_state_record = page_state_service.findPageWithKey(domain_map_id, page_state.getKey());
+		List<String> xpaths = browser_service.extractAllUniqueElementXpaths(page_state.getSrc());
+		if(xpaths.size() <= 2){
+			log.warn("ONLY 2 XPATHS WERE FOUND!!!   url =  "+page_state.getUrl() + ";;   source = "+page_state.getSrc() + ";;   xpaths = "+xpaths);
+			throw new Exception();
+		}
 
-		if(page_state_record == null )
-		{
-			log.warn("Extracting element states..."+page_state.getUrl()+";   key = "+page_state.getKey());
-			List<String> xpaths = browser_service.extractAllUniqueElementXpaths(page_state.getSrc(), null);
-			
-			BufferedImage full_page_screenshot = ImageIO.read(new URL(page_state.getFullPageScreenshotUrlComposite()));
-			List<ElementState> element_states = browser_service.getDomElementStates(page_state, 
-																					xpaths,
-																					browser,
-																					domain_map_id,
-																					full_page_screenshot);
-			
+		if(page_state.getId() == null ) {
 			page_state = page_state_service.save(domain_map_id, page_state);
+			domain_map_service.addPageToDomainMap(domain_map_id, page_state.getId());
+		}
+		
+		if(!page_state.isElementExtractionComplete()){
+			log.warn("Extracting element states..."+page_state.getUrl()+";   key = "+page_state.getKey());
+			BufferedImage full_page_screenshot = ImageIO.read(new URL(page_state.getFullPageScreenshotUrlComposite()));
+			List<ElementState> element_states = new ArrayList<>();
+			
+			element_states = browser_service.getDomElementStates(page_state, 
+																xpaths,
+																browser,
+																domain_map_id,
+																full_page_screenshot);
+
+			if(element_states.size() == 0){
+				log.warn("Uh oh! No elements were found. WELL THIS IS CONCERNING!!! XPATHS used for element build = "+xpaths.size()+"url = "+page_state.getUrl() +" for page id = "+page_state.getKey());
+				throw new Exception();
+			}
 			
 			for(ElementState element: element_states) {
 				if(element.getId() == null) {
-					element = element_state_service.save(domain_map_id, element);
+					ElementState temp_element = element_state_service.save(domain_map_id, element);
+					element.setId(temp_element.getId());
 				}
 				page_state_service.addElement(page_state.getId(), element.getId());
 			}
-			long element_count = page_state_service.getElementStateCount(page_state.getId());
-			if(element_count != element_states.size()) {
-				log.warn("Saved element count does not match!!! pageid = "+page_state.getId()+";    with elements size = "+element_states.size() + ";    element count = "+element_count);
-			}
-		}
-		else {
-			page_state = page_state_record;
+			page_state_service.updateElementExtractionCompleteStatus(page_state.getId(), true);
 		}
 		
 		return page_state;
-
 	}
 
 	/**

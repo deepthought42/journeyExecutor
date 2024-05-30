@@ -25,6 +25,9 @@ import com.looksee.journeyExecutor.models.repository.ElementStateRepository;
 import com.looksee.journeyExecutor.models.repository.PageStateRepository;
 import com.looksee.journeyExecutor.models.repository.ScreenshotRepository;
 
+import io.github.resilience4j.retry.annotation.Retry;
+import lombok.Synchronized;
+
 
 
 /**
@@ -32,6 +35,7 @@ import com.looksee.journeyExecutor.models.repository.ScreenshotRepository;
  *
  */
 @Service
+@Retry(name="neoforj")
 public class PageStateService {
 	@SuppressWarnings("unused")
 	private static Logger log = LoggerFactory.getLogger(PageStateService.class.getName());
@@ -61,13 +65,12 @@ public class PageStateService {
 	 * @pre page_state != null
 	 */
 	@Retryable
-	public PageState save(long domain_audit_id, PageState page_state) throws Exception {
+	@Synchronized
+	public PageState save(long domain_map_id, PageState page_state) throws Exception {
 		assert page_state != null;
 		
-		PageState page_state_record = page_state_repo.findPageWithKey(domain_audit_id, page_state.getKey());
+		PageState page_state_record = findPageWithKey(domain_map_id, page_state.getKey());
 		if(page_state_record == null) {
-			log.warn("page state wasn't found in database. Saving new page state to neo4j; key  = "+page_state.getKey());
-			
 			return page_state_repo.save(page_state);
 		}
 
@@ -83,7 +86,7 @@ public class PageStateService {
 	}
 	
 	public List<PageState> findByScreenshotChecksumAndPageUrl(String user_id, String url, String screenshot_checksum){
-		return page_state_repo.findByScreenshotChecksumAndPageUrl(url, screenshot_checksum);		
+		return page_state_repo.findByScreenshotChecksumAndPageUrl(url, screenshot_checksum);
 	}
 	
 	public List<PageState> findByFullPageScreenshotChecksum(String screenshot_checksum){
@@ -198,6 +201,21 @@ public class PageStateService {
 	}
 
 	public long getElementStateCount(long page_state_id) {
-		return element_state_repo.getElementStateCount(page_state_id);		
+		return element_state_repo.getElementStateCount(page_state_id);
+	}
+
+	@Retryable
+	@Synchronized
+	public PageState findPageWithKey(long audit_record_id, String key) {
+		return page_state_repo.findPageWithKey(audit_record_id, key);
+	}
+
+	@Retryable
+	@Synchronized
+	public void updateElementExtractionCompleteStatus(Long page_id, boolean is_complete) throws Exception {
+		PageState page = page_state_repo.updateElementExtractionCompleteStatus(page_id, is_complete);
+		if(page == null){
+			throw new Exception("Page state with id = "+page_id+" was not found");
+		}
 	}
 }

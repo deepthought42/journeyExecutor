@@ -7,10 +7,10 @@ import org.springframework.data.neo4j.repository.query.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
-import com.looksee.journeyExecutor.models.enums.JourneyStatus;
-import com.looksee.journeyExecutor.models.journeys.Step;
 import com.looksee.journeyExecutor.models.ElementState;
 import com.looksee.journeyExecutor.models.PageState;
+import com.looksee.journeyExecutor.models.enums.JourneyStatus;
+import com.looksee.journeyExecutor.models.journeys.Step;
 
 @Repository
 public interface StepRepository extends Neo4jRepository<Step, Long>{
@@ -33,7 +33,7 @@ public interface StepRepository extends Neo4jRepository<Step, Long>{
 	@Query("MATCH (d:DomainAuditRecord) with d WHERE id(d)=$domain_audit_id MATCH(d)-[]->(p:PageState{key:$page_state_key}) WITH p MATCH (step:Step)-[:STARTS_WITH]->(p:PageState) RETURN step")
 	public List<Step> getStepsWithStartPage(@Param("domain_audit_id") long domain_audit_id, @Param("page_state_key") String key);
 	
-	@Query("MATCH (step:Step) WITH step WHERE id(step)=$step_id MATCH (page:PageState) WHERE id(page)=$page_id MERGE (step)-[:ENDS_WITH]->(page) RETURN step")
+	@Query("MATCH (step:Step) WHERE id(step)=$step_id MATCH (page:PageState) WHERE id(page)=$page_id MERGE (step)-[:ENDS_WITH]->(page) RETURN step")
 	public Step addEndPage(@Param("step_id") long step_id, @Param("page_id") long page_id);
 
 	@Query("MATCH (step:Step) WHERE id(step)=$step_id SET step.key=$step_key RETURN step")
@@ -42,7 +42,7 @@ public interface StepRepository extends Neo4jRepository<Step, Long>{
 	@Query("MATCH (step:Step) WHERE id(step)=$step_id MATCH (page:PageState) WHERE id(page)=$page_id MERGE (step)-[:STARTS_WITH]->(page) RETURN step")
 	public Object setStartPage(@Param("step_id") Long step_id, @Param("page_id") Long page_id);
 
-	@Query("MATCH (step:Step) WITH step WHERE id(step)=$step_id MATCH (element:ElementState) WHERE id(element)=$element_id MERGE (step)-[:HAS]->(element) RETURN step")
+	@Query("MATCH (step:Step) WHERE id(step)=$step_id MATCH (element:ElementState) WHERE id(element)=$element_id MERGE (step)-[:HAS]->(element) RETURN step")
 	public Object setElementState(@Param("step_id") Long step_id, @Param("element_id") Long element_id);
 
 	@Query("MATCH (map:DomainMap)-[*2]-(step:Step{candidate_key:$key}) WHERE id(map)=$domain_map_id RETURN step LIMIT 1")

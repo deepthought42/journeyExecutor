@@ -319,7 +319,7 @@ public class Browser {
 
 		//ImmutableCapabilities capabilities = new ImmutableCapabilities("browserName", "chrome");
 		RemoteWebDriver driver = new RemoteWebDriver(hub_node_url, chrome_options);
-		driver.manage().window().maximize();
+		//driver.manage().window().maximize();
 		//options.setHeadless(true);
 
 		//cap.setCapability("video", "True"); // NOTE: "True" is a case sensitive string, not boolean.
@@ -335,8 +335,6 @@ public class Browser {
 		} else {
 			cap.setCapability("video", "False"); // NOTE: "False" is a case sensitive string, not boolean.
 		log.debug("Requesting chrome remote driver from hub");
-		RemoteWebDriver driver = new RemoteWebDriver(hub_node_url, capabilities);
-		driver.manage().window().maximize();
 		}*/
 
 		//driver.manage().window().setSize(new Dimension(1920, 1080));
@@ -1244,7 +1242,7 @@ public class Browser {
 	public static String extractBody(String src) {
 		assert src != null;
 		
-		Document doc = Jsoup.parse(src);	
+		Document doc = Jsoup.parse(src);
 		Elements body_elements = doc.select("body");
 		return body_elements.html();
 	}

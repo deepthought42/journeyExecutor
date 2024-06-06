@@ -9,9 +9,12 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.retry.annotation.Retryable;
 import org.springframework.stereotype.Service;
 
+import com.looksee.journeyExecutor.models.PageState;
 import com.looksee.journeyExecutor.models.enums.JourneyStatus;
 import com.looksee.journeyExecutor.models.journeys.Journey;
 import com.looksee.journeyExecutor.models.repository.JourneyRepository;
+
+import lombok.Synchronized;
 
 @Service
 public class JourneyService {
@@ -63,13 +66,9 @@ public class JourneyService {
 		return journey_record;
 	}
 
-	public Journey findByCandidateKey(String candidateKey) {
-		return journey_repo.findByCandidateKey(candidateKey);
-	}
-
 	@Retryable
 	public Journey updateFields(long journey_id, JourneyStatus status, String key, List<Long> ordered_ids) {
-		return journey_repo.updateFields(journey_id, status, key, ordered_ids);
+		return journey_repo.updateFields(journey_id, status.toString(), key, ordered_ids);
 	}
 
 	@Retryable
@@ -81,9 +80,14 @@ public class JourneyService {
 		return journey_repo.findByCandidateKey(domain_map_id, candidate_key);
 	}
 
-	@Retryable
+	@Synchronized
 	public Journey updateStatus(long journey_id, JourneyStatus status) {
 		return journey_repo.updateStatus(journey_id, status.toString());
 	}
+
+    public PageState executeJourney(Journey journey, long domain_audit_id) {
+        // TODO Auto-generated method stub
+        throw new UnsupportedOperationException("Unimplemented method 'executeJourney'");
+    }
 	
 }

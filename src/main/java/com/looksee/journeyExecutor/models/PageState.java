@@ -8,7 +8,6 @@ import java.net.URL;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.util.ArrayList;
-import java.util.Base64;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -45,6 +44,8 @@ public class PageState extends LookseeObject {
 	@Getter
 	@Setter
 	private long auditRecordId;
+
+	@JsonIgnore
 	private String src;
 	private String url;
 	private String urlAfterLoading;
@@ -362,15 +363,15 @@ public class PageState extends LookseeObject {
 	public String generateKey() {
 		String gen_src = BrowserService.generalizeSrc(BrowserService.extractBody(this.getSrc()) );
 		
-		return "pagestate" + org.apache.commons.codec.digest.DigestUtils.sha256Hex( getAuditRecordId()+getUrl() + gen_src +getBrowser());
+		return "pagestate" + getAuditRecordId()+ org.apache.commons.codec.digest.DigestUtils.sha256Hex( getUrl() + gen_src +getBrowser());
 	}
 
 	public String getSrc() {
-		return new String(Base64.getDecoder().decode(src));
+		return src;
 	}
 
 	public void setSrc(String src) {
-		this.src = Base64.getEncoder().encodeToString(src.getBytes());
+		this.src = src;
 	}
 
 	public long getScrollXOffset() {
@@ -456,7 +457,7 @@ public class PageState extends LookseeObject {
 	public void addElements(List<ElementState> elements) {
 		//check for duplicates before adding
 		for(ElementState element : elements) {
-			if(element != null && !this.elements.contains(element)) {				
+			if(element != null && !this.elements.contains(element)) {
 				this.elements.add(element);
 			}
 		}

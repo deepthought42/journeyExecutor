@@ -6,14 +6,10 @@ import java.net.URL;
 import org.openqa.selenium.WebDriver;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.retry.annotation.Retryable;
 
 import com.looksee.journeyExecutor.models.enums.BrowserEnvironment;
 import com.looksee.journeyExecutor.models.enums.BrowserType;
 
-import io.github.resilience4j.retry.annotation.Retry;
-
-@Retry(name="webdriver")
 public class BrowserConnectionHelper {
 	@SuppressWarnings("unused")
 	private static Logger log = LoggerFactory.getLogger(BrowserConnectionHelper.class);
@@ -54,7 +50,6 @@ public class BrowserConnectionHelper {
 	 * 
 	 * @throws MalformedURLException
 	 */
-    @Retryable
 	public static Browser getConnection(BrowserType browser, BrowserEnvironment environment) throws Exception {
 		assert browser != null;
 		assert environment != null;

@@ -65,7 +65,6 @@ public class PageStateService {
 	 * @pre page_state != null
 	 */
 	@Retryable
-	@Synchronized
 	public PageState save(long domain_map_id, PageState page_state) throws Exception {
 		assert page_state != null;
 		
@@ -205,7 +204,6 @@ public class PageStateService {
 	}
 
 	@Retryable
-	@Synchronized
 	public PageState findPageWithKey(long audit_record_id, String key) {
 		return page_state_repo.findPageWithKey(audit_record_id, key);
 	}

@@ -59,6 +59,7 @@ import com.assertthat.selenium_shutterbug.core.Capture;
 import com.assertthat.selenium_shutterbug.core.Shutterbug;
 import com.google.api.gax.rpc.ApiException;
 import com.looksee.utils.ImageUtils;
+import com.looksee.utils.TimingUtils;
 
 import cz.vutbr.web.css.CSSFactory;
 import cz.vutbr.web.css.CombinedSelector;
@@ -1089,6 +1090,7 @@ public class Browser {
 				webDriver -> ((JavascriptExecutor) webDriver)
 					.executeScript("return document.readyState")
 					.equals("complete"));
+		TimingUtils.pauseThread(5000L);
 	}
 	
 	private static Dimension getViewportSize(WebDriver driver) {

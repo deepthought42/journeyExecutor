@@ -18,6 +18,7 @@ import com.looksee.journeyExecutor.models.journeys.LoginStep;
 import com.looksee.journeyExecutor.models.journeys.SimpleStep;
 import com.looksee.journeyExecutor.models.journeys.Step;
 import com.looksee.utils.BrowserUtils;
+import com.looksee.utils.TimingUtils;
 
 @Service
 public class StepExecutor {
@@ -62,6 +63,7 @@ public class StepExecutor {
 			else {
 				log.warn("Unknown step type during execution = " + step.getKey());
 			}
+			TimingUtils.pauseThread(5000);
 		}
 		catch(MoveTargetOutOfBoundsException e) {
 			browser.getViewportScrollOffset();

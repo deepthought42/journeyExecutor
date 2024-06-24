@@ -11,8 +11,8 @@ import org.openqa.selenium.remote.Response;
 
 public class RateLimitExecutor extends HttpCommandExecutor {
 
-    public static final int CONCURRENT_SESSIONS = 100;
-    public static final int ACTIONS_RATE_LIMIT_PER_SECOND = 150;
+    public static final int CONCURRENT_SESSIONS = 1;
+    public static final int ACTIONS_RATE_LIMIT_PER_SECOND = 50;
 
     public static final double SECONDS_PER_ACTION = ((double) CONCURRENT_SESSIONS)
             / ((double) ACTIONS_RATE_LIMIT_PER_SECOND);

@@ -28,17 +28,14 @@ public class StepExecutor {
 	public void execute(Browser browser, Step step) throws Exception {
 		assert browser != null;
 		assert step != null;
-		
-		ElementState current_element = null;
-		WebElement last_webelem = null;
+
 		try {
 			if(step instanceof SimpleStep) {
 				SimpleStep simple_step = (SimpleStep)step;
 				ElementState element = simple_step.getElementState();
-				current_element=element;
 				WebElement web_element = browser.findElement(element.getXpath());
-				
-				last_webelem = web_element;
+				browser.scrollToElementCentered(web_element);
+				//web_element.click();
 				//ActionFactory action_factory = new ActionFactory(browser.getDriver());
 				//action_factory.execAction(web_element, "", simple_step.getAction());
 				((JavascriptExecutor)browser.getDriver()).executeScript("arguments[0].click();", web_element);
@@ -54,6 +51,8 @@ public class StepExecutor {
 	
 				WebElement submit_element = browser.getDriver().findElement(By.xpath(login_step.getSubmitElement().getXpath()));
 				action_factory.execAction(submit_element, "", Action.CLICK);
+
+				TimingUtils.pauseThread(5000L);
 			}
 			else if(step instanceof LandingStep) {
 				PageState initial_page = step.getStartPage();
@@ -63,7 +62,6 @@ public class StepExecutor {
 			else {
 				log.warn("Unknown step type during execution = " + step.getKey());
 			}
-			TimingUtils.pauseThread(5000);
 		}
 		catch(MoveTargetOutOfBoundsException e) {
 			browser.getViewportScrollOffset();
@@ -72,14 +70,11 @@ public class StepExecutor {
 			log.warn("URL = "+browser.getDriver().getCurrentUrl());
 			log.warn("browser dimension = "+browser.getViewportSize());
 			log.warn("browser offset = "+browser.getXScrollOffset()+" , "+browser.getYScrollOffset());
-			log.warn("element xpath = "+current_element.getXpath());
-			log.warn("element location = "+current_element.getXLocation()+" , "+current_element.getYLocation());
-			log.warn("element dimension = "+current_element.getWidth()+" , "+current_element.getHeight());
-
-			log.warn("WEB element = "+last_webelem);
-			log.warn("is element visible? = "+last_webelem.isDisplayed());//current_element.isVisible());
 			log.warn("============================================================");;
-			//e.printStackTrace();
+			throw e;
+		}
+		catch(Exception e){
+			log.warn("error occurred while performing steps...."+e.getMessage());
 			throw e;
 		}
 	}

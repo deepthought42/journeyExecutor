@@ -6,6 +6,7 @@ import java.net.URL;
 import java.util.ArrayList;
 import java.util.Base64;
 import java.util.List;
+import java.util.Optional;
 import java.util.stream.Collectors;
 
 import javax.imageio.ImageIO;
@@ -45,7 +46,6 @@ import com.looksee.journeyExecutor.models.message.DiscardedJourneyMessage;
 import com.looksee.journeyExecutor.models.message.JourneyCandidateMessage;
 import com.looksee.journeyExecutor.models.message.PageBuiltMessage;
 import com.looksee.journeyExecutor.models.message.VerifiedJourneyMessage;
-import com.looksee.journeyExecutor.services.AuditRecordService;
 import com.looksee.journeyExecutor.services.BrowserService;
 import com.looksee.journeyExecutor.services.DomainMapService;
 import com.looksee.journeyExecutor.services.DomainService;
@@ -55,8 +55,8 @@ import com.looksee.journeyExecutor.services.PageStateService;
 import com.looksee.journeyExecutor.services.StepExecutor;
 import com.looksee.journeyExecutor.services.StepService;
 import com.looksee.utils.BrowserUtils;
-import com.looksee.utils.JourneyUtils;
 import com.looksee.utils.PathUtils;
+import com.looksee.utils.TimingUtils;
 
 
 /*
@@ -109,9 +109,6 @@ public class AuditController {
 	private PubSubDiscardedJourneyPublisherImpl discarded_journey_topic;
 	
 	@Autowired
-	private AuditRecordService audit_record_service;
-	
-	@Autowired
 	private StepExecutor step_executor;
 	
 	@Autowired
@@ -154,25 +151,29 @@ public class AuditController {
 			
 			performJourneyStepsInBrowser(steps, browser);
 			
-			current_url = browser.getDriver().getCurrentUrl();
-			String sanitized_url = BrowserUtils.sanitizeUserUrl(current_url);
+			TimingUtils.pauseThread(5000L);
+			String browser_url = browser.getDriver().getCurrentUrl();
+			String sanitized_url = BrowserUtils.sanitizeUserUrl(browser_url);
 			current_url = BrowserUtils.getPageUrl(sanitized_url);
 			
 			//if current url is external URL then create ExternalPageState
 			if(BrowserUtils.isExternalLink(domain_url.getHost(), new URL(sanitized_url).getHost())) {
+				if(sanitized_url.contains("look-see.com")){
+					log.warn("OH NO. A LOOK-SEE PAGE WAS IDENTIFIED AS EXTERNAL= "+sanitized_url);
+				}
 				final_page = new PageState();
 				final_page.setUrl(current_url);
-				final_page.setKey(final_page.generateKey());
-				final_page.setSrc("");
+				final_page.setSrc("External Links are not mapped");
 				final_page.setBrowser(BrowserType.CHROME);
 				final_page.setElementExtractionComplete(true);
 				final_page.setAuditRecordId(journey_msg.getAuditRecordId());
+				final_page.setKey(final_page.generateKey());
 				final_page = page_state_service.save( journey_msg.getMapId(), final_page);
-				domain_map_service.addPageToDomainMap(journey_msg.getMapId(), final_page.getId());
 			}
 			else {
 				//if current url is different than second to last page then try to lookup page in database before building page
-				final_page = buildPage(browser, journey_msg.getMapId(), journey_msg.getAuditRecordId());
+				final_page = buildPage(browser, journey_msg.getMapId(), journey_msg.getAuditRecordId(), browser_url);
+				log.warn("COMPLETED BUILD OF PAGE = "+final_page.getUrl() + ";  id = "+final_page.getId());
 			}
 		}
 		catch(JavascriptException e) {
@@ -201,11 +202,25 @@ public class AuditController {
 			journey_service.updateStatus(journey.getId(), JourneyStatus.DISCARDED);
 			return new ResponseEntity<String>(current_url + " is malformed", HttpStatus.OK);
 		}
+		catch(NullPointerException e){
+			e.printStackTrace();
+			return new ResponseEntity<String>(current_url + " experience Null Pointer Exception", HttpStatus.INTERNAL_SERVER_ERROR);
+		}
 		catch(Exception e) {
-			log.warn("Exception occurred! Returning FAILURE;   journey = "+journey.getId() + "  with status = "+journey.getStatus()+" message = "+e.getMessage());
-			if(e.getMessage() != null && e.getMessage().contains("Input byte array has wrong 4-byte ending unit")){
+			log.warn("Exception occurred! Returning FAILURE;   message = "+e.getMessage());
+			if(e.getMessage().contains("Rate exceeded.")){
 				e.printStackTrace();
 			}
+			if(e.getMessage().contains("Unable to execute request for an existing session")){
+				e.printStackTrace();
+			}
+			if(e.getMessage().contains("sleep interrupted")){
+				e.printStackTrace();
+			}
+			if(e.getMessage().contains("java.util.concurrent.TimeoutException")){
+				e.printStackTrace();
+			}
+			
 			journey_service.updateStatus(journey.getId(), JourneyStatus.CANDIDATE);
 			return new ResponseEntity<String>("Error occured while validating journey with id = "+journey.getId(), HttpStatus.INTERNAL_SERVER_ERROR);
 		}
@@ -236,7 +251,7 @@ public class AuditController {
 			journey.setSteps(steps);
 			journey.setKey(journey.generateKey());
 			JourneyStatus status = getVerifiedOrDiscarded(journey);
-			
+			log.warn("journey status = "+status+";;   page id = "+final_page.getId());
 			Journey updated_journey = journey_service.updateFields(journey.getId(), 
 																status, 
 																journey.getKey(),
@@ -263,8 +278,7 @@ public class AuditController {
 				
 				log.warn("Returning success for journey with status = " +updated_journey.getStatus() + ";   journey id ="+updated_journey.getId());
 			}
-			else if(!JourneyUtils.hasLoginStep(steps)
-						&& !final_step.getStartPage().getUrl().equals(final_step.getEndPage().getUrl()))
+			else if(!final_step.getStartPage().getUrl().equals(final_step.getEndPage().getUrl()))
 			{
 				//if page state isn't associated with domain audit then send pageBuilt message
 				PageBuiltMessage page_built_msg = new PageBuiltMessage(journey_msg.getAccountId(),
@@ -360,6 +374,7 @@ public class AuditController {
 
 	/**
 	 * Constructs a {@link PageState page} including all {@link ElementState elements} on the page as a {@linkplain List}
+	 * 
 	 * @param browser
 	 * @param domain_map_id TODO
 	 * 
@@ -368,37 +383,39 @@ public class AuditController {
 	 * 
 	 * @pre browser != null
 	 */
-	private PageState buildPage(Browser browser, long domain_map_id, long audit_record_id) throws Exception {
+	private PageState buildPage(Browser browser, 
+								long domain_map_id, 
+								long audit_record_id, 
+								String browser_url)
+							throws Exception {
 		assert browser != null;
+		assert browser_url != null;
 		
-		PageState page_state = browser_service.buildPageState(browser, audit_record_id);
+		PageState page_state = browser_service.buildPageState(browser, audit_record_id, browser_url);
 		List<String> xpaths = browser_service.extractAllUniqueElementXpaths(page_state.getSrc());
 		if(xpaths.size() <= 2){
 			log.warn("ONLY 2 XPATHS WERE FOUND!!!   url =  "+page_state.getUrl() + ";;   source = "+page_state.getSrc() + ";;   xpaths = "+xpaths);
 			throw new Exception();
 		}
 
-		if(page_state.getId() == null ) {
-			page_state = page_state_service.save(domain_map_id, page_state);
-			domain_map_service.addPageToDomainMap(domain_map_id, page_state.getId());
-		}
+		page_state = page_state_service.save(domain_map_id, page_state);
 		
 		if(!page_state.isElementExtractionComplete()){
-			log.warn("Extracting element states..."+page_state.getUrl()+";   key = "+page_state.getKey());
-			BufferedImage full_page_screenshot = ImageIO.read(new URL(page_state.getFullPageScreenshotUrlComposite()));
-			List<ElementState> element_states = new ArrayList<>();
-			
-			element_states = browser_service.getDomElementStates(page_state, 
-																xpaths,
-																browser,
-																domain_map_id,
-																full_page_screenshot);
+			log.warn("ExtrImageElementacting element states..."+page_state.getUrl()+";   key = "+page_state.getKey());
+			BufferedImage full_page_screenshot = ImageIO.read(new URL(page_state.getFullPageScreenshotUrl()));
+			List<ElementState> element_states = browser_service.getDomElementStates(page_state, 
+																					xpaths,
+																					browser,
+																					domain_map_id,
+																					full_page_screenshot,
+																					browser_url);
 
 			if(element_states.size() == 0){
 				log.warn("Uh oh! No elements were found. WELL THIS IS CONCERNING!!! XPATHS used for element build = "+xpaths.size()+"url = "+page_state.getUrl() +" for page id = "+page_state.getKey());
 				throw new Exception();
 			}
-			
+			log.warn("adding elements to page = "+page_state.getUrl());
+			/*
 			for(ElementState element: element_states) {
 				if(element.getId() == null) {
 					ElementState temp_element = element_state_service.save(domain_map_id, element);
@@ -406,7 +423,10 @@ public class AuditController {
 				}
 				page_state_service.addElement(page_state.getId(), element.getId());
 			}
+			*/
+			log.warn("updating element extraction for page state = "+page_state.getUrl());
 			page_state_service.updateElementExtractionCompleteStatus(page_state.getId(), true);
+			log.warn("done updating page state = "+page_state.getUrl());
 		}
 		
 		return page_state;
@@ -418,7 +438,7 @@ public class AuditController {
 	 * @param steps
 	 * @param browser TODO
 	 * 
-	 * @return
+	 * @return current url
 	 * @throws Exception
 	 * 
 	 * @pre steps != null
@@ -430,17 +450,24 @@ public class AuditController {
 		assert !steps.isEmpty();
 		assert browser != null;
 		
-		String last_url = browser.getDriver().getCurrentUrl();
+		//String last_url = "";
+		//String current_url = "";
 		//execute all steps sequentially in the journey
 		for(Step step: steps) {
 			step_executor.execute(browser, step);
 			
-			String current_url = browser.getDriver().getCurrentUrl();
-			if(!last_url.equals(current_url)) {
-				browser.waitForPageToLoad();
-			}
-			last_url = current_url;
+			//current_url = browser.getDriver().getCurrentUrl();
+			//if(!last_url.equals(current_url)) {
+			//	try{
+			//		browser.waitForPageToLoad();
+			//	}catch(InterruptedException e){
+			//		log.warn("waiting for page to load timed out..."+e.getMessage());
+			//	}
+			//}
+			//last_url = current_url;
 		}
+
+		//return current_url;
 	}
 
 	/**

@@ -10,6 +10,7 @@ import java.net.MalformedURLException;
 import java.net.URL;
 import java.security.KeyManagementException;
 import java.security.NoSuchAlgorithmException;
+import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
@@ -59,7 +60,6 @@ import com.assertthat.selenium_shutterbug.core.Capture;
 import com.assertthat.selenium_shutterbug.core.Shutterbug;
 import com.google.api.gax.rpc.ApiException;
 import com.looksee.utils.ImageUtils;
-import com.looksee.utils.TimingUtils;
 
 import cz.vutbr.web.css.CSSFactory;
 import cz.vutbr.web.css.CombinedSelector;
@@ -71,6 +71,8 @@ import cz.vutbr.web.csskit.RuleFontFaceImpl;
 import cz.vutbr.web.csskit.RuleKeyframesImpl;
 import cz.vutbr.web.csskit.RuleMediaImpl;
 import cz.vutbr.web.domassign.StyleMap;
+import lombok.Getter;
+import lombok.Setter;
 import ru.yandex.qatools.ashot.AShot;
 import ru.yandex.qatools.ashot.shooting.ShootingStrategies;
 
@@ -82,6 +84,9 @@ public class Browser {
 	
 	private static Logger log = LoggerFactory.getLogger(Browser.class);
 	private WebDriver driver = null;
+
+	@Getter
+	@Setter
 	private String browserName; 
 	private long yScrollOffset;
 	private long xScrollOffset;
@@ -150,7 +155,7 @@ public class Browser {
 		
 		try {
 			waitForPageToLoad();
-		}catch(Exception e) {		
+		}catch(Exception e) {
 			/*
 			e.printStackTrace();
 			Alert alert = isAlertPresent();
@@ -162,6 +167,7 @@ public class Browser {
 			}
 			 */
 		}
+		//TimingUtils.pauseThread(5000L);
 	}
 
 	/**
@@ -317,9 +323,12 @@ public class Browser {
 		chrome_options.addArguments("user-agent=LookseeBot");
 		chrome_options.addArguments("window-size=1920,1080");
 		chrome_options.addArguments("--remote-allow-origins=*");
+		chrome_options.addArguments("--headless=new");
 
 		//ImmutableCapabilities capabilities = new ImmutableCapabilities("browserName", "chrome");
 		RemoteWebDriver driver = new RemoteWebDriver(hub_node_url, chrome_options);
+		//RemoteWebDriver driver = new RemoteWebDriver(new RateLimitExecutor(hub_node_url), chrome_options);
+
 		//driver.manage().window().maximize();
 		//options.setHeadless(true);
 
@@ -339,10 +348,9 @@ public class Browser {
 		}*/
 
 		//driver.manage().window().setSize(new Dimension(1920, 1080));
-	    //driver.manage().timeouts().implicitlyWait(Duration.ofSeconds(5L));
-	    //driver.manage().timeouts().scriptTimeout(Duration.ofSeconds(2L));
-
-	    //driver.manage().timeouts().pageLoadTimeout(30L, TimeUnit.SECONDS);
+	    //driver.manage().timeouts().implicitlyWait(Duration.ofSeconds(2L));
+	    driver.manage().timeouts().scriptTimeout(Duration.ofSeconds(30L));
+	    //driver.manage().timeouts().pageLoadTimeout(Duration.ofSeconds(60L));
 		return driver;
 	}
 	
@@ -422,7 +430,7 @@ public class Browser {
 		int viewport_height = extractViewportHeight(driver);
 		long last_y_offset = 0;
 		List<BufferedImage> screenshots = new ArrayList<>();
-		//String page_url = driver.getCurrentUrl();
+
 		//while scroll position isn't at end of page
 		do {
 			//scroll 75% of the height of the viewport
@@ -552,19 +560,6 @@ public class Browser {
 		}
 		
 		return page_screenshot.getSubimage(element_state.getXLocation(), element_state.getYLocation(), width, height);
-		
-/*ORIGINAL CODE		
-		//calculate element position within screen
-		int point_x = element_state.getXLocation()+5;
-		int point_y = element_state.getYLocation();
-		int width = element_state.getWidth()+5;
-		int height = element_state.getHeight();
-		if((point_x+width) >= page_screenshot.getWidth()) {
-			width = page_screenshot.getWidth()-point_x-1;
-		}
-		
-		return page_screenshot.getSubimage(point_x, point_y, width, height);
-		*/
 	}
 	
 	/**
@@ -575,8 +570,6 @@ public class Browser {
 	 * @throws IOException
 	 */
 	public BufferedImage getElementScreenshot(WebElement element) throws Exception{
-		//log.warn("Fullpage width and height :: " + this.getFullPageScreenshot().getWidth() + " , " + this.getFullPageScreenshot().getHeight());
-
 		//calculate element position within screen
 		return Shutterbug.shootElementVerticallyCentered(driver, element).getImage(); 
 		//return Shutterbug.shootElement(driver, element).getImage();
@@ -608,7 +601,6 @@ public class Browser {
 	
 	public static ElementState findLabelFor(Set<ElementState> elements, String for_id){
 		for(ElementState elem : elements){
-			//ElementState tag = (ElementState)elem;
 			if(elem.getName().equals("label") ){
 				if(elem.getAttribute("for").contains(for_id)){
 					return elem;
@@ -929,14 +921,6 @@ public class Browser {
 		return css_map;
 	}
 	
-	public String getBrowserName() {
-		return browserName;
-	}
-
-	public void setBrowserName(String browser_name) {
-		this.browserName = browser_name;
-	}
-	
 
 	public long getYScrollOffset() {
 		return yScrollOffset;
@@ -1085,12 +1069,11 @@ public class Browser {
 	/**
 	 * Waits for the document ready state to be complete, then observes page transition if it exists
 	 */
-	public void waitForPageToLoad() {
-		new WebDriverWait(driver, 60L).until(
+	public void waitForPageToLoad() throws InterruptedException{
+		new WebDriverWait(driver, 30L).until(
 				webDriver -> ((JavascriptExecutor) webDriver)
 					.executeScript("return document.readyState")
 					.equals("complete"));
-		TimingUtils.pauseThread(5000L);
 	}
 	
 	private static Dimension getViewportSize(WebDriver driver) {
@@ -1159,11 +1142,6 @@ public class Browser {
 	    catch (NoAlertPresentException Ex) { 
 	        return null; 
 	    }   // catch 
-	}
-
-	public boolean isDisplayed(ElementState element) {
-		WebElement web_element = driver.findElement(By.xpath(element.getXpath()));
-		return web_element.isDisplayed();
 	}
 
 	public static List<RuleSet> extractRuleSetsFromStylesheets(List<String> raw_stylesheets, URL page_state_url) {
@@ -1257,7 +1235,7 @@ public class Browser {
 
         con.setSSLSocketFactory(sc.getSocketFactory());
         // get response code, 200 = Success
-        int responseCode = con.getResponseCode();
+        //int responseCode = con.getResponseCode();
         if(con.getContentEncoding() != null && con.getContentEncoding().equalsIgnoreCase("gzip")) {
         	return readStream(new GZIPInputStream( con.getInputStream()));
         }
@@ -1354,10 +1332,8 @@ public class Browser {
 	 * 
 	 * @param element
 	 */
-	public void scrollToElementCentered(WebElement element) 
-	{ 
+	public void scrollToElementCentered(WebElement element) { 
 		((JavascriptExecutor)driver).executeScript("arguments[0].scrollIntoView({block: 'center'});", element);
-		
 		getViewportScrollOffset();
 	}
 	
@@ -1367,8 +1343,7 @@ public class Browser {
 	 * 
 	 * @param element
 	 */
-	public void scrollTo(int x, int y) 
-	{ 
+	public void scrollTo(int x, int y) {
 		((JavascriptExecutor)driver).executeScript("window.scrollTo("+x+","+y+");");
 		getViewportScrollOffset();
 	}
@@ -1384,6 +1359,10 @@ public class Browser {
 
 	public boolean is503Error() {
 		return this.getSource().contains("503 Service Temporarily Unavailable");
+	}
+
+	public static boolean is503Error(String source) {
+		return source != null && source.contains("503 Service Temporarily Unavailable");
 	}
 
 	public WebElement findElement(String xpath) throws WebDriverException{

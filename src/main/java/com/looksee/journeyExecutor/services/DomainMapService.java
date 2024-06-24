@@ -12,6 +12,7 @@ import com.looksee.journeyExecutor.models.journeys.DomainMap;
 import com.looksee.journeyExecutor.models.repository.DomainMapRepository;
 
 import io.github.resilience4j.retry.annotation.Retry;
+import lombok.Synchronized;
 
 /**
  * Enables interacting with database for {@link InteractiveStep Steps}
@@ -52,6 +53,7 @@ public class DomainMapService {
 	 * @param page_id
 	 */
 	@Retryable
+	@Synchronized
 	public void addPageToDomainMap(long map_id, long page_id) {
 		domain_map_repo.addPageToDomainMap(map_id, page_id);
 	}

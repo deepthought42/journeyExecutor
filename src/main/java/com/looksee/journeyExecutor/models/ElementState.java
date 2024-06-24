@@ -1,11 +1,8 @@
 package com.looksee.journeyExecutor.models;
 
-import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 import java.util.Objects;
-import java.util.stream.Collectors;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -54,8 +51,6 @@ public class ElementState extends LookseeObject implements Comparable<ElementSta
 	private double nonTextContrast;
 	private boolean imageFlagged;
 	
-	private boolean visible;
-	
 	@CompositeProperty
 	private Map<String, String> renderedCssValues = new HashMap<>();
 	
@@ -90,20 +85,19 @@ public class ElementState extends LookseeObject implements Comparable<ElementSta
 	 * @pre outer_html != null;
 	 * @pre !outer_html.isEmpty()
 	 */
-	public ElementState(String owned_text, 
-						String all_text, 
-						String xpath, 
-						String name, 
-						Map<String, String> attributes, 
-						Map<String, String> css_map, 
-						String screenshot_url, 
-						int x_location, 
-						int y_location, 
+	public ElementState(String owned_text,
+						String all_text,
+						String xpath,
+						String name,
+						Map<String, String> attributes,
+						Map<String, String> css_map,
+						String screenshot_url,
+						int x_location,
+						int y_location,
 						int width,
-						int height, 
+						int height,
 						ElementClassification classification, 
 						String outer_html, 
-						boolean is_visible, 
 						String css_selector, 
 						String font_color, 
 						String background_color,
@@ -130,7 +124,6 @@ public class ElementState extends LookseeObject implements Comparable<ElementSta
 		setCssSelector(css_selector);
 		setClassification(classification);
 		setXpath(xpath);
-		setVisible(is_visible);
 		setForegroundColor(font_color);
 		setBackgroundColor(background_color);
 		setImageFlagged(image_flagged);
@@ -215,13 +208,13 @@ public class ElementState extends LookseeObject implements Comparable<ElementSta
 	 */
 	public String generateKey() {
 		String generalized_html = BrowserService.generalizeSrc(getOuterHtml());
-		String attributes = "";
-		List<String> ordered_attribute_keys = getAttributes().keySet().stream().sorted().collect(Collectors.toList());
+		//String attributes = "";
+		//List<String> ordered_attribute_keys = getAttributes().keySet().stream().sorted().collect(Collectors.toList());
 		
-		for(String attr_key : ordered_attribute_keys) {
-			attributes += getAttributes().get(attr_key);
-		}
-		return "elementstate"+org.apache.commons.codec.digest.DigestUtils.sha256Hex(generalized_html+attributes);
+		//for(String attr_key : ordered_attribute_keys) {
+		//	attributes += getAttributes().get(attr_key);
+		//}
+		return "elementstate"+org.apache.commons.codec.digest.DigestUtils.sha256Hex(generalized_html);
 
 		/*
 		String key = "";
@@ -383,14 +376,6 @@ public class ElementState extends LookseeObject implements Comparable<ElementSta
 
 	public void setRenderedCssValues(Map<String, String> rendered_css_values) {
 		this.renderedCssValues.putAll(rendered_css_values);
-	}
-
-	public boolean isVisible() {
-		return visible;
-	}
-
-	public void setVisible(boolean visible) {
-		this.visible = visible;
 	}
 
 	public String getXpath() {

@@ -10,7 +10,6 @@ import org.springframework.data.neo4j.core.schema.Node;
 import org.springframework.data.neo4j.core.schema.Relationship;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
-import com.looksee.journeyExecutor.gcp.ImageSafeSearchAnnotation;
 import com.looksee.journeyExecutor.models.enums.ElementClassification;
 
 @Node
@@ -62,7 +61,6 @@ public class ImageElementState extends ElementState {
 	 * @param height
 	 * @param classification
 	 * @param outer_html
-	 * @param is_visible visibility of the {@linkplain WebElement}
 	 * @param css_selector
 	 * @param foreground_color
 	 * @param background_color
@@ -72,59 +70,7 @@ public class ImageElementState extends ElementState {
 	 * @param logos
 	 * @param labels
 	 * @param safe_search_annotation
-	 */
-	public ImageElementState(String owned_text, 
-							 String all_text, 
-							 String xpath, 
-							 String tagName, 
-							 Map<String, String> attributes,
-							 Map<String, String> rendered_css_values, 
-							 String screenshot_url, 
-							 int x, 
-							 int y, 
-							 int width, 
-							 int height,
-							 ElementClassification classification, 
-							 String outer_html, 
-							 boolean is_visible, 
-							 String css_selector,
-							 String foreground_color, 
-							 String background_color, 
-							 Set<ImageLandmarkInfo> landmark_info_set,
-							 Set<ImageFaceAnnotation> faces, 
-							 ImageSearchAnnotation image_search, 
-							 Set<Logo> logos,
-							 Set<Label> labels, 
-							 ImageSafeSearchAnnotation safe_search_annotation
-	) {
-		super(owned_text,
-				all_text,
-				xpath,
-				tagName,
-				attributes,
-				rendered_css_values,
-				screenshot_url,
-				x,
-				y,
-				width,
-				height,
-				classification,
-				outer_html,
-				is_visible,
-				css_selector,
-				foreground_color,
-				background_color,
-				!image_search.getFullMatchingImages().isEmpty());
-		setLandmarkInfoSet(landmark_info_set);
-		setFaces(faces);
-		setImageSearchSet(image_search);
-		setLogos(logos);
-		setLabels(labels);
-		setAdult(safe_search_annotation.getAdult());
-		setRacy(safe_search_annotation.getRacy());
-		setViolence(safe_search_annotation.getViolence());
-	}
-	
+	 */	
 	public ImageElementState(String owned_text, 
 			 String all_text, 
 			 String xpath, 
@@ -138,7 +84,6 @@ public class ImageElementState extends ElementState {
 			 int height,
 			 ElementClassification classification, 
 			 String outer_html, 
-			 boolean is_visible, 
 			 String css_selector,
 			 String foreground_color, 
 			 String background_color, 
@@ -161,7 +106,6 @@ public class ImageElementState extends ElementState {
 				height,
 				classification,
 				outer_html,
-				is_visible,
 				css_selector,
 				foreground_color,
 				background_color,

@@ -11,16 +11,13 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.retry.annotation.Retryable;
 import org.springframework.stereotype.Service;
 
-import com.looksee.journeyExecutor.models.Audit;
 import com.looksee.journeyExecutor.models.AuditRecord;
 import com.looksee.journeyExecutor.models.ElementState;
 import com.looksee.journeyExecutor.models.PageAuditRecord;
 import com.looksee.journeyExecutor.models.PageState;
 import com.looksee.journeyExecutor.models.Screenshot;
-import com.looksee.journeyExecutor.models.enums.AuditName;
 import com.looksee.journeyExecutor.models.enums.ElementClassification;
 import com.looksee.journeyExecutor.models.repository.AuditRecordRepository;
-import com.looksee.journeyExecutor.models.repository.AuditRepository;
 import com.looksee.journeyExecutor.models.repository.ElementStateRepository;
 import com.looksee.journeyExecutor.models.repository.PageStateRepository;
 import com.looksee.journeyExecutor.models.repository.ScreenshotRepository;
@@ -48,13 +45,13 @@ public class PageStateService {
 	
 	@Autowired
 	private ScreenshotRepository screenshot_repo;
-	
-	@Autowired
-	private AuditRepository audit_repo;
-	
+
 	@Autowired
 	private AuditRecordRepository audit_record_repo;
 	
+	@Autowired
+	private DomainMapService domain_map_service;
+
 	/**
 	 * Save a {@link PageState} object and its associated objects
 	 * 
@@ -64,13 +61,13 @@ public class PageStateService {
 	 * 
 	 * @pre page_state != null
 	 */
-	@Retryable
 	public PageState save(long domain_map_id, PageState page_state) throws Exception {
 		assert page_state != null;
 		
-		PageState page_state_record = findPageWithKey(domain_map_id, page_state.getKey());
+		PageState page_state_record = findPageWithKey(page_state.getKey());
 		if(page_state_record == null) {
-			return page_state_repo.save(page_state);
+			page_state_record = page_state_repo.save(page_state);
+			domain_map_service.addPageToDomainMap(domain_map_id, page_state_record.getId());
 		}
 
 		return page_state_record;
@@ -136,17 +133,6 @@ public class PageStateService {
 	public List<PageState> findBySourceChecksumForDomain(String url, String src_checksum) {
 		return page_state_repo.findBySourceChecksumForDomain(url, src_checksum);
 	}
-	
-	public List<Audit> getAudits(String page_state_key){
-		assert page_state_key != null;
-		assert !page_state_key.isEmpty();
-		
-		return audit_repo.getAudits(page_state_key);
-	}
-
-	public Audit findAuditBySubCategory(AuditName subcategory, String page_state_key) {
-		return audit_repo.findAuditBySubCategory(subcategory.getShortName(), page_state_key);
-	}
 
 	public List<ElementState> getVisibleLeafElements(String page_state_key) {
 		return element_state_repo.getVisibleLeafElements(page_state_key);
@@ -160,6 +146,7 @@ public class PageStateService {
 	}
 
 	@Retryable
+	@Synchronized
 	public boolean addElement(long page_id, long element_id) {
 		return element_state_repo.addElement(page_id, element_id) != null;
 	}
@@ -204,8 +191,8 @@ public class PageStateService {
 	}
 
 	@Retryable
-	public PageState findPageWithKey(long audit_record_id, String key) {
-		return page_state_repo.findPageWithKey(audit_record_id, key);
+	public PageState findPageWithKey(String key) {
+		return page_state_repo.findPageWithKey(key);
 	}
 
 	@Retryable

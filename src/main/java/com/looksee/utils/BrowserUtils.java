@@ -33,7 +33,6 @@ import org.jsoup.nodes.Element;
 import org.jsoup.select.Elements;
 import org.openqa.selenium.Dimension;
 import org.openqa.selenium.Point;
-import org.openqa.selenium.Rectangle;
 import org.openqa.selenium.WebElement;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -131,7 +130,7 @@ public class BrowserUtils {
 	}
 
 	public static ElementState updateElementLocations(Browser browser, ElementState element) {
-		WebElement web_elem = browser.findWebElementByXpath("");//element.getXpath());
+		WebElement web_elem = browser.findWebElementByXpath(element.getXpath());
 		Point location = web_elem.getLocation();
 		if(location.getX() != element.getXLocation() || location.getY() != element.getYLocation()){
 			element.setXLocation(location.getX());
@@ -1136,9 +1135,7 @@ public class BrowserUtils {
 		return element.getWidth() > viewportWidth || element.getHeight() > viewportHeight;
 	}
 
-
-	public static boolean isHidden(WebElement web_element) {
-		Rectangle rect = web_element.getRect();
-		return rect.getX()==0 && rect.getY()==0 && rect.getWidth()==0 && rect.getHeight()==0;
+	public static boolean isHidden(Point location, Dimension size) {
+		return location.getX()==0 && location.getY()==0 && size.getWidth()==0 && size.getHeight()==0;
 	}
 }

@@ -15,7 +15,10 @@ import com.looksee.journeyExecutor.models.Element;
 import com.looksee.journeyExecutor.models.ElementState;
 import com.looksee.journeyExecutor.models.repository.ElementStateRepository;
 
+import io.github.resilience4j.retry.annotation.Retry;
+
 @Service
+@Retry(name="neoforj")
 public class ElementStateService {
 	
 	@SuppressWarnings("unused")
@@ -80,14 +83,16 @@ public class ElementStateService {
 	 * @pre element != null
 	 */
 	@Retryable
-	public ElementState save(long domain_map_id, ElementState element) {
+	public ElementState save(long domain_map_id, long page_id, ElementState element) {
 		assert element != null;
 
 		ElementState element_record = element_repo.findByDomainMapAndKey(domain_map_id, element.getKey());
 		if(element_record == null) {
-			return element_repo.save(element);
+			element_record = element_repo.save(element);
+			page_state_service.addElement(page_id, element_record.getId());
 		}
-		 return element_record;
+		
+		return element_record;
 	}
 	
 	/**

@@ -9,14 +9,15 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.retry.annotation.Retryable;
 import org.springframework.stereotype.Service;
 
-import com.looksee.journeyExecutor.models.PageState;
 import com.looksee.journeyExecutor.models.enums.JourneyStatus;
 import com.looksee.journeyExecutor.models.journeys.Journey;
 import com.looksee.journeyExecutor.models.repository.JourneyRepository;
 
+import io.github.resilience4j.retry.annotation.Retry;
 import lombok.Synchronized;
 
 @Service
+@Retry(name="neoforj")
 public class JourneyService {
 	@SuppressWarnings("unused")
 	private static Logger log = LoggerFactory.getLogger(JourneyService.class.getName());
@@ -81,13 +82,8 @@ public class JourneyService {
 	}
 
 	@Synchronized
+	@Retryable
 	public Journey updateStatus(long journey_id, JourneyStatus status) {
 		return journey_repo.updateStatus(journey_id, status.toString());
 	}
-
-    public PageState executeJourney(Journey journey, long domain_audit_id) {
-        // TODO Auto-generated method stub
-        throw new UnsupportedOperationException("Unimplemented method 'executeJourney'");
-    }
-	
 }

@@ -171,7 +171,7 @@ public class Browser {
 	}
 
 	/**
-	 * Removes canvas element added by Selenium when taking screenshots
+	 * Removes script, link and style elements
 	 * 
 	 * @param src
 	 * @return
@@ -182,31 +182,19 @@ public class Browser {
 	 */
 	public static String cleanSrc(String src) {
 		Document html_doc = Jsoup.parse(src);
-		
-		for(Element element : html_doc.select("script")) {
-			element.remove();
-		}
-		
-		for(Element element : html_doc.select("style")) {
-			element.remove();
-		}
-		
-		for(Element element : html_doc.select("link")) {
-			if(element.attr("rel").contentEquals("text/css")) {
-				element.remove();
-			}
-		}
+		html_doc.select("script").remove();
+		html_doc.select("style").remove();
+		html_doc.select("link").remove();
 		
 		String html = html_doc.html();
-		html = html.replace("  ", " ");
-		html = html.replace("\n", "");
 		html = html.replace("\r", "");
-		html = html.replace("\t", "");
-
-		return html.replace(" style=\"\"", "");
+		html = html.replace("\n", "");
+		html = html.replace("\t", " ");
+		html = html.replace("  ", " ");
+		html = html.replace("  ", " ");
+		html = html.replace("  ", " ");
 		
-		//html_doc.select("link,script,style").remove();
-		//return html_doc.html();
+		return html.replace(" style=\"\"", "");
 	}
 	
 	/**
@@ -348,9 +336,9 @@ public class Browser {
 		}*/
 
 		//driver.manage().window().setSize(new Dimension(1920, 1080));
-	    //driver.manage().timeouts().implicitlyWait(Duration.ofSeconds(2L));
-	    driver.manage().timeouts().scriptTimeout(Duration.ofSeconds(30L));
-	    //driver.manage().timeouts().pageLoadTimeout(Duration.ofSeconds(60L));
+	    //driver.manage().timeouts().implicitlyWait(Duration.ofSeconds(1L));
+	    driver.manage().timeouts().scriptTimeout(Duration.ofSeconds(10L));
+	    driver.manage().timeouts().pageLoadTimeout(Duration.ofSeconds(30L));
 		return driver;
 	}
 	
@@ -968,9 +956,23 @@ public class Browser {
 	 * Remove Drift.com chat app
 	 */
 	public void removeDriftChat() {
-		((JavascriptExecutor)driver).executeScript("var element=document.getElementById(\"drift-frame-chat\");if(typeof(element)!='undefined' && element != null){document.getElementById(\"drift-frame-chat\").remove();document.getElementById(\"drift-frame-controller\").remove();}");
+		((JavascriptExecutor)driver).executeScript("var element=document.getElementById(\"drift-frame-chat\");if(typeof(element)!='undefined' && element != null){element.remove();document.getElementById(\"drift-frame-controller\").remove();}");
 	}
 	
+	/**
+	 * Remove Drift.com chat app
+	 */
+	public void removeGDPRmodals() {
+		((JavascriptExecutor)driver).executeScript("var element=document.getElementById(\"gdprModal\");if(typeof(element)!='undefined' && element != null){element.remove();}	");
+	}
+
+	/**
+	 * Remove Drift.com chat app
+	 */
+	public void removeGDPR() {
+		((JavascriptExecutor)driver).executeScript("var element=document.getElementById(\"gdpr\");if(typeof(element)!='undefined' && element != null){element.remove();} ");
+	}
+
 	/**
 	 * Loads attributes for this element into a list of element attributes
 	 * 
@@ -1069,7 +1071,7 @@ public class Browser {
 	/**
 	 * Waits for the document ready state to be complete, then observes page transition if it exists
 	 */
-	public void waitForPageToLoad() throws InterruptedException{
+	public void waitForPageToLoad() throws Exception{
 		new WebDriverWait(driver, 30L).until(
 				webDriver -> ((JavascriptExecutor) webDriver)
 					.executeScript("return document.readyState")

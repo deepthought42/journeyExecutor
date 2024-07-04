@@ -64,7 +64,7 @@ public class PageStateService {
 	public PageState save(long domain_map_id, PageState page_state) throws Exception {
 		assert page_state != null;
 		
-		PageState page_state_record = findPageWithKey(page_state.getKey());
+		PageState page_state_record = findPageInDomainMap(domain_map_id, page_state.getKey());
 		if(page_state_record == null) {
 			page_state_record = page_state_repo.save(page_state);
 			domain_map_service.addPageToDomainMap(domain_map_id, page_state_record.getId());
@@ -73,6 +73,10 @@ public class PageStateService {
 		return page_state_record;
 	}
 	
+	private PageState findPageInDomainMap(long domain_map_id, String page_key) {
+		return page_state_repo.findByDomainMap(domain_map_id, page_key);
+	}
+
 	public PageState findByKey(String page_key) {
 		PageState page_state = page_state_repo.findByKey(page_key);
 		if(page_state != null){
@@ -146,7 +150,6 @@ public class PageStateService {
 	}
 
 	@Retryable
-	@Synchronized
 	public boolean addElement(long page_id, long element_id) {
 		return element_state_repo.addElement(page_id, element_id) != null;
 	}

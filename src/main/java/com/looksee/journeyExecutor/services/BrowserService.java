@@ -286,22 +286,12 @@ public class BrowserService {
 		html_doc.select("link").remove();
 		html_doc.select("style").remove();
 		html_doc.select("iframe").remove();
-		
-		//html_doc.attr("id","");
+		html_doc.select("#gdpr").remove();
+		html_doc.select("#gdprModal").remove();
+
 		for(Element element : html_doc.getAllElements()) {
-			/*
-			element.removeAttr("id")
-				   .removeAttr("name")
-				   .removeAttr("style")
-				   .removeAttr("data-id");
-			*/
 		    List<String>  attToRemove = new ArrayList<>();
 			for (Attribute a : element.attributes()) {
-				/*
-				if(element.tagName().contentEquals("img") && a.getKey().contentEquals("src")) {
-					continue;
-				}
-				*/
 		        // transfer it into a list -
 		        // to be sure ALL data-attributes will be removed!!!
 		        attToRemove.add(a.getKey());
@@ -314,7 +304,11 @@ public class BrowserService {
 		
 		removeComments(html_doc);
 		
-		return html_doc.html().replace("\n", "").replace("  ","").replace("> <", "><");
+		return html_doc.html().replace("\n", "")
+								.replace("\t", "")
+								.replace("  ","")
+								.replace(" ", "")
+								.replace("> <", "><");
 	}
 
 	/**
@@ -358,6 +352,7 @@ public class BrowserService {
 		int status_code = BrowserUtils.getHttpStatus(current_url);
 		String url_without_protocol = BrowserUtils.getPageUrl(current_url.toString());
 		browser.removeDriftChat();
+		browser.removeGDPRmodals();
 		boolean is_secure = BrowserUtils.checkIfSecure(current_url);
 
 		String source = Browser.cleanSrc(browser.getDriver().getPageSource());
@@ -401,11 +396,9 @@ public class BrowserService {
 		long y_offset = browser.getYScrollOffset();
 		Dimension size = browser.getDriver().manage().window().getSize();
 		
-		log.warn("page source = "+source.substring(0, 5000));
 		return new PageState(
 							viewport_screenshot_url,
 							source,
-							false,
 							x_offset,
 							y_offset,
 							size.getWidth(),
@@ -479,17 +472,13 @@ public class BrowserService {
 			
 			String tag_name = element.tagName();
 			//check if element is visible in pane and if not then continue to next element xpath
-			if( isStructureTag(tag_name)){
+			if( isStructureTag(tag_name) || !ElementStateUtils.isInteractiveElement(element)){
 				continue;
 			}
-
+			
 			WebElement web_element = browser.findElement(xpath);
 			if(web_element == null) {
 				log.warn("web element is null : "+xpath+"  ;;   for page = "+page_state.getKey());
-				continue;
-			}
-
-			if(!ElementStateUtils.isInteractiveElement(element)){
 				continue;
 			}
 
@@ -497,21 +486,16 @@ public class BrowserService {
 			Dimension element_size = new Dimension(rect.getWidth(), rect.getHeight());
 			Point element_location = new Point(rect.getX(), rect.getY());
 			if( doesElementHaveNegativePosition(element_location)
-			|| BrowserUtils.isHidden(element_location, element_size)
-			|| rect.getHeight() <= 0
-			|| rect.getWidth() <=0
+				|| BrowserUtils.isHidden(element_location, element_size)
+				|| rect.getHeight() <= 0
+				|| rect.getWidth() <= 0
+				|| !web_element.isDisplayed()
 			){
-				continue;
-			}
-			
-			//check if element is visible in pane and if not then continue to next element xpath
-			if( !web_element.isDisplayed()){
 				continue;
 			}
 
 			String css_selector = generateCssSelectorFromXpath(xpath);
 			ElementClassification classification = ElementClassification.UNKNOWN;
-			
 			
 			if(isImageElement(tag_name)) {
 				ElementState element_state = buildImageElementState(xpath,
@@ -532,7 +516,7 @@ public class BrowserService {
 				ElementState element_record = element_state_service.findByDomainMapAndKey(domain_map_id, element_state);
 				if(element_record == null) {
 					element_state = enrichElementState(browser, web_element, element_state, full_page_screenshot, host);
-					element_record = element_state_service.save(domain_map_id, page_state.getId(), element_state);
+					//element_record = element_state_service.save(domain_map_id, page_state.getId(), element_state);
 				}
 				
 				image_elements.add(element_record);
@@ -552,7 +536,7 @@ public class BrowserService {
 				if(element_record == null) {
 					element_state = enrichElementState(browser, web_element, element_state, full_page_screenshot, host);
 					element_state = ElementStateUtils.enrichBackgroundColor(element_state);
-					element_record = element_state_service.save(domain_map_id, page_state.getId(), element_state);
+					//element_record = element_state_service.save(domain_map_id, page_state.getId(), element_state);
 				}
 
 				visited_elements.add(element_record);
@@ -1511,7 +1495,8 @@ public class BrowserService {
 		
 		String element_screenshot_url = "";
 		BufferedImage element_screenshot = null;
-		Map<String, String> rendered_css_props = Browser.loadCssProperties(web_element, browser.getDriver());
+		//TODO: REMOVE FOLLOWING COMMENT ONCE CONFIRMED WORKING AS EXPECTED IN PAGE AUDIT ENRICHMENT MICROSERVICE
+		//Map<String, String> rendered_css_props = Browser.loadCssProperties(web_element, browser.getDriver());
 		Map<String, String> attributes = browser.extractAttributes(web_element);
 		
 		if(BrowserUtils.isLargerThanViewport(element_state, browser.getViewportSize().getWidth(), browser.getViewportSize().getHeight())) {
@@ -1547,7 +1532,7 @@ public class BrowserService {
 		
 		element_state.setScreenshotUrl(element_screenshot_url);
 		element_state.setAttributes(attributes);
-		element_state.setRenderedCssValues(rendered_css_props);
+		//element_state.setRenderedCssValues(rendered_css_props);
 
 		return element_state;
 	}
@@ -1557,7 +1542,7 @@ public class BrowserService {
 	 * @param element_states
 	 * @return
 	 */
-	public List<ElementState> enrichImageElement(List<ElementState> element_states) 
+	public List<ElementState> enrichImageElement(List<ElementState> element_states)
 	{	
 		return element_states.parallelStream().map(element_state -> {
 			if(element_state instanceof ImageElementState && !element_state.getScreenshotUrl().isEmpty()) {

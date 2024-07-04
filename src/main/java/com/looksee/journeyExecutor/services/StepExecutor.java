@@ -18,7 +18,6 @@ import com.looksee.journeyExecutor.models.journeys.LoginStep;
 import com.looksee.journeyExecutor.models.journeys.SimpleStep;
 import com.looksee.journeyExecutor.models.journeys.Step;
 import com.looksee.utils.BrowserUtils;
-import com.looksee.utils.TimingUtils;
 
 @Service
 public class StepExecutor {
@@ -52,7 +51,7 @@ public class StepExecutor {
 				WebElement submit_element = browser.getDriver().findElement(By.xpath(login_step.getSubmitElement().getXpath()));
 				action_factory.execAction(submit_element, "", Action.CLICK);
 
-				TimingUtils.pauseThread(5000L);
+				//TimingUtils.pauseThread(5000L);
 			}
 			else if(step instanceof LandingStep) {
 				PageState initial_page = step.getStartPage();

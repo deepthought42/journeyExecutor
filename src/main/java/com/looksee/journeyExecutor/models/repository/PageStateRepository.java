@@ -106,4 +106,7 @@ public interface PageStateRepository extends Neo4jRepository<PageState, Long> {
 
 	@Query("MATCH (page_state:PageState) WHERE id(page_state)=$page_id SET page_state.elementExtractionComplete=$is_complete RETURN page_state LIMIT 1")
 	public PageState updateElementExtractionCompleteStatus(@Param("page_id") long page_id, @Param("is_complete") boolean is_complete);
+
+	@Query("MATCH (map:DomainMap) WHERE id(map)=$domain_map_id MATCH (map)-[:HAS]->(page_state:PageState) WHERE page_state.key=$page_key RETURN page_state")
+    public PageState findByDomainMap(@Param("domain_map_id") long domain_map_id, @Param("page_key") String page_key);
 }

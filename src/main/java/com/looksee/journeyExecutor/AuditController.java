@@ -5,7 +5,10 @@ import java.net.MalformedURLException;
 import java.net.URL;
 import java.util.ArrayList;
 import java.util.Base64;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
@@ -81,14 +84,16 @@ import com.looksee.utils.TimingUtils;
 public class AuditController {
 	private static Logger log = LoggerFactory.getLogger(AuditController.class);
 
+	private static Map<Long,Integer> review_map = new HashMap<>();
+
 	@Autowired
 	private BrowserService browser_service;
 	
 	@Autowired
-	private PageStateService page_state_service;
-	
-	@Autowired
 	private ElementStateService element_state_service;
+
+	@Autowired
+	private PageStateService page_state_service;
 	
 	@Autowired
 	private StepService step_service;
@@ -118,49 +123,62 @@ public class AuditController {
 	public ResponseEntity<String> receiveMessage(@RequestBody Body body) 
 			throws Exception 
 	{
+		Browser browser = null;
+		Journey journey = null;
+		List<Step> steps = new ArrayList<>();
+		String current_url = "";
+		PageState final_page = null;
+		long domain_audit_id = -1;
+		JourneyCandidateMessage journey_msg = null;
+		JsonMapper mapper = JsonMapper.builder().addModule(new JavaTimeModule()).build();
+		boolean is_external_link = false;
+		Domain domain = null;
+		
 		Body.Message message = body.getMessage();
 		String data = message.getData();
 		String target = !data.isEmpty() ? new String(Base64.getDecoder().decode(data)) : "";
 		
 		ObjectMapper input_mapper = new ObjectMapper();
-		JourneyCandidateMessage journey_msg = input_mapper.readValue(target, JourneyCandidateMessage.class);
-		
-		JsonMapper mapper = JsonMapper.builder().addModule(new JavaTimeModule()).build();
-		Journey journey = journey_msg.getJourney();
-		List<Step> steps = new ArrayList<>(journey.getSteps());
-		String current_url = "";
-		PageState final_page = null;
-		long domain_audit_id = journey_msg.getAuditRecordId();
-		
-		Browser browser = null;
+		journey_msg = input_mapper.readValue(target, JourneyCandidateMessage.class);
+		journey = journey_msg.getJourney();
+
+		review_map.putIfAbsent(journey.getId(), 0);
+		log.warn("review map for journey id "+journey.getId()+"  =   "+review_map.get(journey.getId()));
+		if(review_map.containsKey(journey.getId()) && review_map.get(journey.getId()) >= 4){
+			journey_service.updateStatus(journey.getId(), JourneyStatus.ERROR);
+			return new ResponseEntity<String>("Test errored too much", HttpStatus.OK);
+		}
+		review_map.merge(journey.getId(), 1, (a,b) -> a+b);
+
 		try {
+			steps = new ArrayList<>(journey.getSteps());
+			domain_audit_id = journey_msg.getAuditRecordId();
+		
 			Optional<Journey> journey_opt = journey_service.findById(journey.getId());
 
 			if(journey_opt.isPresent() && !JourneyStatus.CANDIDATE.equals(journey_opt.get().getStatus())){
 				return new ResponseEntity<String>("Journey "+ journey_opt.get().getId()+" does not have CANDIDATE status. It has already been evaluated", HttpStatus.OK);
+			}
+			else {
+				journey = journey_opt.get();
 			}
 
 			//update journey status to REVIEWING
 			journey_service.updateStatus(journey.getId(), JourneyStatus.REVIEWING);
 			
 			//if journey with same candidate key exists that also has a status of VERIFIED or DISCARDED then don't iterate
-			Domain domain = domain_service.findByAuditRecord(journey_msg.getAuditRecordId());
+			domain = domain_service.findByAuditRecord(journey_msg.getAuditRecordId());
 		
 			URL domain_url = new URL(BrowserUtils.sanitizeUserUrl(domain.getUrl()));
 			browser = browser_service.getConnection(BrowserType.CHROME, BrowserEnvironment.DISCOVERY);
 			
-			performJourneyStepsInBrowser(steps, browser);
-			
-			TimingUtils.pauseThread(5000L);
-			String browser_url = browser.getDriver().getCurrentUrl();
+			String browser_url = performJourneyStepsInBrowser(steps, browser);
+			TimingUtils.pauseThread(3000L);
 			String sanitized_url = BrowserUtils.sanitizeUserUrl(browser_url);
 			current_url = BrowserUtils.getPageUrl(sanitized_url);
-			
+			is_external_link = BrowserUtils.isExternalLink(domain_url.getHost(), new URL(sanitized_url).getHost());
 			//if current url is external URL then create ExternalPageState
-			if(BrowserUtils.isExternalLink(domain_url.getHost(), new URL(sanitized_url).getHost())) {
-				if(sanitized_url.contains("look-see.com")){
-					log.warn("OH NO. A LOOK-SEE PAGE WAS IDENTIFIED AS EXTERNAL= "+sanitized_url);
-				}
+			if(is_external_link) {
 				final_page = new PageState();
 				final_page.setUrl(current_url);
 				final_page.setSrc("External Links are not mapped");
@@ -173,7 +191,6 @@ public class AuditController {
 			else {
 				//if current url is different than second to last page then try to lookup page in database before building page
 				final_page = buildPage(browser, journey_msg.getMapId(), journey_msg.getAuditRecordId(), browser_url);
-				log.warn("COMPLETED BUILD OF PAGE = "+final_page.getUrl() + ";  id = "+final_page.getId());
 			}
 		}
 		catch(JavascriptException e) {
@@ -182,45 +199,33 @@ public class AuditController {
 			return new ResponseEntity<String>("Error occured while validating journey with id = "+journey.getId(), HttpStatus.INTERNAL_SERVER_ERROR);
 		}
 		catch(NoSuchSessionException e) {
-			log.warn("Failed to acquire browser session; journey = "+journey.getId() + "  with status = "+journey.getStatus() + "    --> "+e.getLocalizedMessage());
+			log.warn("Failed to acquire browser session; journey = "+journey.getId() + "  with status = "+journey.getStatus() + "    --> "+e.getLocalizedMessage().substring(0,100));
 		    journey_service.updateStatus(journey.getId(), JourneyStatus.CANDIDATE);
 			return new ResponseEntity<String>("Failed to acquire browser connection", HttpStatus.INTERNAL_SERVER_ERROR);
 		}
 		catch(NoSuchElementException e) {
-			log.warn("Failed to acquire browser element for journey = "+journey.getId()+ " with status = "+journey.getStatus()+" ;  on page = " + current_url +  ";     " +e.getLocalizedMessage());
-			//e.printStackTrace();
+			log.warn("Failed to acquire browser element for journey = "+journey.getId()+ " with status = "+journey.getStatus()+" ;  on page = " + current_url +  ";     " +e.getLocalizedMessage().substring(0,100));
 		    journey_service.updateStatus(journey.getId(), JourneyStatus.CANDIDATE);
 			return new ResponseEntity<String>("Element not found", HttpStatus.INTERNAL_SERVER_ERROR);
 		}
 		catch(org.openqa.selenium.interactions.MoveTargetOutOfBoundsException e) {
-			log.debug("MOVE TO TARGET EXCEPTION FOR ELEMENT;    journey = "+journey.getId() + "  with status = "+journey.getStatus() + "  --> "+e.getMessage());
+			log.debug("MOVE TO TARGET EXCEPTION FOR ELEMENT;    journey = "+journey.getId() + "  with status = "+journey.getStatus() + "  --> "+e.getMessage().substring(0,100));
 		    journey_service.updateStatus(journey.getId(), JourneyStatus.CANDIDATE);
 			return new ResponseEntity<String>("MoveToTarget Exception occured while validating journey with id = "+journey.getId()+". Returning ERROR in hopes it works out in another journey", HttpStatus.INTERNAL_SERVER_ERROR);
 		}
 		catch(MalformedURLException e){
-			e.printStackTrace();
+			log.warn("MalformedUrlException = "+current_url);
 			journey_service.updateStatus(journey.getId(), JourneyStatus.DISCARDED);
 			return new ResponseEntity<String>(current_url + " is malformed", HttpStatus.OK);
 		}
 		catch(NullPointerException e){
+			log.warn("NullPointerException occurred");
 			e.printStackTrace();
 			return new ResponseEntity<String>(current_url + " experience Null Pointer Exception", HttpStatus.INTERNAL_SERVER_ERROR);
 		}
 		catch(Exception e) {
 			log.warn("Exception occurred! Returning FAILURE;   message = "+e.getMessage());
-			if(e.getMessage().contains("Rate exceeded.")){
-				e.printStackTrace();
-			}
-			if(e.getMessage().contains("Unable to execute request for an existing session")){
-				e.printStackTrace();
-			}
-			if(e.getMessage().contains("sleep interrupted")){
-				e.printStackTrace();
-			}
-			if(e.getMessage().contains("java.util.concurrent.TimeoutException")){
-				e.printStackTrace();
-			}
-			
+			//e.printStackTrace();
 			journey_service.updateStatus(journey.getId(), JourneyStatus.CANDIDATE);
 			return new ResponseEntity<String>("Error occured while validating journey with id = "+journey.getId(), HttpStatus.INTERNAL_SERVER_ERROR);
 		}
@@ -238,6 +243,7 @@ public class AuditController {
 			if(final_step.getId() == null) {
 				final_step.setKey(final_step.generateKey());
 				Step result_record = step_service.save(final_step);
+				journey_service.addStep(journey.getId(), result_record.getId());
 				final_step.setId(result_record.getId());
 				steps.set(steps.size()-1, final_step);
 			}
@@ -250,22 +256,22 @@ public class AuditController {
 			//UPDATE JOURNEY
 			journey.setSteps(steps);
 			journey.setKey(journey.generateKey());
-			JourneyStatus status = getVerifiedOrDiscarded(journey);
-			log.warn("journey status = "+status+";;   page id = "+final_page.getId());
-			Journey updated_journey = journey_service.updateFields(journey.getId(), 
-																status, 
+			JourneyStatus status = getVerifiedOrDiscarded(journey, domain);
+			Journey updated_journey = journey_service.updateFields(journey.getId(),
+																status,
 																journey.getKey(),
 																journey.getOrderedIds());
 			updated_journey.setSteps(steps);
 			//Save all steps to be attached to journey record
-			for(Step step: steps) {
-				journey_service.addStep(updated_journey.getId(), step.getId());
-			}
+			//for(Step step: steps) {
+			//	journey_service.addStep(updated_journey.getId(), step.getId());
+			//}
 			
 			//add Journey to domain map
 			DomainMap domain_map = domain_map_service.findByDomainAuditId(domain_audit_id);
 			
-			if(JourneyStatus.DISCARDED.equals(updated_journey.getStatus()) || existsInJourney(steps.subList(0,  steps.size()-1), final_step)) {
+			if(JourneyStatus.DISCARDED.equals(updated_journey.getStatus()) 
+				|| existsInJourney(steps.subList(0,  steps.size()-1), final_step)) {
 				log.warn("DISCARDED Journey! "+updated_journey.getId() + " with status = "+updated_journey.getStatus());
 				
 				DiscardedJourneyMessage journey_message = new DiscardedJourneyMessage(	journey,
@@ -275,11 +281,11 @@ public class AuditController {
 
 				String discarded_journey_json = mapper.writeValueAsString(journey_message);
 				discarded_journey_topic.publish(discarded_journey_json);
-				
-				log.warn("Returning success for journey with status = " +updated_journey.getStatus() + ";   journey id ="+updated_journey.getId());
 			}
 			else if(!final_step.getStartPage().getUrl().equals(final_step.getEndPage().getUrl()))
 			{
+				log.warn("VERIFIED Journey! "+updated_journey.getId() + " with status = "+updated_journey.getStatus());
+
 				//if page state isn't associated with domain audit then send pageBuilt message
 				PageBuiltMessage page_built_msg = new PageBuiltMessage(journey_msg.getAccountId(),
 																		final_page.getId(),
@@ -313,18 +319,17 @@ public class AuditController {
 					journey_service.addStep(new_journey.getId(), step.getId());
 				}
 				new_journey.setSteps(steps);
-				
 				//send candidate message with new landing step journey
 				VerifiedJourneyMessage journey_message = new VerifiedJourneyMessage(new_journey,
 																					BrowserType.CHROME, 
 																					journey_msg.getAccountId(), 
 																					journey_msg.getAuditRecordId());
-				
 				String journey_json = mapper.writeValueAsString(journey_message);
 				verified_journey_topic.publish(journey_json);
-				log.warn("Returning success for journey with status = " +new_journey.getStatus() + ";   journey id ="+new_journey.getId());
 			}
 			else {
+				log.warn("VERIFIED Journey! "+updated_journey.getId() + " with status = "+updated_journey.getStatus());
+
 				VerifiedJourneyMessage journey_message = new VerifiedJourneyMessage(updated_journey,
 																					BrowserType.CHROME, 
 																					journey_msg.getAccountId(), 
@@ -332,7 +337,6 @@ public class AuditController {
 				
 				String journey_json = mapper.writeValueAsString(journey_message);
 				verified_journey_topic.publish(journey_json);
-				log.warn("Returning success for journey with status = " +updated_journey.getStatus() + ";   journey id ="+updated_journey.getId());
 
 			}
 			return new ResponseEntity<String>("Successfully verified journey", HttpStatus.OK);
@@ -341,8 +345,6 @@ public class AuditController {
 			journey_service.updateStatus(journey.getId(), JourneyStatus.CANDIDATE);
 			return new ResponseEntity<String>("Error verifying journey", HttpStatus.INTERNAL_SERVER_ERROR);
 		}
-
-		
 	}
 
 	/**
@@ -354,16 +356,15 @@ public class AuditController {
 	 * @return
 	 * @throws MalformedURLException 
 	 */
-	private JourneyStatus getVerifiedOrDiscarded(Journey journey) throws MalformedURLException {
+	private JourneyStatus getVerifiedOrDiscarded(Journey journey, Domain domain) throws MalformedURLException {
 		//get last step
 		Step last_step = journey.getSteps().get(journey.getSteps().size()-1);
-		
 		PageState second_to_last_page = PathUtils.getSecondToLastPageState(journey.getSteps());
 		PageState final_page = PathUtils.getLastPageState(journey.getSteps());
 		
 		if((journey.getSteps().size() > 1 && !(last_step instanceof LandingStep)) 
 				&& (final_page.equals(second_to_last_page)
-						|| BrowserUtils.isExternalLink(new URL(BrowserUtils.sanitizeUrl(second_to_last_page.getUrlAfterLoading(), false)).getHost(), final_page.getUrl()))) 
+						|| BrowserUtils.isExternalLink(new URL(BrowserUtils.sanitizeUserUrl(domain.getUrl())).getHost(), final_page.getUrl())))
 		{
 			return JourneyStatus.DISCARDED;
 		}
@@ -392,16 +393,15 @@ public class AuditController {
 		assert browser_url != null;
 		
 		PageState page_state = browser_service.buildPageState(browser, audit_record_id, browser_url);
+		
 		List<String> xpaths = browser_service.extractAllUniqueElementXpaths(page_state.getSrc());
 		if(xpaths.size() <= 2){
 			log.warn("ONLY 2 XPATHS WERE FOUND!!!   url =  "+page_state.getUrl() + ";;   source = "+page_state.getSrc() + ";;   xpaths = "+xpaths);
-			throw new Exception();
+			throw new Exception("Error! Only 2 xpaths found");
 		}
-
 		page_state = page_state_service.save(domain_map_id, page_state);
 		
 		if(!page_state.isElementExtractionComplete()){
-			log.warn("ExtrImageElementacting element states..."+page_state.getUrl()+";   key = "+page_state.getKey());
 			BufferedImage full_page_screenshot = ImageIO.read(new URL(page_state.getFullPageScreenshotUrl()));
 			List<ElementState> element_states = browser_service.getDomElementStates(page_state, 
 																					xpaths,
@@ -412,21 +412,17 @@ public class AuditController {
 
 			if(element_states.size() == 0){
 				log.warn("Uh oh! No elements were found. WELL THIS IS CONCERNING!!! XPATHS used for element build = "+xpaths.size()+"url = "+page_state.getUrl() +" for page id = "+page_state.getKey());
-				throw new Exception();
+				throw new Exception("Error! No elements were found");
 			}
-			log.warn("adding elements to page = "+page_state.getUrl());
-			/*
-			for(ElementState element: element_states) {
-				if(element.getId() == null) {
-					ElementState temp_element = element_state_service.save(domain_map_id, element);
-					element.setId(temp_element.getId());
-				}
-				page_state_service.addElement(page_state.getId(), element.getId());
-			}
-			*/
-			log.warn("updating element extraction for page state = "+page_state.getUrl());
+
+			long page_state_id = page_state.getId();
+			element_states.stream()
+							.filter(Objects::nonNull)
+							.map( element -> element_state_service.save(domain_map_id, element))
+							.map( element -> page_state_service.addElement(page_state_id, element.getId()))
+							.collect(Collectors.toList());
+
 			page_state_service.updateElementExtractionCompleteStatus(page_state.getId(), true);
-			log.warn("done updating page state = "+page_state.getUrl());
 		}
 		
 		return page_state;
@@ -445,29 +441,29 @@ public class AuditController {
 	 * @pre !steps.isEmpty()
 	 * @pre browser != null;
 	 */
-	private void performJourneyStepsInBrowser(List<Step> steps, Browser browser) throws Exception  {
+	private String performJourneyStepsInBrowser(List<Step> steps, Browser browser) throws Exception  {
 		assert steps != null;
 		assert !steps.isEmpty();
 		assert browser != null;
 		
-		//String last_url = "";
-		//String current_url = "";
+		String last_url = "";
+		String current_url = "";
 		//execute all steps sequentially in the journey
 		for(Step step: steps) {
 			step_executor.execute(browser, step);
-			
-			//current_url = browser.getDriver().getCurrentUrl();
-			//if(!last_url.equals(current_url)) {
-			//	try{
-			//		browser.waitForPageToLoad();
-			//	}catch(InterruptedException e){
-			//		log.warn("waiting for page to load timed out..."+e.getMessage());
-			//	}
-			//}
-			//last_url = current_url;
+			current_url = browser.getDriver().getCurrentUrl();
+			if(!last_url.equals(current_url)) {
+				try{
+					browser.waitForPageToLoad();
+				}catch(Exception e){
+					log.warn("waiting for page to load timed out..."+e.getMessage());
+				}
+				TimingUtils.pauseThread(5000L);
+			}
+			last_url = current_url;
 		}
 
-		//return current_url;
+		return current_url;
 	}
 
 	/**
@@ -477,6 +473,7 @@ public class AuditController {
 	 * @param step
 	 * 
 	 * @return
+	 * 
 	 */
 	private boolean existsInJourney(List<Step> steps, Step step) {
 		for(Step journey_step : steps) {

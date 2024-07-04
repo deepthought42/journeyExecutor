@@ -63,7 +63,7 @@ public interface ElementStateRepository extends Neo4jRepository<ElementState, Lo
 	@Query("MATCH (p:PageState)-[:HAS]->(e:ElementState{classification:'LEAF'}) where id(p)=$page_state_id AND e.visible=true RETURN e")
 	public List<ElementState> getVisibleLeafElements(@Param("page_state_id") long page_state_id);
 
-	@Query("MATCH (p:PageState) WITH p MATCH (element:ElementState) WHERE id(p)=$page_id AND id(element)=$element_id MERGE (p)-[:HAS]->(element) RETURN element LIMIT 1")
+	@Query("MATCH (p:PageState) WHERE id(p)=$page_id MATCH (element:ElementState) WHERE id(element)=$element_id MERGE (p)-[:HAS]->(element) RETURN element LIMIT 1")
 	public ElementState addElement(@Param("page_id") long page_id, @Param("element_id") long element_id);
 
 	@Query("MATCH (p:PageState)-[:HAS]->(element:ElementState) WHERE id(p)=$page_id AND id(element)=$element_id RETURN element ORDER BY p.created_at DESC LIMIT 1")

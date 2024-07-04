@@ -208,24 +208,7 @@ public class ElementState extends LookseeObject implements Comparable<ElementSta
 	 */
 	public String generateKey() {
 		String generalized_html = BrowserService.generalizeSrc(getOuterHtml());
-		//String attributes = "";
-		//List<String> ordered_attribute_keys = getAttributes().keySet().stream().sorted().collect(Collectors.toList());
-		
-		//for(String attr_key : ordered_attribute_keys) {
-		//	attributes += getAttributes().get(attr_key);
-		//}
 		return "elementstate"+org.apache.commons.codec.digest.DigestUtils.sha256Hex(generalized_html);
-
-		/*
-		String key = "";
-		List<String> properties = new ArrayList<>(getRenderedCssValues().keySet());
-		Collections.sort(properties);
-		for(String style : properties) {
-			key += getRenderedCssValues().get(style);
-		}
-		
-		return "elementstate"+org.apache.commons.codec.digest.DigestUtils.sha256Hex(key)+org.apache.commons.codec.digest.DigestUtils.sha256Hex(getOuterHtml());
-		*/
 	}
 
 	/**
@@ -356,20 +339,7 @@ public class ElementState extends LookseeObject implements Comparable<ElementSta
 	public void setClassification(ElementClassification classification) {
 		this.classification = classification.toString();
 	}
-	
-	/*
-	public List<ElementState> getChildElements() {
-		return childElements;
-	}
 
-	public void setChildElements(List<ElementState> child_elements) {
-		this.childElements = child_elements;
-	}
-	
-	public void addChildElement(ElementState child_element) {
-		this.childElements.add(child_element);
-	}
-*/
 	public Map<String, String> getRenderedCssValues() {
 		return renderedCssValues;
 	}

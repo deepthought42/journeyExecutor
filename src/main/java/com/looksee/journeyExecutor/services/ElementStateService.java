@@ -83,13 +83,12 @@ public class ElementStateService {
 	 * @pre element != null
 	 */
 	@Retryable
-	public ElementState save(long domain_map_id, long page_id, ElementState element) {
+	public ElementState save(long domain_map_id, ElementState element) {
 		assert element != null;
 
 		ElementState element_record = element_repo.findByDomainMapAndKey(domain_map_id, element.getKey());
 		if(element_record == null) {
 			element_record = element_repo.save(element);
-			page_state_service.addElement(page_id, element_record.getId());
 		}
 		
 		return element_record;
@@ -105,7 +104,7 @@ public class ElementStateService {
 	public ElementState saveFormElement(ElementState element){
 		assert element != null;
 		ElementState element_record = element_repo.findByKey(element.getKey());
-		if(element_record == null){			
+		if(element_record == null){
 			element_record = element_repo.save(element);
 		}
 		/*

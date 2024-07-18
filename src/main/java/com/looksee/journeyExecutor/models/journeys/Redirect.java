@@ -8,8 +8,6 @@ import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonTypeName;
 import com.looksee.journeyExecutor.models.enums.JourneyStatus;
 import com.looksee.journeyExecutor.models.enums.StepType;
-import com.looksee.journeyExecutor.models.journeys.Redirect;
-import com.looksee.journeyExecutor.models.journeys.Step;
 
 @JsonIgnoreProperties(ignoreUnknown = true)
 @JsonTypeName("REDIRECT")

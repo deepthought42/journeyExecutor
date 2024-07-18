@@ -16,6 +16,7 @@ import com.looksee.journeyExecutor.models.PageState;
  */
 @Repository
 public interface PageStateRepository extends Neo4jRepository<PageState, Long> {
+	
 	@Query("MATCH (:Account{username:$user_id})-[*]->(p:PageState{key:$key}) RETURN p LIMIT 1")
 	public PageState findByKeyAndUsername(@Param("user_id") String user_id, @Param("key") String key);
 

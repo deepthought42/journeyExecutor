@@ -451,6 +451,7 @@ public class AuditController {
 		//execute all steps sequentially in the journey
 		for(Step step: steps) {
 			step_executor.execute(browser, step);
+			TimingUtils.pauseThread(2000L);
 			current_url = browser.getDriver().getCurrentUrl();
 			if(!last_url.equals(current_url)) {
 				try{
@@ -458,7 +459,6 @@ public class AuditController {
 				}catch(Exception e){
 					log.warn("waiting for page to load timed out..."+e.getMessage());
 				}
-				TimingUtils.pauseThread(5000L);
 			}
 			last_url = current_url;
 		}

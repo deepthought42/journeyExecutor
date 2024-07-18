@@ -36,7 +36,10 @@ public class Journey extends LookseeObject {
 	@Getter
 	@Setter
 	private String candidateKey;
-	private String status;
+
+	@Getter
+	@Setter
+	private JourneyStatus status;
 	
 	public Journey() {
 		super();
@@ -119,13 +122,5 @@ public class Journey extends LookseeObject {
 									  .map(step -> step.getId())
 									  .collect(Collectors.toList());
 		setOrderedIds(ordered_ids);
-	}
-
-	public JourneyStatus getStatus() {
-		return JourneyStatus.create(status);
-	}
-
-	public void setStatus(JourneyStatus status) {
-		this.status = status.toString();
 	}
 }

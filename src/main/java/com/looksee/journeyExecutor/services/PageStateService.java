@@ -90,11 +90,11 @@ public class PageStateService {
 	}
 	
 	public List<PageState> findByFullPageScreenshotChecksum(String screenshot_checksum){
-		return page_state_repo.findByFullPageScreenshotChecksum(screenshot_checksum);		
+		return page_state_repo.findByFullPageScreenshotChecksum(screenshot_checksum);
 	}
 	
 	public PageState findByAnimationImageChecksum(String user_id, String screenshot_checksum){
-		return page_state_repo.findByAnimationImageChecksum(user_id, screenshot_checksum);		
+		return page_state_repo.findByAnimationImageChecksum(user_id, screenshot_checksum);
 	}
 	
 	public List<ElementState> getElementStates(String page_key){
@@ -154,10 +154,6 @@ public class PageStateService {
 		return element_state_repo.addElement(page_id, element_id) != null;
 	}
 
-	private Optional<ElementState> getElementState(long page_id, long element_id) {
-		return element_state_repo.getElementState(page_id, element_id);
-	}
-
 	/**
 	 * Retrieves an {@link AuditRecord} for the page with the given id
 	 * @param id
@@ -206,4 +202,13 @@ public class PageStateService {
 			throw new Exception("Page state with id = "+page_id+" was not found");
 		}
 	}
+
+	@Retryable
+	@Synchronized
+    public void updateInteractiveElementExtractionComplete(Long page_id, boolean is_complete) throws Exception {
+        PageState page = page_state_repo.updateInteractiveElementExtractionCompleteStatus(page_id, is_complete);
+		if(page == null){
+			throw new Exception("Page state with id = "+page_id+" was not found");
+		}
+    }
 }

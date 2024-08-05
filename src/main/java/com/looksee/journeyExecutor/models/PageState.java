@@ -93,6 +93,10 @@ public class PageState extends LookseeObject {
 	
 	@Getter
 	@Setter
+	private boolean interactiveElementExtractionComplete;
+	
+	@Getter
+	@Setter
 	private long scrollXOffset;
 
 	@Getter
@@ -229,8 +233,9 @@ public class PageState extends LookseeObject {
 		setStylesheetUrls( stylesheets);
 		setScriptUrls( script_urls);
 		setFaviconUrl(icon_links);
-		setKeywords(new HashSet<>());
+		setInteractiveElementExtractionComplete(false);
 		setElementExtractionComplete(false);
+		setKeywords(new HashSet<>());
 		setAuditRecordId(audit_record_id);
 		setGeneralizedSrc(BrowserService.generalizeSrc(src));
 		setKey(generateKey());

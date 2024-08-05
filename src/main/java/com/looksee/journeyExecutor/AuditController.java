@@ -401,7 +401,7 @@ public class AuditController {
 		}
 		page_state = page_state_service.save(domain_map_id, page_state);
 		
-		if(!page_state.isElementExtractionComplete()){
+		if(!page_state.isInteractiveElementExtractionComplete()){
 			BufferedImage full_page_screenshot = ImageIO.read(new URL(page_state.getFullPageScreenshotUrl()));
 			List<ElementState> element_states = browser_service.getDomElementStates(page_state, 
 																					xpaths,
@@ -422,7 +422,7 @@ public class AuditController {
 							.map( element -> page_state_service.addElement(page_state_id, element.getId()))
 							.collect(Collectors.toList());
 
-			page_state_service.updateElementExtractionCompleteStatus(page_state.getId(), true);
+			page_state_service.updateInteractiveElementExtractionComplete(page_state.getId(), true);
 		}
 		
 		return page_state;

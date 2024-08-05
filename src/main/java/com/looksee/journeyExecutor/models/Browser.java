@@ -3,8 +3,6 @@ package com.looksee.journeyExecutor.models;
 import java.awt.Graphics2D;
 import java.awt.image.BufferedImage;
 import java.io.BufferedReader;
-import java.io.ByteArrayOutputStream;
-import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
@@ -30,11 +28,6 @@ import javax.xml.xpath.XPathConstants;
 import javax.xml.xpath.XPathExpressionException;
 import javax.xml.xpath.XPathFactory;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.springframework.stereotype.Component;
-import org.w3c.dom.Node;
-import org.apache.commons.lang3.ThreadUtils;
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
 import org.jsoup.nodes.Element;
@@ -58,11 +51,15 @@ import org.openqa.selenium.remote.RemoteWebDriver;
 import org.openqa.selenium.remote.UnreachableBrowserException;
 import org.openqa.selenium.support.ui.ExpectedCondition;
 import org.openqa.selenium.support.ui.WebDriverWait;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.stereotype.Component;
+import org.w3c.dom.Node;
 
 import com.assertthat.selenium_shutterbug.core.Capture;
 import com.assertthat.selenium_shutterbug.core.Shutterbug;
+import com.google.api.gax.rpc.ApiException;
 import com.looksee.utils.ImageUtils;
-import com.looksee.utils.TimingUtils;
 
 import cz.vutbr.web.css.CSSFactory;
 import cz.vutbr.web.css.CombinedSelector;
@@ -74,6 +71,8 @@ import cz.vutbr.web.csskit.RuleFontFaceImpl;
 import cz.vutbr.web.csskit.RuleKeyframesImpl;
 import cz.vutbr.web.csskit.RuleMediaImpl;
 import cz.vutbr.web.domassign.StyleMap;
+import lombok.Getter;
+import lombok.Setter;
 import ru.yandex.qatools.ashot.AShot;
 import ru.yandex.qatools.ashot.shooting.ShootingStrategies;
 
@@ -85,6 +84,9 @@ public class Browser {
 	
 	private static Logger log = LoggerFactory.getLogger(Browser.class);
 	private WebDriver driver = null;
+
+	@Getter
+	@Setter
 	private String browserName; 
 	private long yScrollOffset;
 	private long xScrollOffset;
@@ -111,18 +113,6 @@ public class Browser {
 	 */
 	public Browser(String browser, URL hub_node_url) throws MalformedURLException {
 		assert browser != null;
-		
-		//create proxy server connection for handling browserup proxy calls
-		//BrowserUpProxyServer browserup_proxy = new BrowserUpProxyServer();
-		
-		/*
-		DefaultApi browserup_proxy = new DefaultApi();
-		
-		List<HarEntry> har_entries = browserup_proxy.entries(port, urlPattern) //entries(8000, "\"^(http|https)://" + hub_node_url.getHost() + "\\\\.com/.*$\"");
-		for(HarEntry entry: har_entries) {
-			entry.
-		}
-		*/
 		
 		this.setBrowserName(browser);
 		if("chrome".equals(browser)){
@@ -165,9 +155,9 @@ public class Browser {
 		
 		try {
 			waitForPageToLoad();
-		}catch(Exception e) {		
-			e.printStackTrace();
+		}catch(Exception e) {
 			/*
+			e.printStackTrace();
 			Alert alert = isAlertPresent();
 			if(alert != null){
 				log.debug("Alert was encountered during navigation page load!!!");
@@ -177,38 +167,34 @@ public class Browser {
 			}
 			 */
 		}
-		//TimingUtils.pauseThread(15);
+		//TimingUtils.pauseThread(5000L);
 	}
 
 	/**
-	 * Removes canvas element added by Selenium when taking screenshots
+	 * Removes script, link and style elements
 	 * 
 	 * @param src
 	 * @return
 	 * 
 	 * @precondition src != null
+	 * 
+	 * @Version - 9/18/2023
 	 */
 	public static String cleanSrc(String src) {
 		Document html_doc = Jsoup.parse(src);
-		
-		for(Element element : html_doc.select("script")) {
-			element.remove();
-		}
-		
-		for(Element element : html_doc.select("style")) {
-			element.remove();
-		}
-		
-		for(Element element : html_doc.select("link")) {
-			if(element.attr("rel").contentEquals("text/css")) {
-				element.remove();
-			}
-		}
+		html_doc.select("script").remove();
+		html_doc.select("style").remove();
+		html_doc.select("link").remove();
 		
 		String html = html_doc.html();
+		html = html.replace("\r", "");
+		html = html.replace("\n", "");
+		html = html.replace("\t", " ");
+		html = html.replace("  ", " ");
+		html = html.replace("  ", " ");
+		html = html.replace("  ", " ");
+		
 		return html.replace(" style=\"\"", "");
-		//html_doc.select("link,script,style").remove();
-		//return html_doc.html();
 	}
 	
 	/**
@@ -238,7 +224,9 @@ public class Browser {
 		ImmutableCapabilities capabilities = new ImmutableCapabilities("browserName", "firefox");
 
 		//options.setHeadless(true);
-	    RemoteWebDriver driver = new RemoteWebDriver(hub_node_url, capabilities);
+	    //RemoteWebDriver driver = new RemoteWebDriver(new RateLimitExecutor(hub_node_url), capabilities);
+		RemoteWebDriver driver = new RemoteWebDriver(hub_node_url, capabilities);
+
 		driver.manage().window().maximize();
 
 	    //driver.manage().window().setSize(new Dimension(1024, 768));
@@ -323,10 +311,13 @@ public class Browser {
 		chrome_options.addArguments("user-agent=LookseeBot");
 		chrome_options.addArguments("window-size=1920,1080");
 		chrome_options.addArguments("--remote-allow-origins=*");
+		chrome_options.addArguments("--headless=new");
 
 		//ImmutableCapabilities capabilities = new ImmutableCapabilities("browserName", "chrome");
 		RemoteWebDriver driver = new RemoteWebDriver(hub_node_url, chrome_options);
-		driver.manage().window().maximize();
+		//RemoteWebDriver driver = new RemoteWebDriver(new RateLimitExecutor(hub_node_url), chrome_options);
+
+		//driver.manage().window().maximize();
 		//options.setHeadless(true);
 
 		//cap.setCapability("video", "True"); // NOTE: "True" is a case sensitive string, not boolean.
@@ -342,15 +333,12 @@ public class Browser {
 		} else {
 			cap.setCapability("video", "False"); // NOTE: "False" is a case sensitive string, not boolean.
 		log.debug("Requesting chrome remote driver from hub");
-		RemoteWebDriver driver = new RemoteWebDriver(hub_node_url, capabilities);
-		driver.manage().window().maximize();
 		}*/
 
 		//driver.manage().window().setSize(new Dimension(1920, 1080));
-	    //driver.manage().timeouts().implicitlyWait(Duration.ofSeconds(5L));
-	    //driver.manage().timeouts().scriptTimeout(Duration.ofSeconds(2L));
-
-	    //driver.manage().timeouts().pageLoadTimeout(30L, TimeUnit.SECONDS);
+	    //driver.manage().timeouts().implicitlyWait(Duration.ofSeconds(1L));
+	    driver.manage().timeouts().scriptTimeout(Duration.ofSeconds(10L));
+	    driver.manage().timeouts().pageLoadTimeout(Duration.ofSeconds(30L));
 		return driver;
 	}
 	
@@ -419,6 +407,7 @@ public class Browser {
 	 * @return File png file of image
 	 * @throws IOException
 	 */
+	@Deprecated
 	public BufferedImage getFullPageScreenshotStitched() throws IOException {
 		double percentage = 0.10;
 		
@@ -429,7 +418,7 @@ public class Browser {
 		int viewport_height = extractViewportHeight(driver);
 		long last_y_offset = 0;
 		List<BufferedImage> screenshots = new ArrayList<>();
-		//String page_url = driver.getCurrentUrl();
+
 		//while scroll position isn't at end of page
 		do {
 			//scroll 75% of the height of the viewport
@@ -531,18 +520,34 @@ public class Browser {
 	}
 	
 	/**
+	 * Retrieves element screenshot by obtaining subimage of full page screenshot
 	 * 
-	 * @param screenshot
-	 * @param elem
-	 * @return
+	 * @param element_state
+	 * @param page screenshot
+	 * @return 
+	 * 
 	 * @throws IOException
+	 * 
+	 * @pre element_state != null
+	 * @pre page_screenshot != null
 	 */
-	public BufferedImage getElementScreenshot(WebElement element) throws Exception{
-		//log.warn("Fullpage width and height :: " + this.getFullPageScreenshot().getWidth() + " , " + this.getFullPageScreenshot().getHeight());
-
-		//calculate element position within screen
-		return Shutterbug.shootElementVerticallyCentered(driver, element).getImage(); 
-		//return Shutterbug.shootElement(driver, element).getImage();
+	public static BufferedImage getElementScreenshot(ElementState element_state, 
+													BufferedImage page_screenshot) throws IOException{
+		assert element_state != null;
+		assert page_screenshot != null;
+		
+		int width = element_state.getWidth();
+		int height = element_state.getHeight();
+		
+		if( (element_state.getXLocation() + element_state.getWidth()) > page_screenshot.getWidth() ) {
+			width = page_screenshot.getWidth() - element_state.getXLocation()-1;
+		}
+		
+		if( (element_state.getYLocation() + element_state.getHeight()) > page_screenshot.getHeight() ) {
+			height = page_screenshot.getHeight() - element_state.getYLocation()-1;
+		}
+		
+		return page_screenshot.getSubimage(element_state.getXLocation(), element_state.getYLocation(), width, height);
 	}
 	
 	/**
@@ -552,23 +557,38 @@ public class Browser {
 	 * @return
 	 * @throws IOException
 	 */
-	public static BufferedImage getElementScreenshot(ElementState element_state, BufferedImage page_screenshot, Browser browser) throws IOException{
+	public BufferedImage getElementScreenshot(WebElement element) throws Exception{
 		//calculate element position within screen
-		int point_x = element_state.getXLocation()+5;
-		int point_y = element_state.getYLocation();
-		int width = element_state.getWidth()+5;
-		int height = element_state.getHeight();
-		if((point_x+width) >= page_screenshot.getWidth()) {
-			width = page_screenshot.getWidth()-point_x-1;
-		}
-		
-		return page_screenshot.getSubimage(point_x, point_y, width, height);
+		return Shutterbug.shootElementVerticallyCentered(driver, element).getImage(); 
+		//return Shutterbug.shootElement(driver, element).getImage();
 	}
 
+	/**
+	 * 
+	 * @param screenshot
+	 * @param elem
+	 * @return
+	 * @throws IOException
+	 */
+	public static BufferedImage getElementScreenshot(Point element_location,
+													 Dimension element_size,
+													 BufferedImage page_screenshot) throws IOException{
+		int width = element_size.getWidth();
+		int height = element_size.getHeight();
+		
+		if( (element_location.getX() + element_size.getWidth()) > page_screenshot.getWidth() ) {
+			width = page_screenshot.getWidth() - element_location.getX()-1;
+		}
+		
+		if( (element_location.getY() + element_size.getHeight()) > page_screenshot.getHeight() ) {
+			height = page_screenshot.getHeight() - element_location.getY()-1;
+		}
+		
+		return page_screenshot.getSubimage(element_location.getX(), element_location.getY(), width, height);
+	}
 	
 	public static ElementState findLabelFor(Set<ElementState> elements, String for_id){
 		for(ElementState elem : elements){
-			//ElementState tag = (ElementState)elem;
 			if(elem.getName().equals("label") ){
 				if(elem.getAttribute("for").contains(for_id)){
 					return elem;
@@ -889,14 +909,6 @@ public class Browser {
 		return css_map;
 	}
 	
-	public String getBrowserName() {
-		return browserName;
-	}
-
-	public void setBrowserName(String browser_name) {
-		this.browserName = browser_name;
-	}
-	
 
 	public long getYScrollOffset() {
 		return yScrollOffset;
@@ -914,57 +926,7 @@ public class Browser {
 		this.xScrollOffset = x_scroll_offset;
 	}
 	
-	@Deprecated
-	public void scrollToElement(String xpath, WebElement elem) 
-    {
-		Point offsets = elem.getLocation();
-		log.warn("offsets before scrolling = "+offsets);
-
-		int offsets_y = -9999999;
-		
-		if(xpath.contains("nav") || xpath.startsWith("//body/header")) {
-			scrollToTopOfPage();
-			this.setXScrollOffset(0);
-			this.setYScrollOffset(0);
-			return;
-		}
-		
-		while(offsets_y != offsets.getY()) {
-			offsets_y = offsets.getY();
-			scrollDownFull();
-			offsets = elem.getLocation();
-		}
-		log.warn("offsets after scrolling = "+offsets);
-
-		offsets = getViewportScrollOffset();
-		this.setXScrollOffset(offsets.getX());
-		this.setYScrollOffset(offsets.getY());
-    }
-		
-	/**
-	 * 
-	 * @param element
-	 */
-	public void scrollToElement(com.looksee.journeyExecutor.models.Element element) 
-    { 
-		WebElement elem = driver.findElement(By.xpath(element.getXpath()));
-		((JavascriptExecutor)driver).executeScript("arguments[0].scrollIntoView({block: \"center\", behavior: \"instant\"});", elem);
-		Point offsets = getViewportScrollOffset();
-		this.setXScrollOffset(offsets.getX());
-		this.setYScrollOffset(offsets.getY());
-    }
 	
-	/**
-	 * 
-	 * @param element
-	 */
-	public void scrollToElement(WebElement element) 
-	{ 
-		((JavascriptExecutor)driver).executeScript("arguments[0].scrollIntoView({block: \"center\", behavior: \"instant\"});", element);
-		Point offsets = getViewportScrollOffset();
-		this.setXScrollOffset(offsets.getX());
-		this.setYScrollOffset(offsets.getY());
-	}
 	
 	/**
 	 * 
@@ -994,11 +956,25 @@ public class Browser {
 	 * Remove Drift.com chat app
 	 */
 	public void removeDriftChat() {
-		((JavascriptExecutor)driver).executeScript("var element=document.getElementById(\"drift-frame-chat\");if(typeof(element)!='undefined' && element != null){document.getElementById(\"drift-frame-chat\").remove();document.getElementById(\"drift-frame-controller\").remove();}");
+		((JavascriptExecutor)driver).executeScript("var element=document.getElementById(\"drift-frame-chat\");if(typeof(element)!='undefined' && element != null){element.remove();document.getElementById(\"drift-frame-controller\").remove();}");
 	}
 	
 	/**
-	 * Loads attributes for this element into a list of {@link Attribute}s
+	 * Remove Drift.com chat app
+	 */
+	public void removeGDPRmodals() {
+		((JavascriptExecutor)driver).executeScript("var element=document.getElementById(\"gdprModal\");if(typeof(element)!='undefined' && element != null){element.remove();}	");
+	}
+
+	/**
+	 * Remove Drift.com chat app
+	 */
+	public void removeGDPR() {
+		((JavascriptExecutor)driver).executeScript("var element=document.getElementById(\"gdpr\");if(typeof(element)!='undefined' && element != null){element.remove();} ");
+	}
+
+	/**
+	 * Loads attributes for this element into a list of element attributes
 	 * 
 	 * @param attributeList
 	 */
@@ -1060,6 +1036,8 @@ public class Browser {
 			x_offset = Integer.parseInt(objx.toString());
 		}
 		
+		this.setXScrollOffset(x_offset);
+		this.setYScrollOffset(y_offset);
 		return new Point(x_offset, y_offset);
 	}
 	
@@ -1093,7 +1071,7 @@ public class Browser {
 	/**
 	 * Waits for the document ready state to be complete, then observes page transition if it exists
 	 */
-	public void waitForPageToLoad() {
+	public void waitForPageToLoad() throws Exception{
 		new WebDriverWait(driver, 30L).until(
 				webDriver -> ((JavascriptExecutor) webDriver)
 					.executeScript("return document.readyState")
@@ -1166,11 +1144,6 @@ public class Browser {
 	    catch (NoAlertPresentException Ex) { 
 	        return null; 
 	    }   // catch 
-	}
-
-	public boolean isDisplayed(ElementState element) {
-		WebElement web_element = driver.findElement(By.xpath(element.getXpath()));
-		return web_element.isDisplayed();
 	}
 
 	public static List<RuleSet> extractRuleSetsFromStylesheets(List<String> raw_stylesheets, URL page_state_url) {
@@ -1251,7 +1224,7 @@ public class Browser {
 	public static String extractBody(String src) {
 		assert src != null;
 		
-		Document doc = Jsoup.parse(src);	
+		Document doc = Jsoup.parse(src);
 		Elements body_elements = doc.select("body");
 		return body_elements.html();
 	}
@@ -1264,7 +1237,7 @@ public class Browser {
 
         con.setSSLSocketFactory(sc.getSocketFactory());
         // get response code, 200 = Success
-        int responseCode = con.getResponseCode();
+        //int responseCode = con.getResponseCode();
         if(con.getContentEncoding() != null && con.getContentEncoding().equalsIgnoreCase("gzip")) {
         	return readStream(new GZIPInputStream( con.getInputStream()));
         }
@@ -1286,26 +1259,97 @@ public class Browser {
         return sb.toString();
     }
 
+	/**
+	 * Scroll to th bottom of the body element
+	 */
 	public void scrollToBottomOfPage() {
 		((JavascriptExecutor) driver)
 	     	.executeScript("window.scrollTo(0, document.body.scrollHeight)");
+		getViewportScrollOffset();
 	}
 	
+	/**
+	 * Scroll to position (0,0)
+	 */
 	public void scrollToTopOfPage() {
-		((JavascriptExecutor) driver)
-	     	.executeScript("window.scrollTo(0, 0)");
+		scrollTo(0,0);
 	}
 	
 	public void scrollDownPercent(double percent) {
 		((JavascriptExecutor) driver)
 	     	.executeScript("window.scrollBy(0, (window.innerHeight*"+percent+"))");
+		getViewportScrollOffset();
 	}
 	
 	public void scrollDownFull() {
-		((JavascriptExecutor) driver)
-	     	.executeScript("window.scrollBy(0, window.innerHeight)");
+		scrollTo(0, getViewportSize().getHeight());
 	}
 
+	/**
+	 * Scroll to element by scrolling down 1 screen length at a time until the element is visible
+	 *  within the viewport\
+	 *  
+	 * @param xpath
+	 * @param elem
+	 */
+	public void scrollToElement(String xpath, WebElement elem) 
+    {
+		if(xpath.contains("nav") || xpath.startsWith("//body/header")) {
+			scrollToTopOfPage();
+			return;
+		}
+		
+		Point element_offset = elem.getLocation();
+		while(this.getYScrollOffset() != element_offset.getY()) {
+			scrollDownFull();
+		}
+
+		getViewportScrollOffset();
+    }
+	
+	/**
+	 * 
+	 * @param element
+	 */
+	public void scrollToElement(WebElement element) 
+    { 
+		((JavascriptExecutor)driver).executeScript("arguments[0].scrollIntoView({block: 'center'});", element);
+		getViewportScrollOffset();
+    }
+	
+	/**
+	 * 
+	 * @param element
+	 */
+	public void scrollToElement(ElementState element) 
+    { 
+		int viewport_height = getViewportSize().getHeight();
+		int quarter_size = (int)Math.round(viewport_height/4.0);
+		scrollTo(element.getXLocation(), element.getYLocation()-quarter_size);
+		
+		//getViewportScrollOffset();
+    }
+	
+	/**
+	 * 
+	 * @param element
+	 */
+	public void scrollToElementCentered(WebElement element) { 
+		((JavascriptExecutor)driver).executeScript("arguments[0].scrollIntoView({block: 'center'});", element);
+		getViewportScrollOffset();
+	}
+	
+	
+	/**
+	 * Scroll to coordinate
+	 * 
+	 * @param element
+	 */
+	public void scrollTo(int x, int y) {
+		((JavascriptExecutor)driver).executeScript("window.scrollTo("+x+","+y+");");
+		getViewportScrollOffset();
+	}
+	
 	/**
 	 * Retrieve HTML source form webpage
 	 * 
@@ -1319,7 +1363,13 @@ public class Browser {
 		return this.getSource().contains("503 Service Temporarily Unavailable");
 	}
 
+	public static boolean is503Error(String source) {
+		return source != null && source.contains("503 Service Temporarily Unavailable");
+	}
+
 	public WebElement findElement(String xpath) throws WebDriverException{
 		return getDriver().findElement(By.xpath(xpath));
 	}
+
+	
 }

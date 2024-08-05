@@ -1,6 +1,5 @@
 package com.looksee.journeyExecutor.models;
 
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
@@ -9,7 +8,6 @@ import org.slf4j.LoggerFactory;
 import org.springframework.data.neo4j.core.schema.Relationship;
 
 import com.looksee.journeyExecutor.models.enums.FormType;
-import com.looksee.journeyExecutor.models.message.BugMessage;
 
 
 /**
@@ -23,9 +21,6 @@ public class Form extends LookseeObject{
 	private String name;
     
 	private String type;
-	
-	@Relationship(type = "HAS")
-	private List<BugMessage> bugMessages;
 	
 	@Relationship(type = "DEFINED_BY")
 	private ElementState formTag;
@@ -57,7 +52,7 @@ public class Form extends LookseeObject{
 	 * @return
 	 */
 	@Override
-	public String generateKey() {		
+	public String generateKey() {
 		return "form"+getFormTag();
 	}
 
@@ -201,29 +196,5 @@ public class Form extends LookseeObject{
 	@Override
 	public Form clone(){
 		return new Form(formTag, formFields, submitField, name);
-	}
-
-	public List<BugMessage> getBugMessages() {
-		return bugMessages;
-	}
-
-	public void setBugMessages(List<BugMessage> bug_messages) {
-		if(this.bugMessages == null) {
-			this.bugMessages = new ArrayList<>();
-		}
-		this.bugMessages = bug_messages;
-	}
-	
-	public void addBugMessage(BugMessage bug_message) {
-		if(this.bugMessages == null) {
-			this.bugMessages = new ArrayList<>();
-		}
-		log.warn("bug meesages  :: "+this.bugMessages);
-		this.bugMessages.add(bug_message);
-	}
-
-	public void removeBugMessage(BugMessage msg) {
-		int idx = bugMessages.indexOf(msg);
-		this.bugMessages.remove(idx);
 	}
 }

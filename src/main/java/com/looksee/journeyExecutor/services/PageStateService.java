@@ -8,22 +8,22 @@ import java.util.Optional;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.retry.annotation.Retryable;
 import org.springframework.stereotype.Service;
 
-import com.looksee.journeyExecutor.models.Audit;
+import com.looksee.journeyExecutor.models.AuditRecord;
 import com.looksee.journeyExecutor.models.ElementState;
 import com.looksee.journeyExecutor.models.PageAuditRecord;
 import com.looksee.journeyExecutor.models.PageState;
 import com.looksee.journeyExecutor.models.Screenshot;
-import com.looksee.journeyExecutor.models.enums.AuditName;
 import com.looksee.journeyExecutor.models.enums.ElementClassification;
 import com.looksee.journeyExecutor.models.repository.AuditRecordRepository;
-import com.looksee.journeyExecutor.models.repository.AuditRepository;
 import com.looksee.journeyExecutor.models.repository.ElementStateRepository;
 import com.looksee.journeyExecutor.models.repository.PageStateRepository;
 import com.looksee.journeyExecutor.models.repository.ScreenshotRepository;
 
 import io.github.resilience4j.retry.annotation.Retry;
+import lombok.Synchronized;
 
 
 
@@ -32,6 +32,7 @@ import io.github.resilience4j.retry.annotation.Retry;
  *
  */
 @Service
+@Retry(name="neoforj")
 public class PageStateService {
 	@SuppressWarnings("unused")
 	private static Logger log = LoggerFactory.getLogger(PageStateService.class.getName());
@@ -44,36 +45,38 @@ public class PageStateService {
 	
 	@Autowired
 	private ScreenshotRepository screenshot_repo;
-	
-	@Autowired
-	private AuditRepository audit_repo;
-	
+
 	@Autowired
 	private AuditRecordRepository audit_record_repo;
 	
+	@Autowired
+	private DomainMapService domain_map_service;
+
 	/**
 	 * Save a {@link PageState} object and its associated objects
+	 * 
 	 * @param page_state
 	 * @return
 	 * @throws Exception 
 	 * 
 	 * @pre page_state != null
 	 */
-	@Retry(name = "neoforj")
-	public PageState save(PageState page_state) throws Exception {
+	public PageState save(long domain_map_id, PageState page_state) throws Exception {
 		assert page_state != null;
 		
-		//PageState page_state_record = page_state_repo.findByKey(page_state.getKey());
-		
-		//if(page_state_record == null) {
-			log.warn("page state wasn't found in database. Saving new page state to neo4j");
-			
-			return page_state_repo.save(page_state);
-		//}
+		PageState page_state_record = findPageInDomainMap(domain_map_id, page_state.getKey());
+		if(page_state_record == null) {
+			page_state_record = page_state_repo.save(page_state);
+			domain_map_service.addPageToDomainMap(domain_map_id, page_state_record.getId());
+		}
 
-		//return page_state_record;
+		return page_state_record;
 	}
 	
+	private PageState findPageInDomainMap(long domain_map_id, String page_key) {
+		return page_state_repo.findByDomainMap(domain_map_id, page_key);
+	}
+
 	public PageState findByKey(String page_key) {
 		PageState page_state = page_state_repo.findByKey(page_key);
 		if(page_state != null){
@@ -83,15 +86,15 @@ public class PageStateService {
 	}
 	
 	public List<PageState> findByScreenshotChecksumAndPageUrl(String user_id, String url, String screenshot_checksum){
-		return page_state_repo.findByScreenshotChecksumAndPageUrl(url, screenshot_checksum);		
+		return page_state_repo.findByScreenshotChecksumAndPageUrl(url, screenshot_checksum);
 	}
 	
 	public List<PageState> findByFullPageScreenshotChecksum(String screenshot_checksum){
-		return page_state_repo.findByFullPageScreenshotChecksum(screenshot_checksum);		
+		return page_state_repo.findByFullPageScreenshotChecksum(screenshot_checksum);
 	}
 	
 	public PageState findByAnimationImageChecksum(String user_id, String screenshot_checksum){
-		return page_state_repo.findByAnimationImageChecksum(user_id, screenshot_checksum);		
+		return page_state_repo.findByAnimationImageChecksum(user_id, screenshot_checksum);
 	}
 	
 	public List<ElementState> getElementStates(String page_key){
@@ -134,17 +137,6 @@ public class PageStateService {
 	public List<PageState> findBySourceChecksumForDomain(String url, String src_checksum) {
 		return page_state_repo.findBySourceChecksumForDomain(url, src_checksum);
 	}
-	
-	public List<Audit> getAudits(String page_state_key){
-		assert page_state_key != null;
-		assert !page_state_key.isEmpty();
-		
-		return audit_repo.getAudits(page_state_key);
-	}
-
-	public Audit findAuditBySubCategory(AuditName subcategory, String page_state_key) {
-		return audit_repo.findAuditBySubCategory(subcategory.getShortName(), page_state_key);
-	}
 
 	public List<ElementState> getVisibleLeafElements(String page_state_key) {
 		return element_state_repo.getVisibleLeafElements(page_state_key);
@@ -157,17 +149,9 @@ public class PageStateService {
 		return page_state_repo.findByUrl(url);
 	}
 
-	public boolean addElement(long page_id, long element_id) {		
-		Optional<ElementState> element_state = getElementState(page_id, element_id);
-		
-		if(element_state.isPresent()) {
-			return true;
-		}
+	@Retryable
+	public boolean addElement(long page_id, long element_id) {
 		return element_state_repo.addElement(page_id, element_id) != null;
-	}
-
-	private Optional<ElementState> getElementState(long page_id, long element_id) {
-		return element_state_repo.getElementState(page_id, element_id);
 	}
 
 	/**
@@ -183,10 +167,12 @@ public class PageStateService {
 		return page_state_repo.findById(page_id);
 	}
 
+	@Retryable
 	public void updateCompositeImageUrl(Long id, String composite_img_url) {
 		page_state_repo.updateCompositeImageUrl(id, composite_img_url);
 	}
 
+	@Retryable
 	public void addAllElements(long page_state_id, List<Long> element_ids) {
 		page_state_repo.addAllElements(page_state_id, element_ids);
 	}
@@ -200,6 +186,29 @@ public class PageStateService {
 	}
 
 	public long getElementStateCount(long page_state_id) {
-		return element_state_repo.getElementStateCount(page_state_id);		
+		return element_state_repo.getElementStateCount(page_state_id);
 	}
+
+	@Retryable
+	public PageState findPageWithKey(String key) {
+		return page_state_repo.findPageWithKey(key);
+	}
+
+	@Retryable
+	@Synchronized
+	public void updateElementExtractionCompleteStatus(Long page_id, boolean is_complete) throws Exception {
+		PageState page = page_state_repo.updateElementExtractionCompleteStatus(page_id, is_complete);
+		if(page == null){
+			throw new Exception("Page state with id = "+page_id+" was not found");
+		}
+	}
+
+	@Retryable
+	@Synchronized
+    public void updateInteractiveElementExtractionComplete(Long page_id, boolean is_complete) throws Exception {
+        PageState page = page_state_repo.updateInteractiveElementExtractionCompleteStatus(page_id, is_complete);
+		if(page == null){
+			throw new Exception("Page state with id = "+page_id+" was not found");
+		}
+    }
 }

@@ -3,64 +3,32 @@ package com.looksee.journeyExecutor.models.message;
 import com.looksee.journeyExecutor.models.enums.BrowserType;
 import com.looksee.journeyExecutor.models.journeys.Journey;
 
+import lombok.Getter;
+import lombok.Setter;
+
 public class DiscardedJourneyMessage extends Message {
 
+	@Getter
+	@Setter
 	private Journey journey;
+	
+	@Getter
+	@Setter
 	private BrowserType browserType;
-	private long domainId;
-	private long accountId;
+
+	@Getter
+	@Setter
 	private long auditRecordId;
    
-	public DiscardedJourneyMessage(Journey journey, 
-								   BrowserType browserType, 
-								   long domainId, 
-								   long accountId, 
-								   long auditRecordId) {
+	public DiscardedJourneyMessage() {}
+	
+	public DiscardedJourneyMessage( Journey journey, 
+									BrowserType browserType, 
+									long accountId, 
+									long auditRecordId) {
+		super(accountId);
 		setJourney(journey);
 		setBrowserType(browserType);
-		setDomainId(domainId);
-		setAccountId(accountId);
 		setAuditRecordId(auditRecordId);
 	}
-
-	public BrowserType getBrowserType() {
-		return browserType;
-	}
-
-	public void setBrowserType(BrowserType browserType) {
-		this.browserType = browserType;
-	}
-
-	public long getDomainId() {
-		return domainId;
-	}
-
-	public void setDomainId(long domainId) {
-		this.domainId = domainId;
-	}
-
-	public long getAccountId() {
-		return accountId;
-	}
-
-	public void setAccountId(long accountId) {
-		this.accountId = accountId;
-	}
-
-	public long getAuditRecordId() {
-		return auditRecordId;
-	}
-
-	public void setAuditRecordId(long auditRecordId) {
-		this.auditRecordId = auditRecordId;
-	}
-
-	public Journey getJourney() {
-		return journey;
-	}
-
-	public void setJourney(Journey journey) {
-		this.journey = journey;
-	}
-
 }

@@ -11,14 +11,12 @@ import org.springframework.stereotype.Repository;
 
 import com.looksee.journeyExecutor.models.PageState;
 
-import io.github.resilience4j.retry.annotation.Retry;
-
 /**
  * 
  */
 @Repository
-@Retry(name = "neoforj")
 public interface PageStateRepository extends Neo4jRepository<PageState, Long> {
+	
 	@Query("MATCH (:Account{username:$user_id})-[*]->(p:PageState{key:$key}) RETURN p LIMIT 1")
 	public PageState findByKeyAndUsername(@Param("user_id") String user_id, @Param("key") String key);
 
@@ -101,10 +99,18 @@ public interface PageStateRepository extends Neo4jRepository<PageState, Long> {
 	@Query("MATCH (domain_audit:DomainAuditRecord) with domain_audit  WHERE id(domain_audit)=$domain_audit_id MATCH (domain_audit)-[*2]->(page_state:PageState) WHERE id(page_state)=$page_state_id RETURN page_state")
 	public PageState findByDomainAudit(@Param("domain_audit_id") long domainAuditRecordId, @Param("page_state_id") long page_state_id);
 
-	@Query("MATCH (audit_record:DomainAuditRecord) WITH audit_record WHERE id(audit_record)=$audit_record_id MATCH (audit_record)-[:FOR]->(page:PageState) WHERE page.key=$page_key RETURN page")
-	public PageState findPageWithKey(@Param("audit_record_id") long audit_record_id, @Param("page_key") String key);
+	@Query("MATCH (page:PageState) WHERE page.key=$page_key RETURN page LIMIT 1")
+	public PageState findPageWithKey(@Param("page_key") String key);
 
-	@Query("MATCH (domain_audit:DomainAuditRecord) with domain_audit WHERE id(domain_audit)=$domain_audit_id MATCH (domain_audit)-[:FOR]->(page_state:PageState) WHERE page_state.url=$url MATCH page=(page_state)-[]->(:ElementState) RETURN page LIMIT 1")
+	@Query("MATCH (domain_audit:DomainAuditRecord)-[:FOR]->(page_state:PageState) WHERE id(domain_audit)=$domain_audit_id AND page_state.url=$url MATCH page=(page_state)-[]->(:ElementState) RETURN page LIMIT 1")
 	public PageState findByDomainAudit(@Param("domain_audit_id") long domainAuditRecordId, @Param("url") String url);
-	
+
+	@Query("MATCH (page_state:PageState) WHERE id(page_state)=$page_id SET page_state.elementExtractionComplete=$is_complete RETURN page_state LIMIT 1")
+	public PageState updateElementExtractionCompleteStatus(@Param("page_id") long page_id, @Param("is_complete") boolean is_complete);
+
+	@Query("MATCH (map:DomainMap) WHERE id(map)=$domain_map_id MATCH (map)-[:HAS]->(page_state:PageState) WHERE page_state.key=$page_key RETURN page_state")
+    public PageState findByDomainMap(@Param("domain_map_id") long domain_map_id, @Param("page_key") String page_key);
+
+	@Query("MATCH (page_state:PageState) WHERE id(page_state)=$page_id SET page_state.interactiveElementExtractionComplete=$is_complete RETURN page_state LIMIT 1")
+    public PageState updateInteractiveElementExtractionCompleteStatus(@Param("page_id") long page_id, @Param("is_complete") boolean is_complete);
 }

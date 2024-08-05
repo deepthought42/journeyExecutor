@@ -1,27 +1,29 @@
 package com.looksee.journeyExecutor.models.message;
 
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
 
+/**
+ * Message used to indicate that a domain page has been built and data extracted
+ */
+@NoArgsConstructor
 public class PageBuiltMessage extends Message{
+	@Getter
+	@Setter
 	private long pageId;
-	
-	public PageBuiltMessage() {
-		super(-1, -1, -1);
-	}
-	
-	public PageBuiltMessage(long account_id, 
-							long domain_audit_id,
-							long domain_id,
-							long page_id) 
-	{
-		super(account_id, domain_audit_id, domain_id);
-		setPageId(page_id);
-	}
-	
-	public long getPageId() {
-		return pageId;
-	}
-	public void setPageId(long page_id) {
-		this.pageId = page_id;
-	}
 
+	@Getter
+	@Setter
+	private long auditRecordId;
+	
+	public PageBuiltMessage(long account_id,
+							long page_id,
+							long audit_record_id)
+	{
+		super(account_id);
+		setPageId(page_id);
+		setAuditRecordId(audit_record_id);
+	}
 }
+

@@ -1,66 +1,46 @@
 package com.looksee.journeyExecutor.models.message;
 
 import com.looksee.journeyExecutor.models.enums.BrowserType;
-import com.looksee.journeyExecutor.models.enums.PathStatus;
 import com.looksee.journeyExecutor.models.journeys.Journey;
+
+import lombok.Getter;
+import lombok.Setter;
 
 /**
  * 
  */
 public class VerifiedJourneyMessage extends Message {
 
+	@Getter
+	@Setter
 	private Journey journey;
-	private PathStatus status;
+
+	@Getter
+	@Setter
 	private BrowserType browser;
-	
+
+	@Getter
+	@Setter
+	private long auditRecordId;
+
 	public VerifiedJourneyMessage() {}
 	
-	public VerifiedJourneyMessage( Journey journey, 
-								   PathStatus status, 
+	public VerifiedJourneyMessage( Journey journey,
 								   BrowserType browser,
-								   long domain_id,
-								   long account_id, 
+								   long account_id,
 								   long audit_record_id)
 	{
 		setJourney(journey);
-		setStatus(status);
 		setBrowser(browser);
-		setDomainId(domain_id);
 		setAccountId(account_id);
-		setDomainAuditRecordId(audit_record_id);
+		setAuditRecordId(audit_record_id);
 	}
 	
 	public VerifiedJourneyMessage clone(){
 		return new VerifiedJourneyMessage(	journey.clone(), 
-											getStatus(), 
 											getBrowser(), 
-											getDomainId(), 
 											getAccountId(), 
-											getDomainAuditRecordId());
-	}
-
-	public PathStatus getStatus() {
-		return status;
-	}
-
-	private void setStatus(PathStatus status) {
-		this.status = status;
-	}
-
-	public BrowserType getBrowser() {
-		return browser;
-	}
-
-	public void setBrowser(BrowserType browser) {
-		this.browser = browser;
-	}
-
-	public Journey getJourney() {
-		return journey;
-	}
-
-	public void setJourney(Journey journey) {
-		this.journey = journey;
+											getAuditRecordId());
 	}
 }
 

@@ -1,10 +1,6 @@
 package com.looksee.journeyExecutor.models;
 
-
-import java.util.ArrayList;
-import java.util.Collections;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 
@@ -17,6 +13,7 @@ import com.fasterxml.jackson.annotation.JsonSubTypes;
 import com.fasterxml.jackson.annotation.JsonSubTypes.Type;
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import com.looksee.journeyExecutor.models.enums.ElementClassification;
+import com.looksee.journeyExecutor.services.BrowserService;
 
 
 /**
@@ -54,8 +51,6 @@ public class ElementState extends LookseeObject implements Comparable<ElementSta
 	private double nonTextContrast;
 	private boolean imageFlagged;
 	
-	private boolean visible;
-	
 	@CompositeProperty
 	private Map<String, String> renderedCssValues = new HashMap<>();
 	
@@ -90,20 +85,19 @@ public class ElementState extends LookseeObject implements Comparable<ElementSta
 	 * @pre outer_html != null;
 	 * @pre !outer_html.isEmpty()
 	 */
-	public ElementState(String owned_text, 
-						String all_text, 
-						String xpath, 
-						String name, 
-						Map<String, String> attributes, 
-						Map<String, String> css_map, 
-						String screenshot_url, 
-						int x_location, 
-						int y_location, 
+	public ElementState(String owned_text,
+						String all_text,
+						String xpath,
+						String name,
+						Map<String, String> attributes,
+						Map<String, String> css_map,
+						String screenshot_url,
+						int x_location,
+						int y_location,
 						int width,
-						int height, 
+						int height,
 						ElementClassification classification, 
 						String outer_html, 
-						boolean is_visible, 
 						String css_selector, 
 						String font_color, 
 						String background_color,
@@ -130,7 +124,6 @@ public class ElementState extends LookseeObject implements Comparable<ElementSta
 		setCssSelector(css_selector);
 		setClassification(classification);
 		setXpath(xpath);
-		setVisible(is_visible);
 		setForegroundColor(font_color);
 		setBackgroundColor(background_color);
 		setImageFlagged(image_flagged);
@@ -208,21 +201,14 @@ public class ElementState extends LookseeObject implements Comparable<ElementSta
 	}
 
 	/**
-	 * Generates a key using both path and result in order to guarantee uniqueness of key as well 
-	 * as easy identity of {@link Test} when generated in the wild via discovery
+	 * Generates a key using the outer html. Keys are not unique across entire dataset. Instead, ElementState keys 
+	 * are only unique per domain.
 	 * 
 	 * @return
 	 */
 	public String generateKey() {
-		
-		String key = "";
-		List<String> properties = new ArrayList<>(getRenderedCssValues().keySet());
-		Collections.sort(properties);
-		for(String style : properties) {
-			key += getRenderedCssValues().get(style);
-		}
-		
-		return "elementstate"+org.apache.commons.codec.digest.DigestUtils.sha256Hex(key)+org.apache.commons.codec.digest.DigestUtils.sha256Hex(getOuterHtml());
+		String generalized_html = BrowserService.generalizeSrc(getOuterHtml());
+		return "elementstate"+org.apache.commons.codec.digest.DigestUtils.sha256Hex(generalized_html);
 	}
 
 	/**
@@ -353,34 +339,13 @@ public class ElementState extends LookseeObject implements Comparable<ElementSta
 	public void setClassification(ElementClassification classification) {
 		this.classification = classification.toString();
 	}
-	
-	/*
-	public List<ElementState> getChildElements() {
-		return childElements;
-	}
 
-	public void setChildElements(List<ElementState> child_elements) {
-		this.childElements = child_elements;
-	}
-	
-	public void addChildElement(ElementState child_element) {
-		this.childElements.add(child_element);
-	}
-*/
 	public Map<String, String> getRenderedCssValues() {
 		return renderedCssValues;
 	}
 
 	public void setRenderedCssValues(Map<String, String> rendered_css_values) {
 		this.renderedCssValues.putAll(rendered_css_values);
-	}
-
-	public boolean isVisible() {
-		return visible;
-	}
-
-	public void setVisible(boolean visible) {
-		this.visible = visible;
 	}
 
 	public String getXpath() {

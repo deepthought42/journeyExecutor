@@ -12,10 +12,7 @@ import org.springframework.stereotype.Repository;
 import com.looksee.journeyExecutor.models.Domain;
 import com.looksee.journeyExecutor.models.ElementState;
 
-import io.github.resilience4j.retry.annotation.Retry;
-
 @Repository
-@Retry(name = "neoforj")
 public interface ElementStateRepository extends Neo4jRepository<ElementState, Long> {
 	
 	@Query("MATCH (e:ElementState{key:$key}) RETURN e LIMIT 1")
@@ -66,7 +63,7 @@ public interface ElementStateRepository extends Neo4jRepository<ElementState, Lo
 	@Query("MATCH (p:PageState)-[:HAS]->(e:ElementState{classification:'LEAF'}) where id(p)=$page_state_id AND e.visible=true RETURN e")
 	public List<ElementState> getVisibleLeafElements(@Param("page_state_id") long page_state_id);
 
-	@Query("MATCH (p:PageState) WITH p MATCH (element:ElementState) WHERE id(p)=$page_id AND id(element)=$element_id MERGE (p)-[:HAS]->(element) RETURN element LIMIT 1")
+	@Query("MATCH (p:PageState) WHERE id(p)=$page_id MATCH (element:ElementState) WHERE id(element)=$element_id MERGE (p)-[:HAS]->(element) RETURN element LIMIT 1")
 	public ElementState addElement(@Param("page_id") long page_id, @Param("element_id") long element_id);
 
 	@Query("MATCH (p:PageState)-[:HAS]->(element:ElementState) WHERE id(p)=$page_id AND id(element)=$element_id RETURN element ORDER BY p.created_at DESC LIMIT 1")
@@ -127,4 +124,9 @@ public interface ElementStateRepository extends Neo4jRepository<ElementState, Lo
 	@Query("MATCH (p:PageState)-[]->(e:ElementState) WHERE id(p)=$page_state_id RETURN COUNT(e)")
 	public long getElementStateCount(@Param("page_state_id") long page_state_id);
 
+	@Query("MATCH p=(d:DomainAuditRecord)-[]->(n:PageState) WHERE id(d)=$domain_audit_id MATCH a=(n)-[]->(e:ElementState{key:$key}) RETURN e LIMIT 1")
+	public ElementState findByDomainAuditAndKey(@Param("domain_audit_id") long domain_audit_id, @Param("key") String element_key);
+
+	@Query("MATCH p=(d:DomainMap)-[*3]->(n:PageState) WHERE id(d)=$domain_map_id MATCH a=(n)-[]->(e:ElementState{key:$key}) RETURN e LIMIT 1")
+	public ElementState findByDomainMapAndKey(@Param("domain_map_id") long domain_map_id, @Param("key") String key);
 }

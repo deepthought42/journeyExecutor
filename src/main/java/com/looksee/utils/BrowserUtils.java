@@ -33,7 +33,6 @@ import org.jsoup.nodes.Element;
 import org.jsoup.select.Elements;
 import org.openqa.selenium.Dimension;
 import org.openqa.selenium.Point;
-import org.openqa.selenium.WebDriverException;
 import org.openqa.selenium.WebElement;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -41,13 +40,12 @@ import org.slf4j.LoggerFactory;
 import com.looksee.journeyExecutor.gcp.GoogleCloudStorage;
 import com.looksee.journeyExecutor.models.Browser;
 import com.looksee.journeyExecutor.models.ColorData;
+import com.looksee.journeyExecutor.models.Domain;
 import com.looksee.journeyExecutor.models.ElementState;
 import com.looksee.journeyExecutor.models.ImageElementState;
 import com.looksee.journeyExecutor.models.PageLoadAnimation;
 import com.looksee.journeyExecutor.models.PageState;
-import com.looksee.journeyExecutor.models.enums.BrowserEnvironment;
 import com.looksee.journeyExecutor.models.enums.BrowserType;
-import com.looksee.journeyExecutor.services.BrowserService;
 
 
 /**
@@ -132,7 +130,7 @@ public class BrowserUtils {
 	}
 
 	public static ElementState updateElementLocations(Browser browser, ElementState element) {
-		WebElement web_elem = browser.findWebElementByXpath("");//element.getXpath());
+		WebElement web_elem = browser.findWebElementByXpath(element.getXpath());
 		Point location = web_elem.getLocation();
 		if(location.getX() != element.getXLocation() || location.getY() != element.getYLocation()){
 			element.setXLocation(location.getX());
@@ -158,7 +156,7 @@ public class BrowserUtils {
 	 * Checks if url is part of domain including sub-domains
 	 *  
 	 * @param domain_host host of {@link Domain domain}
-	 * @param url 
+	 * @param url
 	 * 
 	 * @return true if url is external, otherwise false
 	 * 
@@ -180,14 +178,14 @@ public class BrowserUtils {
 		String url_without_protocol = url.replace("http://", "");
 		url_without_protocol = url_without_protocol.replace("https://", "");
 		boolean is_same_domain = false;
-		
 		boolean contains_domain = url_without_protocol.contains(domain_host);
-		boolean is_url_longer = url_without_protocol.length() > domain_host.length();
-		boolean url_contains_long_host = url.contains(domain_host+"/");
-		if( contains_domain && ((is_url_longer && url_contains_long_host) || !is_url_longer) ) {
+
+		if( contains_domain ) {
 			is_same_domain = true;
 		}
+		
 		boolean is_relative = isRelativeLink(domain_host, url);
+		
 		return (!is_same_domain && !is_relative ) || url.contains("////");
 	}
 	
@@ -198,6 +196,8 @@ public class BrowserUtils {
 	 * 
 	 * @return true if link is empty or if it starts with a '/' and doesn't contain the domain host, otherwise false
 	 * @throws URISyntaxException
+	 * 
+	 * @Version - 9/20/2023
 	 */
 	public static boolean isRelativeLink(String domain_host, String link_url) {
 		assert domain_host != null;
@@ -209,7 +209,7 @@ public class BrowserUtils {
 		}
 		
 		//check if link is a path by ensuring that it neither contains the/a domain host or a protocol
-		
+
 		return link_without_params.isEmpty()
 				|| (link_without_params.charAt(0) == '/' && !link_without_params.startsWith("//") && !link_without_params.contains(domain_host)) 
 				|| (link_without_params.charAt(0) == '?' && !link_without_params.contains(domain_host))
@@ -232,7 +232,7 @@ public class BrowserUtils {
 	 */
 	public static boolean containsHost(String link_url) {
 
-		String host_pattern = "([a-zA-Z0-9.-]+(:[a-zA-Z0-9.&%$-]+)*@)*((25[0-5]|2[0-4][0-9]|1[0-9]{2}|[1-9][0-9]?)(\\.(25[0-5]|2[0-4][0-9]|1[0-9]{2}|[1-9]?[0-9])){3}|([a-zA-Z0-9-]+\\.)*[a-zA-Z0-9-]+\\.(com|app|edu|gov|int|mil|net|org|biz|arpa|info|name|pro|aero|coop|museum|website|space|ca|us|co))(:[0-9]+)*";
+		String host_pattern = "([a-zA-Z0-9.-]+(:[a-zA-Z0-9.&%$-]+)*@)*((25[0-5]|2[0-4][0-9]|1[0-9]{2}|[1-9][0-9]?)(\\.(25[0-5]|2[0-4][0-9]|1[0-9]{2}|[1-9]?[0-9])){3}|([a-zA-Z0-9-]+\\.)*[a-zA-Z0-9-]+\\.(com|app|edu|gov|int|mil|net|org|biz|arpa|info|name|pro|aero|coop|museum|website|space|ca|us|co|uk|cc|es|tn|dev))(:[0-9]+)*";
 		Pattern pattern = Pattern.compile(host_pattern);
         Matcher matcher = pattern.matcher(link_url);
 
@@ -1010,53 +1010,6 @@ public class BrowserUtils {
 			return true;
 		}
 	}
-
-	/**
-	 * Extracts the page source from the URL.
-	 * Attempts to connect to the browser service, then navigates to the url and extracts the source.
-	 * 
-	 * @param sanitized_url The sanitized URL that contains the page source
-	 * @param browser_service 
-	 * @return {@code String} The page source
-	 * 
-	 * @pre sanitized_url != null
-	 * @pre browser_service != null
-	 */
-	public static String extractPageSrc(URL sanitized_url, BrowserService browser_service){
-		assert sanitized_url != null;
-		assert browser_service != null;
-
-		//Extract page source from url
-		int attempt_cnt = 0;
-		String page_src = "";
-		
-		do {
-			Browser browser = null;
-			try {
-				browser = browser_service.getConnection(BrowserType.CHROME, BrowserEnvironment.DISCOVERY);
-				browser.navigateTo(sanitized_url.toString());
-				
-				sanitized_url = new URL(browser.getDriver().getCurrentUrl());
-				page_src = browser_service.getPageSource(browser, sanitized_url);
-				attempt_cnt = 10000000;
-				break;
-			}
-			catch(MalformedURLException e) {
-				log.warn("Malformed URL exception occurred for  "+sanitized_url);
-				break;
-			}
-			catch(WebDriverException e) {								
-				log.warn("failed to obtain page source during crawl of :: "+sanitized_url);
-			}
-			finally {
-				if(browser != null) {
-					browser.close();
-				}
-			}
-		} while (page_src.trim().isEmpty() && attempt_cnt < 1000);
-
-		return page_src;
-  }	
 	
 	/**
 	 * Retrieves {@link ElementStates} that contain text
@@ -1167,5 +1120,20 @@ public class BrowserUtils {
 		}
 
 		return null;
+	}
+
+	/**
+	 * 
+	 * @param element
+	 * @param viewportWidth
+	 * @param viewportHeight
+	 * @return
+	 */
+	public static boolean isLargerThanViewport(ElementState element, int viewportWidth, int viewportHeight) {
+		return element.getWidth() > viewportWidth || element.getHeight() > viewportHeight;
+	}
+
+	public static boolean isHidden(Point location, Dimension size) {
+		return location.getX()==0 && location.getY()==0 && size.getWidth()==0 && size.getHeight()==0;
 	}
 }

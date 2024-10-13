@@ -31,8 +31,6 @@ hs_err_pid*
 
 .settings/
 
-*.properties
-
 *.prod
 
 LOG_FILE_IS_UNDEFINED

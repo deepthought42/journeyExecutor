@@ -456,30 +456,34 @@ public class BrowserService {
 		
 		Document html_doc = Jsoup.parse(body_src);
 		String host = (new URL(browser_url)).getHost();
-		
-		xpaths = xpaths.parallelStream().map(xpath -> xpath).filter(Objects::nonNull).collect(Collectors.toList());
-		
-		if(page_state.getViewportWidth() != 1920){
-			log.warn("XPATH COUNT = "+xpaths.size()+";;;    page id = "+page_state.getKey()+"  :   "+page_state.getUrl());
-			log.warn("viewport doesn't match expections");
-		}
+		xpaths = xpaths.parallelStream().filter(Objects::nonNull).collect(Collectors.toList());
 
 		//iterate over xpaths to build ElementStates without screenshots
 		for(String xpath : xpaths) {
 			//load JSOUP element
 			Elements elements = Xsoup.compile(xpath).evaluate(html_doc).getElements();
 			Element element = elements.first();
-			
+			if(page_state.getUrl().contains("blog")){
+				log.warn("reviewing element with xpath1 = "+xpath);
+			}
 			String tag_name = element.tagName();
 			//check if element is visible in pane and if not then continue to next element xpath
 			if( isStructureTag(tag_name) || !ElementStateUtils.isInteractiveElement(element)){
+				if(page_state.getUrl().contains("blog")){
+					log.warn("skipping xpath = "+xpath);
+				}
 				continue;
 			}
-			
+			if(page_state.getUrl().contains("blog")){
+				log.warn("reviewing element with xpath2 = "+xpath);
+			}
 			WebElement web_element = browser.findElement(xpath);
 			if(web_element == null) {
 				log.warn("web element is null : "+xpath+"  ;;   for page = "+page_state.getKey());
 				continue;
+			}
+			if(page_state.getUrl().contains("blog")){
+				log.warn("reviewing element with xpath3 = "+xpath);
 			}
 
 			Rectangle rect = web_element.getRect();
@@ -491,12 +495,21 @@ public class BrowserService {
 				|| rect.getWidth() <= 0
 				|| !web_element.isDisplayed()
 			){
+				if(page_state.getUrl().contains("blog")){
+					log.warn("skipping element because of negative position or no dimensions or not displayed = "+xpath);
+				}
 				continue;
+			}
+
+			if(page_state.getUrl().contains("blog")){
+				log.warn("reviewing element with xpath4 = "+xpath);
 			}
 
 			String css_selector = generateCssSelectorFromXpath(xpath);
 			ElementClassification classification = ElementClassification.UNKNOWN;
-			
+			if(page_state.getUrl().contains("blog")){
+				log.warn("reviewing element with xpath5 = "+xpath);
+			}
 			if(isImageElement(tag_name)) {
 				ElementState element_state = buildImageElementState(xpath,
 																   new HashMap<>(),
@@ -516,39 +529,50 @@ public class BrowserService {
 				ElementState element_record = element_state_service.findByDomainMapAndKey(domain_map_id, element_state);
 				if(element_record == null) {
 					element_state = enrichElementState(browser, web_element, element_state, full_page_screenshot, host);
+					element_state = enrichImageElement(element_state);
 					//element_record = element_state_service.save(domain_map_id, page_state.getId(), element_state);
+					visited_elements.add(element_state);
 				}
-				
-				image_elements.add(element_record);
+				else{
+					visited_elements.add(element_record);
+				}
 			}
 			else {
-				ElementState element_state = buildElementState(xpath,
-															   new HashMap<>(),
-															   element,
-															   classification,
-															   new HashMap<>(),
-															   null,
-															   css_selector,
-															   element_size,
-															   element_location);
-				
-				ElementState element_record = element_state_service.findByDomainMapAndKey(domain_map_id, element_state);
-				if(element_record == null) {
-					element_state = enrichElementState(browser, web_element, element_state, full_page_screenshot, host);
-					element_state = ElementStateUtils.enrichBackgroundColor(element_state);
-					//element_record = element_state_service.save(domain_map_id, page_state.getId(), element_state);
+				if(page_state.getUrl().contains("blog")){
+					log.warn("reviewing element with xpath6 (element-build) = "+xpath);
 				}
-
-				visited_elements.add(element_record);
+				try{
+					ElementState element_state = buildElementState(xpath,
+																new HashMap<>(),
+																element,
+																classification,
+																new HashMap<>(),
+																null,
+																css_selector,
+																element_size,
+																element_location);
+					
+					ElementState element_record = element_state_service.findByDomainMapAndKey(domain_map_id, element_state);
+					if(element_record == null) {
+						if(page_state.getUrl().contains("blog")){
+							log.warn("reviewing element with xpath6 (element-enrichment) = "+xpath);
+						}
+						element_state = enrichElementState(browser, web_element, element_state, full_page_screenshot, host);
+						if(page_state.getUrl().contains("blog")){
+							log.warn("reviewing element with xpath6 (background enrichment) = "+xpath);
+						}
+						element_state = ElementStateUtils.enrichBackgroundColor(element_state);
+						//element_record = element_state_service.save(domain_map_id, page_state.getId(), element_state);
+						visited_elements.add(element_state);
+					}
+					else{
+						visited_elements.add(element_record);
+					}
+				}catch(Exception e){
+					e.printStackTrace();
+				}
 			}
 		}
-
-		image_elements = image_elements.parallelStream()
-											.map(element -> element)
-											.filter(Objects::nonNull)
-											.map(element -> enrichImageElement(element))
-											.collect(Collectors.toList());
-
 		visited_elements.addAll(image_elements);
 
 		return visited_elements;

@@ -28,7 +28,11 @@ public class BrowserUtilTests {
 		boolean is_external4 = BrowserUtils.isExternalLink("look-see.com", url4);
 		System.out.println("is external4 = "+is_external4);
 		assertTrue(is_external4);
-		
+
+		String url5= "otter.ai";
+		boolean is_external5 = BrowserUtils.isExternalLink("look-see.com", url5);
+		System.out.println("is external5 = "+is_external5);
+		assertTrue(is_external5);
 	}
 
 	@Test

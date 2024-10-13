@@ -143,7 +143,6 @@ public class AuditController {
 		journey = journey_msg.getJourney();
 
 		review_map.putIfAbsent(journey.getId(), 0);
-		log.warn("review map for journey id "+journey.getId()+"  =   "+review_map.get(journey.getId()));
 		if(review_map.containsKey(journey.getId()) && review_map.get(journey.getId()) >= 4){
 			journey_service.updateStatus(journey.getId(), JourneyStatus.ERROR);
 			return new ResponseEntity<String>("Test errored too much", HttpStatus.OK);
@@ -191,6 +190,7 @@ public class AuditController {
 			else {
 				//if current url is different than second to last page then try to lookup page in database before building page
 				final_page = buildPage(browser, journey_msg.getMapId(), journey_msg.getAuditRecordId(), browser_url);
+				log.warn("created page "+final_page.getUrl() + " with key =   "+final_page.getKey());
 			}
 		}
 		catch(JavascriptException e) {
@@ -409,18 +409,35 @@ public class AuditController {
 																					domain_map_id,
 																					full_page_screenshot,
 																					browser_url);
+			if(page_state.getUrl().contains("blog")){
+				for(ElementState element: element_states){
+					if(element == null){
+						continue;
+					}
+					log.warn("element xpath = "+element.getXpath());
+				}
+			}
 
 			if(element_states.size() == 0){
 				log.warn("Uh oh! No elements were found. WELL THIS IS CONCERNING!!! XPATHS used for element build = "+xpaths.size()+"url = "+page_state.getUrl() +" for page id = "+page_state.getKey());
 				throw new Exception("Error! No elements were found");
 			}
 
+			log.warn("Extracted "+element_states.size() +" elements from DOM for page "+page_state.getUrl());
 			long page_state_id = page_state.getId();
+			
 			element_states.stream()
 							.filter(Objects::nonNull)
 							.map( element -> element_state_service.save(domain_map_id, element))
 							.map( element -> page_state_service.addElement(page_state_id, element.getId()))
 							.collect(Collectors.toList());
+
+			log.warn("Extracted1 "+element_states.size() +" elements from DOM for page "+page_state.getUrl());
+			if(page_state.getUrl().contains("blog")){
+				for(ElementState element: element_states){
+					log.warn("element xpath = "+element.getXpath());
+				}
+			}
 
 			page_state_service.updateInteractiveElementExtractionComplete(page_state.getId(), true);
 		}

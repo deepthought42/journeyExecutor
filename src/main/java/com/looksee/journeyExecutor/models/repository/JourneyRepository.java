@@ -14,10 +14,10 @@ public interface JourneyRepository extends Neo4jRepository<Journey, Long>  {
 	
 	public Journey findByKey(@Param("key") String key);
 
-	@Query("MATCH (map:DomainMap) WITH map WHERE id(map)=$map_id MATCH (map)-[:CONTAINS]->(j:Journey{key:$key}) RETURN j LIMIT 1")
+	@Query("MATCH (map:DomainMap) WHERE id(map)=$map_id MATCH (map)-[:CONTAINS]->(j:Journey{key:$key}) RETURN j LIMIT 1")
 	public Journey findByKey(@Param("map_id") long domain_map_id, @Param("key") String key);
 
-	@Query("MATCH (j:Journey) WITH j WHERE id(j)=$journey_id MATCH (s:Step) WHERE id(s)=$step_id MERGE (j)-[:HAS]->(s) RETURN j")
+	@Query("MATCH (j:Journey) WHERE id(j)=$journey_id MATCH (s:Step) WHERE id(s)=$step_id MERGE (j)-[:HAS]->(s) RETURN j")
 	public Journey addStep(@Param("journey_id") long journey_id, @Param("step_id") long id);
 
 	@Query("MATCH (j:Journey) WHERE id(j)=$journey_id SET j.status=$status, j.key=$key, j.orderedIds=$ordered_ids RETURN j")
@@ -26,7 +26,7 @@ public interface JourneyRepository extends Neo4jRepository<Journey, Long>  {
 								@Param("key") String key,
 								@Param("ordered_ids") List<Long> ordered_ids);
 
-	@Query("MATCH (map:DomainMap) WITH map WHERE id(map)=$map_id MATCH (map)-[:CONTAINS]->(j:Journey{candidateKey:$candidateKey}) RETURN j LIMIT 1")
+	@Query("MATCH (map:DomainMap) WHERE id(map)=$map_id MATCH (map)-[:CONTAINS]->(j:Journey{candidateKey:$candidateKey}) RETURN j LIMIT 1")
 	public Journey findByCandidateKey(@Param("map_id") long domain_map_id, @Param("candidateKey") String candidate_key);
 
 	@Query("MATCH (journey:Journey) WHERE id(journey)=$journey_id SET journey.status=$status RETURN journey")

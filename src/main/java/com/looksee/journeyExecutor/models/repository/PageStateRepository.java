@@ -51,13 +51,13 @@ public interface PageStateRepository extends Neo4jRepository<PageState, Long> {
 	@Query("MATCH (ps:PageState) WHERE id(ps)=$id SET ps.fullPageScreenshotUrlComposite = $composite_img_url RETURN ps")
 	public void updateCompositeImageUrl(@Param("id") long id, @Param("composite_img_url") String composite_img_url);
 
-	@Query("MATCH (p:PageState) WITH p WHERE id(p)=$page_state_id MATCH (element:ElementState) WHERE id(element) IN $element_id_list MERGE (p)-[:HAS]->(element) RETURN p LIMIT 1")
+	@Query("MATCH (p:PageState) WHERE id(p)=$page_state_id MATCH (element:ElementState) WHERE id(element) IN $element_id_list MERGE (p)-[:HAS]->(element) RETURN p LIMIT 1")
 	public void addAllElements(@Param("page_state_id") long page_state_id, @Param("element_id_list") List<Long> element_id_list);
 	
 	@Query("MATCH (domain_audit:DomainAuditRecord)-[]->(page_state:PageState) WHERE id(domain_audit)=$domain_audit_id RETURN page_state")
 	public Set<PageState> getPageStatesForDomainAuditRecord(@Param("domain_audit_id") long domain_audit_id);
 	
-	@Query("MATCH (audit_record:DomainAuditRecord) WITH audit_record WHERE id(audit_record)=$audit_record_id MATCH (audit_record)-[:FOR]->(page:PageState) WHERE page.url=$page_url RETURN page")
+	@Query("MATCH (audit_record:DomainAuditRecord) WHERE id(audit_record)=$audit_record_id MATCH (audit_record)-[:FOR]->(page:PageState) WHERE page.url=$page_url RETURN page")
 	public PageState findPageWithUrl(@Param("audit_record_id") long audit_record_id, @Param("page_url") String page_url);
 
 	@Query("MATCH (d:Domain)-[]->(p:PageState) WHERE id(d)=$domain_id RETURN p")
@@ -66,7 +66,7 @@ public interface PageStateRepository extends Neo4jRepository<PageState, Long> {
 	@Query("MATCH (d:Domain)-[]->(p:PageState) WHERE id(d)=$domain_id AND id(p)=$page_id RETURN p")
 	public Optional<PageState> getPage(@Param("domain_id") long domain_id, @Param("page_id") long page_id);
 
-	@Query("MATCH (d:Domain) WITH d MATCH (p:PageState) WHERE id(d)=$domain_id AND id(p)=$page_id MERGE (d)-[:HAS]->(p) RETURN p")
+	@Query("MATCH (d:Domain) MATCH (p:PageState) WHERE id(d)=$domain_id AND id(p)=$page_id MERGE (d)-[:HAS]->(p) RETURN p")
 	public PageState addPage(@Param("domain_id") long domain_id, @Param("page_id") long page_id);
 	
 	@Query("MATCH (d:Domain{host:$host})-[:HAS]->(p:PageState) RETURN p")
@@ -75,13 +75,13 @@ public interface PageStateRepository extends Neo4jRepository<PageState, Long> {
 	@Query("MATCH (:Account{user_id:$user_id})-[]->(d:Domain{url:$url}) MATCH (d)-[]->(p:Page) MATCH (p)-[]->(ps:PageState) MATCH (ps)-[]->(ps:PageState) MATCH (ps)-[:HAS]->(:Form{key:$key}) RETURN ps")
 	public PageState getPageState(@Param("user_id") String user_id, @Param("url") String url, @Param("key") String key);
 
-	@Query("MATCH (s:Step) WITH s MATCH (p:PageState) WHERE id(s)=$step_id AND id(p)=$page_state_id MERGE (s)-[:STARTS_WITH]->(p) RETURN p")
+	@Query("MATCH (s:Step) MATCH (p:PageState) WHERE id(s)=$step_id AND id(p)=$page_state_id MERGE (s)-[:STARTS_WITH]->(p) RETURN p")
 	public PageState addStartPageToStep(@Param("step_id") long id, @Param("page_state_id") long page_state_id);	
 
 	@Query("MATCH (s:LoginStep)-[:STARTS_WITH]->(page:PageState) WHERE id(s)=$step_id RETURN page")
 	public PageState getStartPageToLoginStep(@Param("step_id") long id);
 	
-	@Query("MATCH (s:Step) WITH s MATCH (p:PageState) WHERE id(s)=$step_id AND id(p)=$page_state_id MERGE (s)-[:ENDS_WITH]->(p) RETURN p")
+	@Query("MATCH (s:Step) MATCH (p:PageState) WHERE id(s)=$step_id AND id(p)=$page_state_id MERGE (s)-[:ENDS_WITH]->(p) RETURN p")
 	public PageState addEndPageToStep(@Param("step_id") long id, @Param("page_state_id") long page_state_id);
 
 	@Query("MATCH (s:Step)-[:ENDS_WITH]->(page:PageState) WHERE id(s)=$step_id RETURN page")
@@ -108,7 +108,7 @@ public interface PageStateRepository extends Neo4jRepository<PageState, Long> {
 	@Query("MATCH (page_state:PageState) WHERE id(page_state)=$page_id SET page_state.elementExtractionComplete=$is_complete RETURN page_state LIMIT 1")
 	public PageState updateElementExtractionCompleteStatus(@Param("page_id") long page_id, @Param("is_complete") boolean is_complete);
 
-	@Query("MATCH (map:DomainMap) WHERE id(map)=$domain_map_id MATCH (map)-[:HAS]->(page_state:PageState) WHERE page_state.key=$page_key RETURN page_state")
+	@Query("MATCH (map:DomainMap)-[:HAS]->(page_state:PageState) WHERE id(map)=$domain_map_id AND page_state.key=$page_key RETURN page_state")
     public PageState findByDomainMap(@Param("domain_map_id") long domain_map_id, @Param("page_key") String page_key);
 
 	@Query("MATCH (page_state:PageState) WHERE id(page_state)=$page_id SET page_state.interactiveElementExtractionComplete=$is_complete RETURN page_state LIMIT 1")

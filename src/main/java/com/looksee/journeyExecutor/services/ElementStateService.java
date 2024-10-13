@@ -213,6 +213,7 @@ public class ElementStateService {
 		return element_repo.findByDomainAuditAndKey(domain_audit_id, element.getKey());
 	}
 
+	@Retryable
 	public ElementState findByDomainMapAndKey(long domain_map_id, ElementState element) throws Exception {
 		return element_repo.findByDomainMapAndKey(domain_map_id, element.getKey());
 	}

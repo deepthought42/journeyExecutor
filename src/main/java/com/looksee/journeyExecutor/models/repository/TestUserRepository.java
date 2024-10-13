@@ -20,7 +20,7 @@ public interface TestUserRepository extends Neo4jRepository<TestUser, Long> {
 	@Query("MATCH (d:Domain)-[]->(user:TestUser) WHERE id(d)=$domain_id RETURN user")
 	public List<TestUser> findTestUsers(@Param("domain_id") long domain_id);
 	
-	@Query("MATCH (s:Step) WITH s MATCH (user:TestUser) WHERE id(s)=$step_id AND id(user)=$user_id MERGE (s)-[:USES]->(user) RETURN user")
+	@Query("MATCH (s:Step) MATCH (user:TestUser) WHERE id(s)=$step_id AND id(user)=$user_id MERGE (s)-[:USES]->(user) RETURN user")
 	public TestUser addTestUser(@Param("step_id") long id, @Param("user_id") long user_id);
 
 	@Query("MATCH (s:LoginStep)-[:USES]->(user:TestUser) WHERE id(s)=$step_id RETURN user")

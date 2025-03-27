@@ -22,6 +22,7 @@
 # virtual machine crash logs, see http://www.java.com/en/download/help/error_hotspot.xml
 hs_err_pid*
 
+*.prod
 *.stage
 
 /target/
@@ -31,7 +32,5 @@ hs_err_pid*
 .classpath
 
 .settings/
-
-*.prod
 
 LOG_FILE_IS_UNDEFINED

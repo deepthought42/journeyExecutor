@@ -1,3 +1,10 @@
+## [1.0.1](https://github.com/deepthought42/journeyExecutor/compare/v1.0.0...v1.0.1) (2025-03-27)
+
+
+### Bug Fixes
+
+* renamed jar file executed in Dockerfile ([48755e3](https://github.com/deepthought42/journeyExecutor/commit/48755e30798c2625e1c76c116495cc6419ff8d27))
+
 # 1.0.0 (2025-03-27)
 
 

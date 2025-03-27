@@ -21,62 +21,69 @@ Note that this section will need to be replaced once we have an Anthos or Terraf
 
 Step 1: setup firewall for neo4j
 
-	gcloud compute firewall-rules create allow-neo4j-bolt-http-https --allow tcp:7473,tcp:7474,tcp:7687 --source-ranges 0.0.0.0/0 --target-tags neo4j
-	
+```bash
+gcloud compute firewall-rules create allow-neo4j-bolt-http-https --allow tcp:7473,tcp:7474,tcp:7687 --source-ranges 0.0.0.0/0 --target-tags neo4j
+```
+
 Step 2: Get image name for Community version 1.4
-
+```bash
  	gcloud compute images list --project launcher-public | grep --extended-regexp "neo4j-community-1-4-.*"
- 	
-Step 3: create new instance
+```
 
+Step 3: create new instance
+```bash
 gcloud config set project cosmic-envoy-280619
 gcloud compute instances create neo4j-prod --machine-type e2-medium --image-project launcher-public --image neo4j-community-1-4-3-6-apoc --tags neo4j,http-server,https-server
 
-
 gcloud compute instances add-tags neo4j-stage --tags http-server,https-server
+```
 
 Step 4 : SSH to server and check status
-
+```bash
 gcloud compute ssh neo4j-stage
 sudo systemctl status neo4j
+```
 
 Follow step 3 from this webpage to configure neo4j server - https://www.digitalocean.com/community/tutorials/how-to-install-and-configure-neo4j-on-ubuntu-20-04
 
 Step 6: Delete neo4j instance
-
+```bash
 gcloud compute instances delete neo4j-stage
+```
 
 
 ### Docker
 
+```bash
 maven clean install
 
 docker build --tag look-see .
 
 docker run -p 80:80 -p 8080:8080 -p 9080:9080 -p 443:443 --name look-see look-see
-
+```
 
 ### Deploy docker container to gcr
-
+```bash
 gcloud auth print-access-token | sudo docker login   -u oauth2accesstoken   --password-stdin https://us-central1-docker.pkg.dev
 
-sudo docker build --no-cache -t us-central1-docker.pkg.dev/cosmic-envoy-280619/page-builder/#.#.# .
+sudo docker build --no-cache -t us-central1-docker.pkg.dev/cosmic-envoy-280619/journey-executor/#.#.# .
 
-sudo docker push us-central1-docker.pkg.dev/cosmic-envoy-280619/page-builder/#.#.#
+sudo docker push us-central1-docker.pkg.dev/cosmic-envoy-280619/journey-executor/#.#.#
 
 
-sudo docker build --no-cache -t us-central1-docker.pkg.dev/cosmic-envoy-280619/page-builder/page-builder .
+sudo docker build --no-cache -t us-central1-docker.pkg.dev/cosmic-envoy-280619/journey-executor/journey-executor .
 
-sudo docker push us-central1-docker.pkg.dev/cosmic-envoy-280619/page-builder/page-builder 
-
+sudo docker push us-central1-docker.pkg.dev/cosmic-envoy-280619/journey-executor/journey-executor 
+```
 # Security
 
 ## Generating a new PKCS12 certificate for SSL
 
 Run the following command in Linux to create a keystore called api_key with a privateKeyEntry
 
+```bash
 openssl pkcs12 -export -inkey private.key -in certificate.crt -out api_key.p12
-
+```
 # Testing
 
 ## Sending url message
@@ -108,7 +115,9 @@ Migration notes:
 2. Push Docker image to GCP artifact repository
 3. Tag docker image
 	
+	```bash
 		sudo docker image tag selenium/standalone-chrome:114.0 us-central1-docker.pkg.dev/cosmic-envoy-280619/selenium-chrome/114.0
+	```
 		
 4. Create Cloud Run service
 		

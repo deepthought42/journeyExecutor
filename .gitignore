@@ -24,8 +24,9 @@ hs_err_pid*
 
 *.stage
 
-*.json
 /target/
+/node_modules/
+/.vscode/
 
 .classpath
 

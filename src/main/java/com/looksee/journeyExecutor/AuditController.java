@@ -30,37 +30,36 @@ import org.springframework.web.bind.annotation.RestController;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.json.JsonMapper;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
-import com.looksee.journeyExecutor.gcp.PubSubDiscardedJourneyPublisherImpl;
-import com.looksee.journeyExecutor.gcp.PubSubJourneyVerifiedPublisherImpl;
-import com.looksee.journeyExecutor.gcp.PubSubPageBuiltPublisherImpl;
-import com.looksee.journeyExecutor.mapper.Body;
-import com.looksee.journeyExecutor.models.Browser;
-import com.looksee.journeyExecutor.models.Domain;
-import com.looksee.journeyExecutor.models.ElementState;
-import com.looksee.journeyExecutor.models.PageState;
-import com.looksee.journeyExecutor.models.enums.BrowserEnvironment;
-import com.looksee.journeyExecutor.models.enums.BrowserType;
-import com.looksee.journeyExecutor.models.enums.JourneyStatus;
-import com.looksee.journeyExecutor.models.journeys.DomainMap;
-import com.looksee.journeyExecutor.models.journeys.Journey;
-import com.looksee.journeyExecutor.models.journeys.LandingStep;
-import com.looksee.journeyExecutor.models.journeys.Step;
-import com.looksee.journeyExecutor.models.message.DiscardedJourneyMessage;
-import com.looksee.journeyExecutor.models.message.JourneyCandidateMessage;
-import com.looksee.journeyExecutor.models.message.PageBuiltMessage;
-import com.looksee.journeyExecutor.models.message.VerifiedJourneyMessage;
-import com.looksee.journeyExecutor.services.BrowserService;
-import com.looksee.journeyExecutor.services.DomainMapService;
-import com.looksee.journeyExecutor.services.DomainService;
-import com.looksee.journeyExecutor.services.ElementStateService;
-import com.looksee.journeyExecutor.services.JourneyService;
-import com.looksee.journeyExecutor.services.PageStateService;
-import com.looksee.journeyExecutor.services.StepExecutor;
-import com.looksee.journeyExecutor.services.StepService;
+import com.looksee.gcp.PubSubDiscardedJourneyPublisherImpl;
+import com.looksee.gcp.PubSubJourneyVerifiedPublisherImpl;
+import com.looksee.gcp.PubSubPageBuiltPublisherImpl;
+import com.looksee.mapper.Body;
+import com.looksee.models.Browser;
+import com.looksee.models.Domain;
+import com.looksee.models.ElementState;
+import com.looksee.models.PageState;
+import com.looksee.models.enums.BrowserEnvironment;
+import com.looksee.models.enums.BrowserType;
+import com.looksee.models.enums.JourneyStatus;
+import com.looksee.models.journeys.DomainMap;
+import com.looksee.models.journeys.Journey;
+import com.looksee.models.journeys.LandingStep;
+import com.looksee.models.journeys.Step;
+import com.looksee.models.message.DiscardedJourneyMessage;
+import com.looksee.models.message.JourneyCandidateMessage;
+import com.looksee.models.message.PageBuiltMessage;
+import com.looksee.models.message.VerifiedJourneyMessage;
+import com.looksee.services.BrowserService;
+import com.looksee.services.DomainMapService;
+import com.looksee.services.DomainService;
+import com.looksee.services.ElementStateService;
+import com.looksee.services.JourneyService;
+import com.looksee.services.PageStateService;
+import com.looksee.services.StepExecutor;
+import com.looksee.services.StepService;
 import com.looksee.utils.BrowserUtils;
 import com.looksee.utils.PathUtils;
 import com.looksee.utils.TimingUtils;
-
 
 /*
  * Copyright 2019 Google LLC
@@ -276,6 +275,7 @@ public class AuditController {
 				
 				DiscardedJourneyMessage journey_message = new DiscardedJourneyMessage(	journey,
 																						journey_msg.getBrowser(),
+																						domain.getId(),
 																						journey_msg.getAccountId(),
 																						journey_msg.getAuditRecordId());
 
@@ -362,7 +362,7 @@ public class AuditController {
 		PageState second_to_last_page = PathUtils.getSecondToLastPageState(journey.getSteps());
 		PageState final_page = PathUtils.getLastPageState(journey.getSteps());
 		
-		if((journey.getSteps().size() > 1 && !(last_step instanceof LandingStep)) 
+		if((journey.getSteps().size() > 1 && !(last_step instanceof LandingStep))
 				&& (final_page.equals(second_to_last_page)
 						|| BrowserUtils.isExternalLink(new URL(BrowserUtils.sanitizeUserUrl(domain.getUrl())).getHost(), final_page.getUrl())))
 		{
@@ -384,9 +384,9 @@ public class AuditController {
 	 * 
 	 * @pre browser != null
 	 */
-	private PageState buildPage(Browser browser, 
-								long domain_map_id, 
-								long audit_record_id, 
+	private PageState buildPage(Browser browser,
+								long domain_map_id,
+								long audit_record_id,
 								String browser_url)
 							throws Exception {
 		assert browser != null;
@@ -486,8 +486,8 @@ public class AuditController {
 	/**
 	 * Checks if step is already present within the {@link Journey journey}
 	 * 
-	 * @param steps
-	 * @param step
+	 * @param steps	steps to check
+	 * @param step	step to check
 	 * 
 	 * @return
 	 * 

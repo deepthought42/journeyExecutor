@@ -283,51 +283,78 @@
 		    <artifactId>ashot</artifactId>
 		    <version>1.5.4</version>
 		</dependency>
-	  </dependencies>
+
+		<!-- https://mvnrepository.com/artifact/io.swagger.core.v3/swagger-annotations -->
+		<dependency>
+			<groupId>io.swagger.core.v3</groupId>
+			<artifactId>swagger-annotations</artifactId>
+			<version>2.2.31</version>
+		</dependency>
+
+		<!-- Alternative: Direct JAR from GitHub release (uncomment if Maven repo doesn't work) -->
+		<dependency>
+            <groupId>com.looksee</groupId>
+            <artifactId>core</artifactId>
+            <version>0.1.9</version>
+            <scope>system</scope>
+            <systemPath>${pom.basedir}/libs/core-0.1.9.jar</systemPath>
+        </dependency>
+	</dependencies>
 
 
-	  <build>
+	<build>
 	    <plugins>
-	      <plugin>
-	        <groupId>org.springframework.boot</groupId>
-	        <artifactId>spring-boot-maven-plugin</artifactId>
-	      </plugin>
-	      <!-- [START cloudrun_pubsub_jib] -->
-	      <!-- [START run_pubsub_jib] -->
-	      <plugin>
-	        <groupId>com.google.cloud.tools</groupId>
-	        <artifactId>jib-maven-plugin</artifactId>
-	        <version>3.2.1</version>
-	        <configuration>
-	          <to>
-	            <image>gcr.io/PROJECT_ID/pubsub</image>
-	          </to>
-	        </configuration>
-	      </plugin>
-	      <plugin>
-		      <groupId>org.springframework.boot</groupId>
-	          <artifactId>spring-boot-maven-plugin</artifactId>
-	          <version>${springboot.version}</version>
-	          <configuration>
-	             <fork>true</fork>
-	             <mainClass>com.looksee.journeyExecutor.Application</mainClass>
-	          </configuration>
-	          <executions>
-	            <execution>
-	              <goals>
-	                <goal>repackage</goal>
-                  </goals>
-	            </execution>
-	          </executions>
-		    </plugin>
-	      <plugin>
-            <groupId>org.springframework.boot</groupId>
-            <artifactId>spring-boot-maven-plugin</artifactId>
-    	  </plugin>
-	      <!-- [END run_pubsub_jib] -->
-	      <!-- [END cloudrun_pubsub_jib] -->
-	    </plugins>
-  	</build>
+			<plugin>
+				<groupId>org.codehaus.mojo</groupId>
+				<artifactId>exec-maven-plugin</artifactId>
+				<version>3.1.0</version>
+				<executions>
+					<execution>
+						<id>download-core-jar</id>
+						<phase>validate</phase>
+						<goals>
+							<goal>exec</goal>
+						</goals>
+						<configuration>
+							<executable>bash</executable>
+							<arguments>
+								<argument>scripts/download-core.sh</argument>
+							</arguments>
+							<workingDirectory>${project.basedir}</workingDirectory>
+						</configuration>
+					</execution>
+				</executions>
+			</plugin>
+			<!-- [START cloudrun_pubsub_jib] -->
+			<!-- [START run_pubsub_jib] -->
+			<plugin>
+				<groupId>com.google.cloud.tools</groupId>
+				<artifactId>jib-maven-plugin</artifactId>
+				<version>3.2.1</version>
+				<configuration>
+				<to>
+					<image>gcr.io/PROJECT_ID/pubsub</image>
+				</to>
+				</configuration>
+			</plugin>
+			<plugin>
+				<groupId>org.springframework.boot</groupId>
+				<artifactId>spring-boot-maven-plugin</artifactId>
+				<version>${springboot.version}</version>
+				<configuration>
+					<fork>true</fork>
+					<mainClass>com.looksee.journeyExecutor.Application</mainClass>
+				</configuration>
+				<executions>
+					<execution>
+					<goals>
+						<goal>repackage</goal>
+					</goals>
+					</execution>
+				</executions>
+			</plugin>
+		</plugins>
+	</build>
     
     <repositories>
         <repository>

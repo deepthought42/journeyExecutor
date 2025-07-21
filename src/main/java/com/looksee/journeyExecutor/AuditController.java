@@ -137,7 +137,7 @@ public class AuditController {
 	 * @throws Exception if an error occurs while evaluating the journey
 	 */
 	@RequestMapping(value = "/", method = RequestMethod.POST)
-	public ResponseEntity<String> receiveMessage(@RequestBody Body body) 
+	public ResponseEntity<String> receiveMessage(@RequestBody Body body)
 			throws Exception 
 	{
 		Browser browser = null;

@@ -61,24 +61,23 @@ import com.looksee.utils.BrowserUtils;
 import com.looksee.utils.PathUtils;
 import com.looksee.utils.TimingUtils;
 
-/*
- * Copyright 2019 Google LLC
+/**
+ * Controller for the journey executor.
  *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
+ * This controller is responsible for receiving a {@link JourneyCandidateMessage} and processing it.
  *
- * http://www.apache.org/licenses/LICENSE-2.0
+ * If the journey is in a {@link JourneyStatus#CANDIDATE} status, it will be evaluated.
  *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
+ * If the journey is in a {@link JourneyStatus#REVIEWING} status, it will be skipped.
+ *
+ * If the journey is in a {@link JourneyStatus#VERIFIED} status, it will be skipped.
+ *
+ * If the journey is in a {@link JourneyStatus#DISCARDED} status, it will be skipped.
+ *
+ * If the journey is in a {@link JourneyStatus#ERROR} status, it will be skipped.
+ *
+ * If the journey is in a {@link JourneyStatus#CANCELLED} status, it will be skipped.
  */
-// [START cloudrun_pubsub_handler]
-// [START run_pubsub_handler]
-// PubsubController consumes a Pub/Sub message.
 @RestController
 public class AuditController {
 	private static Logger log = LoggerFactory.getLogger(AuditController.class);
@@ -118,6 +117,25 @@ public class AuditController {
 	@Autowired
 	private PubSubPageBuiltPublisherImpl page_built_topic;
 	
+	/**
+	 * Receives a {@link JourneyCandidateMessage} and processes it.
+	 *
+	 * If the journey is in a {@link JourneyStatus#CANDIDATE} status, it will be evaluated.
+	 *
+	 * If the journey is in a {@link JourneyStatus#REVIEWING} status, it will be skipped.
+	 *
+	 * If the journey is in a {@link JourneyStatus#VERIFIED} status, it will be skipped.
+	 *
+	 * If the journey is in a {@link JourneyStatus#DISCARDED} status, it will be skipped.
+	 *
+	 * If the journey is in a {@link JourneyStatus#ERROR} status, it will be skipped.
+	 *
+	 * If the journey is in a {@link JourneyStatus#CANCELLED} status, it will be skipped.
+	 *
+	 * @param body {@link Body} containing the {@link JourneyCandidateMessage}
+	 * @return {@link ResponseEntity} containing the result of the journey evaluation
+	 * @throws Exception if an error occurs while evaluating the journey
+	 */
 	@RequestMapping(value = "/", method = RequestMethod.POST)
 	public ResponseEntity<String> receiveMessage(@RequestBody Body body) 
 			throws Exception 

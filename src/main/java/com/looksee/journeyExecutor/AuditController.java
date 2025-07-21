@@ -14,7 +14,6 @@ import java.util.stream.Collectors;
 
 import javax.imageio.ImageIO;
 
-import org.apache.commons.io.file.PathUtils;
 import org.openqa.selenium.JavascriptException;
 import org.openqa.selenium.NoSuchElementException;
 import org.openqa.selenium.NoSuchSessionException;
@@ -34,6 +33,9 @@ import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import com.looksee.gcp.PubSubDiscardedJourneyPublisherImpl;
 import com.looksee.gcp.PubSubJourneyVerifiedPublisherImpl;
 import com.looksee.gcp.PubSubPageBuiltPublisherImpl;
+import com.looksee.mapper.Body;
+import com.looksee.models.Browser;
+import com.looksee.models.Domain;
 import com.looksee.models.ElementState;
 import com.looksee.models.PageState;
 import com.looksee.models.enums.BrowserEnvironment;
@@ -42,6 +44,7 @@ import com.looksee.models.enums.JourneyStatus;
 import com.looksee.models.journeys.DomainMap;
 import com.looksee.models.journeys.Journey;
 import com.looksee.models.journeys.LandingStep;
+import com.looksee.models.journeys.Step;
 import com.looksee.models.message.DiscardedJourneyMessage;
 import com.looksee.models.message.JourneyCandidateMessage;
 import com.looksee.models.message.PageBuiltMessage;
@@ -55,6 +58,7 @@ import com.looksee.services.PageStateService;
 import com.looksee.services.StepExecutor;
 import com.looksee.services.StepService;
 import com.looksee.utils.BrowserUtils;
+import com.looksee.utils.PathUtils;
 import com.looksee.utils.TimingUtils;
 
 /*

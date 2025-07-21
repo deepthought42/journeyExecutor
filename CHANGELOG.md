@@ -1,3 +1,10 @@
+## [1.1.1](https://github.com/deepthought42/journeyExecutor/compare/v1.1.0...v1.1.1) (2025-07-21)
+
+
+### Bug Fixes
+
+* cleanup pom file ([947d6fe](https://github.com/deepthought42/journeyExecutor/commit/947d6fee4ca40c80d8f2fc3573548056da31f428))
+
 # [1.1.0](https://github.com/deepthought42/journeyExecutor/compare/v1.0.2...v1.1.0) (2025-07-21)
 
 
